@@ -39,6 +39,7 @@ import {
 } from './utils'
 import type { Program } from '@coral-xyz/anchor'
 import type { VirtualCurve as VirtualCurveIDL } from './idl/idl'
+import { BN } from '@coral-xyz/anchor'
 
 export class VirtualCurveClient
     extends VirtualCurve
@@ -191,8 +192,16 @@ export class VirtualCurveClient
         throw new Error('Invalid base token type')
     }
 
-    async swap(swapParam: SwapParam) {
-        const { amountIn, minAmountOut, swapBaseForQuote, owner } = swapParam
+    async swap(swapParam: {
+        amountIn: BN
+        minimumAmountOut: BN
+    }): Promise<Transaction> {
+        const { amountIn, minimumAmountOut } = swapParam
+
+        // Determine swap direction based on pool state
+        const swapBaseForQuote = true // This should be determined based on your pool's logic
+        const owner = this.program.provider.publicKey
+        if (!owner) throw new Error('No wallet connected')
 
         const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
             (() => {
@@ -268,7 +277,7 @@ export class VirtualCurveClient
                 ...wrapSOLInstruction(
                     owner,
                     inputTokenAccount,
-                    amountIn.toNumber()
+                    BigInt(amountIn.toString())
                 )
             )
             cleanupIxs.push(unwrapSOLInstruction(owner))
@@ -299,8 +308,7 @@ export class VirtualCurveClient
         return this.program.methods
             .swap({
                 amountIn,
-                minAmountOut,
-                swapBaseForQuote,
+                minimumAmountOut,
             })
             .accounts(accounts)
             .transaction()
