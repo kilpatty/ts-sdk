@@ -17,6 +17,12 @@ export class VirtualCurveAdmin
         super(program)
     }
 
+    /**
+     * Create a claim fee operator
+     * @param connection - The connection to the Solana network
+     * @param createClaimFeeOperatorParam - The parameters for the claim fee operator
+     * @returns A transaction
+     */
     static async createClaimFeeOperator(
         connection: Connection,
         createClaimFeeOperatorParam: CreateClaimFeeOperatorParam
@@ -35,6 +41,12 @@ export class VirtualCurveAdmin
             .transaction()
     }
 
+    /**
+     * Close a claim fee operator
+     * @param connection - The connection to the Solana network
+     * @param params - The parameters for the claim fee operator
+     * @returns A transaction
+     */
     static async closeClaimFeeOperator(
         connection: Connection,
         params: CloseClaimFeeOperatorParam
