@@ -67,17 +67,14 @@ export function deriveTokenVault(
     return tokenVault
 }
 
-export function deriveMetadata(
-    mint: PublicKey,
-    programId: PublicKey
-): PublicKey {
+export function deriveMetadata(mint: PublicKey): PublicKey {
     const [metadata] = PublicKey.findProgramAddressSync(
         [
             Buffer.from(SEED.METADATA),
             METADATA_PROGRAM_ID.toBuffer(),
             mint.toBuffer(),
         ],
-        programId
+        METADATA_PROGRAM_ID
     )
 
     return metadata

@@ -150,7 +150,7 @@ export class VirtualCurveClient
         const pool = derivePool(quoteMint, baseMint, config, program.programId)
         const baseVault = deriveTokenVault(pool, baseMint, program.programId)
         const quoteVault = deriveTokenVault(pool, quoteMint, program.programId)
-        const baseMetadata = deriveMetadata(baseMint, program.programId)
+        const baseMetadata = deriveMetadata(baseMint)
 
         if (baseTokenType === TokenType.SPL) {
             const accounts: InitializeVirtualPoolWithSplTokenAccounts = {
@@ -223,92 +223,129 @@ export class VirtualCurveClient
      * @returns A swap transaction
      */
     async swap(swapParam: SwapParam): Promise<Transaction> {
-        const inputMint = swapParam.swapBaseForQuote
-            ? new PublicKey(swapParam.baseMint)
-            : new PublicKey(swapParam.quoteMint)
-        const outputMint = swapParam.swapBaseForQuote
-            ? new PublicKey(swapParam.quoteMint)
-            : new PublicKey(swapParam.baseMint)
+        const { amountIn, minimumAmountOut, swapBaseForQuote, owner } =
+            swapParam
 
-        const isSOLInput = inputMint.toString() === NATIVE_MINT.toString()
-        const isSOLOutput = outputMint.toString() === NATIVE_MINT.toString()
+        const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
+            (() => {
+                if (swapBaseForQuote) {
+                    return {
+                        inputMint: new PublicKey(
+                            this.virtualPoolState.baseMint
+                        ),
+                        outputMint: new PublicKey(
+                            this.poolConfigState.quoteMint
+                        ),
+                        inputTokenProgram:
+                            this.virtualPoolState.poolType === TokenType.SPL
+                                ? TOKEN_PROGRAM_ID
+                                : TOKEN_2022_PROGRAM_ID,
+                        outputTokenProgram:
+                            this.poolConfigState.quoteTokenFlag ===
+                            TokenType.SPL
+                                ? TOKEN_PROGRAM_ID
+                                : TOKEN_2022_PROGRAM_ID,
+                    }
+                } else {
+                    return {
+                        inputMint: new PublicKey(
+                            this.poolConfigState.quoteMint
+                        ),
+                        outputMint: new PublicKey(
+                            this.virtualPoolState.baseMint
+                        ),
+                        inputTokenProgram:
+                            this.poolConfigState.quoteTokenFlag ===
+                            TokenType.SPL
+                                ? TOKEN_PROGRAM_ID
+                                : TOKEN_2022_PROGRAM_ID,
+                        outputTokenProgram:
+                            this.virtualPoolState.poolType === TokenType.SPL
+                                ? TOKEN_PROGRAM_ID
+                                : TOKEN_2022_PROGRAM_ID,
+                    }
+                }
+            })()
 
-        const inputTokenProgram = swapParam.swapBaseForQuote
-            ? this.virtualPoolState.poolType === TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
-            : this.poolConfigState.quoteTokenFlag === TokenType.SPL
-              ? TOKEN_PROGRAM_ID
-              : TOKEN_2022_PROGRAM_ID
-
-        const outputTokenProgram = swapParam.swapBaseForQuote
-            ? this.poolConfigState.quoteTokenFlag === TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
-            : this.virtualPoolState.poolType === TokenType.SPL
-              ? TOKEN_PROGRAM_ID
-              : TOKEN_2022_PROGRAM_ID
+        const eventAuthority = deriveEventAuthority(this.program.programId)
+        const poolAuthority = derivePoolAuthority(this.program.programId)
 
         const inputTokenAccount = findAssociatedTokenAddress(
-            swapParam.user,
+            owner,
             inputMint,
             inputTokenProgram
         )
 
         const outputTokenAccount = findAssociatedTokenAddress(
-            swapParam.user,
+            owner,
             outputMint,
             outputTokenProgram
         )
 
-        const eventAuthority = deriveEventAuthority(this.program.programId)
-        const poolAuthority = derivePoolAuthority(this.program.programId)
+        const isSOLInput = inputMint.toString() === NATIVE_MINT.toString()
+        const isSOLOutput = outputMint.toString() === NATIVE_MINT.toString()
 
         const ixs = []
         const cleanupIxs = []
         if (isSOLInput) {
             ixs.push(
                 createAssociatedTokenAccountIdempotentInstruction(
-                    swapParam.user,
+                    owner,
                     inputTokenAccount,
-                    swapParam.user,
+                    owner,
                     inputMint
                 )
             )
             ixs.push(
                 ...wrapSOLInstruction(
-                    swapParam.user,
+                    owner,
                     inputTokenAccount,
-                    BigInt(swapParam.swapParams.amountIn.toString())
+                    BigInt(amountIn.toString())
                 )
             )
-            cleanupIxs.push(unwrapSOLInstruction(swapParam.user))
+            cleanupIxs.push(unwrapSOLInstruction(owner))
         }
 
         ixs.push(
             createAssociatedTokenAccountIdempotentInstruction(
-                swapParam.user,
+                owner,
                 outputTokenAccount,
-                swapParam.user,
+                owner,
                 outputMint
             )
         )
 
         if (isSOLOutput) {
-            cleanupIxs.push(unwrapSOLInstruction(swapParam.user))
+            cleanupIxs.push(unwrapSOLInstruction(owner))
         }
 
         const accounts: SwapAccounts = {
-            ...swapParam,
-            inputTokenAccount,
-            outputTokenAccount,
+            baseMint: this.virtualPoolState.baseMint,
+            quoteMint: this.poolConfigState.quoteMint,
+            pool: this.pool,
+            baseVault: this.virtualPoolState.baseVault,
+            quoteVault: this.virtualPoolState.quoteVault,
+            config: this.virtualPoolState.config,
             eventAuthority,
             poolAuthority,
+            referralTokenAccount: null,
+            inputTokenAccount,
+            outputTokenAccount,
+            payer: owner,
+            tokenBaseProgram: swapBaseForQuote
+                ? inputTokenProgram
+                : outputTokenProgram,
+            tokenQuoteProgram: swapBaseForQuote
+                ? outputTokenProgram
+                : inputTokenProgram,
             program: this.program.programId,
         }
 
         const transaction = await this.program.methods
-            .swap(swapParam.swapParams)
+            .swap({
+                amountIn,
+                minimumAmountOut,
+            })
             .accounts(accounts)
             .transaction()
         return transaction

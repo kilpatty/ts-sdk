@@ -200,18 +200,11 @@ export type CreatePoolParam = {
     quoteTokenType: TokenType
 }
 
-export type SwapParam = Omit<
-    SwapAccounts,
-    | 'program'
-    | 'eventAuthority'
-    | 'inputTokenAccount'
-    | 'outputTokenAccount'
-    | 'poolAuthority'
-> & {
-    user: PublicKey
+export type SwapParam = {
+    owner: PublicKey
+    amountIn: BN
+    minimumAmountOut: BN
     swapBaseForQuote: boolean
-} & {
-    swapParams: SwapParameters
 }
 
 export type CreateClaimFeeOperatorParam = Omit<

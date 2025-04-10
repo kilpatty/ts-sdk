@@ -7,11 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsc --watch",
-    "build": "bunx bunup index.ts --format esm,cjs --dts",
-    "test:create-config": "tsx tests/createConfig.test.ts",
-    "test:create-pool": "tsx tests/createPool.test.ts",
-    "create-config": "tsx scripts/createConfig.ts",
-    "create-pool": "tsx scripts/createPool.ts"
+    "build": "bunx bunup index.ts --format esm,cjs --dts"
   },
   "exports": {
     ".": {
