@@ -1,5 +1,5 @@
 import { PublicKey } from '@solana/web3.js'
-import type { PoolConfig, VirtualPool } from './types'
+import type { PoolConfig, VirtualPool } from '../../src/types'
 import { BN } from 'bn.js'
 
 export const DEFAULT_POOL_CONFIG: PoolConfig = {

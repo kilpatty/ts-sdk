@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import BN from 'bn.js'
 import { type VirtualPool, type PoolConfig } from '../src/types'
-import { DEFAULT_POOL_CONFIG, DEFAULT_VIRTUAL_POOL } from '../src/defaults'
+import { DEFAULT_POOL_CONFIG, DEFAULT_VIRTUAL_POOL } from './utils/defaults'
 import { getInitialBaseSupply, MAX_CURVE_POINT } from '../src/math/poolConfig'
 import { getPriceFromId } from '../src/math/priceMath'
 import { swapQuote } from '../src/math/swapQuote'
