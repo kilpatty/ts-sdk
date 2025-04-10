@@ -11,10 +11,12 @@ import {
     type MigrateMeteoraDammLockLpTokenForCreatorParam,
     type MigrateMeteoraDammLockLpTokenForPartnerParam,
     type MigrateMeteoraDammParam,
+    type PoolConfig,
     type PoolConfigState,
     type SwapAccounts,
     type SwapParam,
     type VirtualCurveClientInterface,
+    type VirtualPool,
     type VirtualPoolState,
 } from './types'
 import {
@@ -47,6 +49,7 @@ import {
 import type { Program } from '@coral-xyz/anchor'
 import type { VirtualCurve as VirtualCurveIDL } from './idl/idl'
 import BN from 'bn.js'
+import { swapQuote } from './math/swapQuote'
 
 export class VirtualCurveClient
     extends VirtualCurve
@@ -508,5 +511,23 @@ export class VirtualCurveClient
             )
 
         return metadata
+    }
+
+    swapQuote(
+        virtualPool: VirtualPool,
+        config: PoolConfig,
+        swapBaseForQuote: boolean,
+        amountIn: BN,
+        hasReferral: boolean,
+        currentPoint: BN
+    ) {
+        return swapQuote(
+            virtualPool,
+            config,
+            swapBaseForQuote,
+            amountIn,
+            hasReferral,
+            currentPoint
+        )
     }
 }

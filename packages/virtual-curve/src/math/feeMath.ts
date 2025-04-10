@@ -1,91 +1,213 @@
 import BN from 'bn.js'
-import { SafeMath } from './safeMath'
-import { Rounding, safeMulDivCastU64 } from './utilsMath'
-import {
-    BASIS_POINT_MAX,
-    FEE_DENOMINATOR,
-    MAX_FEE_NUMERATOR,
-} from './constants'
+import type { DynamicFeeConfig, VolatilityTracker } from '../types'
+
+// Constants matching Rust implementation
+export const MAX_EXPONENTIAL = 0x80000 // 1048576
+export const SCALE_OFFSET = 64
+export const ONE = new BN(1).shln(SCALE_OFFSET)
+export const BASIS_POINT_MAX = new BN(10000)
 
 /**
- * Fee scheduler mode
- */
-export enum FeeSchedulerMode {
-    // fee = cliff_fee_numerator - passed_period * reduction_factor
-    Linear = 0,
-    // fee = cliff_fee_numerator * (1-reduction_factor/10_000)^passed_period
-    Exponential = 1,
-}
-
-/**
- * Fee mode
- */
-export interface FeeMode {
-    feesOnInput: boolean
-    feesOnBaseToken: boolean
-    hasReferral: boolean
-}
-
-/**
- * Fee on amount result
- */
-export interface FeeOnAmountResult {
-    amount: BN
-    tradingFee: BN
-    protocolFee: BN
-    referralFee: BN
-}
-
-/**
- * Get fee in period for exponential fee scheduler
- * @param cliffFeeNumerator Cliff fee numerator
- * @param reductionFactor Reduction factor
- * @param period Period
- * @returns Fee numerator
+ * Calculate fee for exponential decay: cliff_fee_numerator * (1-reduction_factor/10_000)^passed_period
  */
 export function getFeeInPeriod(
     cliffFeeNumerator: BN,
     reductionFactor: BN,
-    period: number
+    passedPeriod: BN
 ): BN {
-    if (period === 0) {
-        return cliffFeeNumerator
+    // Make bin_step into Q64x64, and divided by BASIS_POINT_MAX
+    const bps = reductionFactor.shln(SCALE_OFFSET).div(BASIS_POINT_MAX)
+
+    // Add 1 to bps, we get 1.0001 in Q64.64
+    const base = ONE.sub(bps)
+
+    // Calculate power
+    const result = pow(base, passedPeriod.toNumber())
+    if (!result) {
+        throw new Error('MathOverflow')
     }
 
-    let feeNumerator = cliffFeeNumerator
-    const reductionFactorBasisPoint = SafeMath.div(
-        SafeMath.mul(reductionFactor, new BN(BASIS_POINT_MAX)),
-        new BN(BASIS_POINT_MAX)
-    )
+    // Calculate final fee
+    const fee = result.mul(cliffFeeNumerator).shrn(SCALE_OFFSET)
 
-    for (let i = 0; i < period; i++) {
-        feeNumerator = SafeMath.div(
-            SafeMath.mul(
-                feeNumerator,
-                SafeMath.sub(new BN(BASIS_POINT_MAX), reductionFactorBasisPoint)
-            ),
-            new BN(BASIS_POINT_MAX)
-        )
-    }
-
-    return feeNumerator
+    return fee
 }
 
 /**
- * Get current base fee numerator
- * @param baseFee Base fee parameters
- * @param currentPoint Current point
- * @param activationPoint Activation point
- * @returns Current base fee numerator
+ * Power function matching Rust implementation exactly
+ */
+export function pow(base: BN, exp: number): BN | null {
+    // If exponent is negative. We will invert the result later by 1 / base^exp.abs()
+    let invert = exp < 0
+
+    // When exponential is 0, result will always be 1
+    if (exp === 0) {
+        return ONE
+    }
+
+    // Make the exponential positive
+    exp = Math.abs(exp)
+
+    // No point to continue the calculation as it will overflow
+    if (exp >= MAX_EXPONENTIAL) {
+        return null
+    }
+
+    let squaredBase = base
+    let result = ONE
+
+    // When multiply the base twice, the number of bits double from 128 -> 256, which overflow.
+    // The trick here is to inverse the calculation, which make the upper 64 bits (number bits) to be 0s.
+    if (squaredBase.gte(result)) {
+        // This inverse the base: 1 / base
+        squaredBase = new BN(2).pow(new BN(128)).sub(new BN(1)).div(squaredBase)
+        // If exponent is negative, the above already inverted the result
+        invert = !invert
+    }
+
+    // Binary exponentiation implementation matching Rust exactly
+    if (exp & 0x1) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x2) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x4) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x8) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x10) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x20) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x40) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x80) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x100) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x200) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x400) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x800) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x1000) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x2000) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x4000) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x8000) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x10000) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x20000) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
+    if (exp & 0x40000) {
+        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
+    }
+
+    // Stop here as the next is 20th bit, which > MAX_EXPONENTIAL
+    if (result.isZero()) {
+        return null
+    }
+
+    if (invert) {
+        result = new BN(2).pow(new BN(128)).sub(new BN(1)).div(result)
+    }
+
+    return result
+}
+
+/**
+ * Calculate total trading fee including base and dynamic fees
+ */
+export function getTotalTradingFee(
+    poolFees: any, // Update with proper type
+    currentPoint: BN,
+    activationPoint: BN
+): BN {
+    // Get base fee numerator
+    const baseFeeNumerator = getCurrentBaseFeeNumerator(
+        poolFees.baseFee,
+        currentPoint,
+        activationPoint
+    )
+
+    // Get dynamic fee (if enabled)
+    const dynamicFee = getDynamicFee(
+        poolFees.dynamicFee,
+        poolFees.volatilityTracker
+    )
+
+    // Add base and dynamic fees
+    const totalFeeNumerator = baseFeeNumerator.add(dynamicFee)
+
+    // Cap at MAX_FEE_NUMERATOR
+    const MAX_FEE_NUMERATOR = new BN(10000)
+    return totalFeeNumerator.gt(MAX_FEE_NUMERATOR)
+        ? MAX_FEE_NUMERATOR
+        : totalFeeNumerator
+}
+
+/**
+ * Get current base fee numerator based on fee schedule
  */
 export function getCurrentBaseFeeNumerator(
-    baseFee: {
-        cliffFeeNumerator: BN
-        feeSchedulerMode: number
-        numberOfPeriod: number
-        periodFrequency: BN
-        reductionFactor: BN
-    },
+    baseFee: any, // Update with proper type
     currentPoint: BN,
     activationPoint: BN
 ): BN {
@@ -93,188 +215,49 @@ export function getCurrentBaseFeeNumerator(
         return baseFee.cliffFeeNumerator
     }
 
-    // Can trade before activation point, so if it is alpha-vault, we use min fee
-    let period: BN
-    if (currentPoint.lt(activationPoint)) {
-        period = new BN(baseFee.numberOfPeriod)
-    } else {
-        period = SafeMath.div(
-            SafeMath.sub(currentPoint, activationPoint),
-            baseFee.periodFrequency
-        )
-        if (period.gt(new BN(baseFee.numberOfPeriod))) {
-            period = new BN(baseFee.numberOfPeriod)
-        }
-    }
+    const period = currentPoint.lt(activationPoint)
+        ? new BN(baseFee.numberOfPeriod)
+        : BN.min(
+              currentPoint.sub(activationPoint).div(baseFee.periodFrequency),
+              new BN(baseFee.numberOfPeriod)
+          )
 
-    const feeSchedulerMode = baseFee.feeSchedulerMode
-
-    if (feeSchedulerMode === FeeSchedulerMode.Linear) {
-        const feeNumerator = SafeMath.sub(
-            baseFee.cliffFeeNumerator,
-            SafeMath.mul(period, baseFee.reductionFactor)
-        )
-        return feeNumerator
-    } else if (feeSchedulerMode === FeeSchedulerMode.Exponential) {
-        const feeNumerator = getFeeInPeriod(
-            baseFee.cliffFeeNumerator,
-            baseFee.reductionFactor,
-            period.toNumber()
-        )
-        return feeNumerator
-    } else {
-        throw new Error('Invalid fee scheduler mode')
+    // Handle fee scheduler modes
+    switch (baseFee.feeSchedulerMode) {
+        case 0: // Linear
+            return baseFee.cliffFeeNumerator.sub(
+                period.mul(baseFee.reductionFactor)
+            )
+        case 1: // Exponential
+            return getFeeInPeriod(
+                baseFee.cliffFeeNumerator,
+                baseFee.reductionFactor,
+                period
+            )
+        default:
+            throw new Error('Invalid fee scheduler mode')
     }
 }
 
 /**
- * Get fee on amount
- * @param amount Amount
- * @param poolFees Pool fees
- * @param isReferral Whether referral is used
- * @param currentPoint Current point
- * @param activationPoint Activation point
- * @returns Fee on amount result
+ * Calculate dynamic fee based on volatility
  */
-export function getFeeOnAmount(
-    amount: BN,
-    poolFees: {
-        baseFee: {
-            cliffFeeNumerator: BN
-            feeSchedulerMode: number
-            numberOfPeriod: number
-            periodFrequency: BN
-            reductionFactor: BN
-        }
-        protocolFeePercent: number
-        referralFeePercent: number
-        dynamicFee: {
-            initialized: number
-            maxVolatilityAccumulator: number
-            variableFeeControl: number
-            binStep: number
-            filterPeriod: number
-            decayPeriod: number
-            reductionFactor: number
-            lastUpdateTimestamp: BN
-            binStepU128: BN
-            sqrtPriceReference: BN
-            volatilityAccumulator: BN
-            volatilityReference: BN
-        }
-    },
-    isReferral: boolean,
-    currentPoint: BN,
-    activationPoint: BN
-): FeeOnAmountResult {
-    // Get total trading fee
-    const baseFeeNumerator = getCurrentBaseFeeNumerator(
-        poolFees.baseFee,
-        currentPoint,
-        activationPoint
-    )
-
-    // Add dynamic fee if enabled
-    let totalFeeNumerator = baseFeeNumerator
-    if (poolFees.dynamicFee.initialized !== 0) {
-        const variableFee = getVariableFee(poolFees.dynamicFee)
-        totalFeeNumerator = SafeMath.add(totalFeeNumerator, variableFee)
-    }
-
-    // Cap at MAX_FEE_NUMERATOR
-    if (totalFeeNumerator.gt(new BN(MAX_FEE_NUMERATOR))) {
-        totalFeeNumerator = new BN(MAX_FEE_NUMERATOR)
-    }
-
-    // Calculate trading fee
-    const tradingFee = safeMulDivCastU64(
-        amount,
-        totalFeeNumerator,
-        new BN(FEE_DENOMINATOR),
-        Rounding.Up
-    )
-
-    // Update amount
-    const amountAfterFee = SafeMath.sub(amount, tradingFee)
-
-    // Calculate protocol fee
-    const protocolFee = safeMulDivCastU64(
-        tradingFee,
-        new BN(poolFees.protocolFeePercent),
-        new BN(100),
-        Rounding.Down
-    )
-
-    // Update trading fee
-    const tradingFeeAfterProtocol = SafeMath.sub(tradingFee, protocolFee)
-
-    // Calculate referral fee
-    let referralFee = new BN(0)
-    if (isReferral) {
-        referralFee = safeMulDivCastU64(
-            protocolFee,
-            new BN(poolFees.referralFeePercent),
-            new BN(100),
-            Rounding.Down
-        )
-    }
-
-    // Update protocol fee
-    const protocolFeeAfterReferral = SafeMath.sub(protocolFee, referralFee)
-
-    return {
-        amount: amountAfterFee,
-        tradingFee: tradingFeeAfterProtocol,
-        protocolFee: protocolFeeAfterReferral,
-        referralFee,
-    }
-}
-
-/**
- * Get variable fee from dynamic fee
- * @param dynamicFee Dynamic fee parameters
- * @returns Variable fee
- */
-export function getVariableFee(dynamicFee: {
-    initialized: number
-    maxVolatilityAccumulator: number
-    variableFeeControl: number
-    binStep: number
-    filterPeriod: number
-    decayPeriod: number
-    reductionFactor: number
-    lastUpdateTimestamp: BN
-    binStepU128: BN
-    sqrtPriceReference: BN
-    volatilityAccumulator: BN
-    volatilityReference: BN
-}): BN {
-    if (dynamicFee.initialized === 0) {
+export function getDynamicFee(
+    dynamicFee: DynamicFeeConfig,
+    volatilityTracker: VolatilityTracker
+): BN {
+    if (!dynamicFee.initialized) {
         return new BN(0)
     }
 
-    // Square of volatility accumulator * bin step
-    const squareVfaBin = SafeMath.mul(
-        SafeMath.mul(
-            dynamicFee.volatilityAccumulator,
-            new BN(dynamicFee.binStep)
-        ),
-        SafeMath.mul(
-            dynamicFee.volatilityAccumulator,
-            new BN(dynamicFee.binStep)
-        )
-    )
+    // Calculate square of volatility accumulator * bin step
+    const squareVfaBin = volatilityTracker.volatilityAccumulator
+        .mul(new BN(dynamicFee.binStep))
+        .pow(new BN(2))
 
-    // Variable fee control, volatility accumulator, bin step are in basis point unit (10_000)
-    // Scale down to 1e9 unit and ceiling the remaining
-    const vFee = SafeMath.mul(
-        squareVfaBin,
-        new BN(dynamicFee.variableFeeControl)
-    )
-    const scaledVFee = SafeMath.div(
-        SafeMath.add(vFee, new BN(99_999_999_999)),
-        new BN(100_000_000_000)
-    )
+    // Calculate variable fee using the control parameter
+    const vFee = squareVfaBin.mul(new BN(dynamicFee.variableFeeControl))
 
-    return scaledVFee
+    // Scale down to match Rust implementation: (v_fee + 99_999_999_999) / 100_000_000_000
+    return vFee.add(new BN('99999999999')).div(new BN('100000000000'))
 }
