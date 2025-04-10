@@ -1,4 +1,4 @@
-# virtual-curve
+# Virtual Curve SDK
 
 To install dependencies:
 
