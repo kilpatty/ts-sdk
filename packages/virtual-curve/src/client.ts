@@ -2,6 +2,7 @@ import {
     TokenType,
     type ClaimTradingFeeParam,
     type CreateConfigParam,
+    type CreatePartnerMetadataParam,
     type CreatePartnerMetadataParameters,
     type CreatePoolParam,
     type InitializeVirtualPoolWithSplTokenAccounts,
@@ -464,37 +465,33 @@ export class VirtualCurveClient
      */
     static async createPartnerMetadata(
         connection: Connection,
-        feeClaimer: PublicKey,
-        payer: PublicKey,
-        name: string,
-        website: string,
-        logo: string
+        createPartnerMetadataParam: CreatePartnerMetadataParam
     ): Promise<Transaction> {
         const { program } = createProgram(connection)
         const eventAuthority = deriveEventAuthority(program.programId)
         const partnerMetadata = derivePartnerMetadata(
-            feeClaimer,
+            createPartnerMetadataParam.feeClaimer,
             program.programId
         )
 
+        const partnerMetadataParam: CreatePartnerMetadataParameters = {
+            padding: new Array(96).fill(0),
+            name: createPartnerMetadataParam.name,
+            website: createPartnerMetadataParam.website,
+            logo: createPartnerMetadataParam.logo,
+        }
+
         const accounts = {
             partnerMetadata,
-            payer,
-            feeClaimer,
+            payer: createPartnerMetadataParam.payer,
+            feeClaimer: createPartnerMetadataParam.feeClaimer,
             systemProgram: SystemProgram.programId,
             eventAuthority,
             program: program.programId,
         }
 
-        const createPartnerMetadataParam: CreatePartnerMetadataParameters = {
-            padding: Array(96).fill(new BN(0)),
-            name,
-            website,
-            logo,
-        }
-
         return program.methods
-            .createPartnerMetadata(createPartnerMetadataParam)
+            .createPartnerMetadata(partnerMetadataParam)
             .accounts(accounts)
             .transaction()
     }
@@ -505,19 +502,37 @@ export class VirtualCurveClient
      * @param params - The parameters for the partner withdraw surplus
      * @returns A partner withdraw surplus transaction
      */
-    static async partnerWithdrawSurplus(
-        connection: Connection,
-        params: PartnerWithdrawSurplusParam
+    async partnerWithdrawSurplus(
+        partnerWithdrawSurplusParam: PartnerWithdrawSurplusParam
     ): Promise<Transaction> {
-        const { program } = createProgram(connection)
-        const eventAuthority = deriveEventAuthority(program.programId)
+        const poolAuthority = derivePoolAuthority(this.program.programId)
+        const eventAuthority = deriveEventAuthority(this.program.programId)
+
+        const tokenQuoteAccount = findAssociatedTokenAddress(
+            partnerWithdrawSurplusParam.feeClaimer,
+            this.poolConfigState.quoteMint,
+            this.poolConfigState.quoteTokenFlag === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
+        )
+
         const accounts = {
-            ...params,
+            poolAuthority,
+            config: this.virtualPoolState.config,
+            virtualPool: partnerWithdrawSurplusParam.virtualPool,
+            tokenQuoteAccount,
+            quoteVault: this.virtualPoolState.quoteVault,
+            quoteMint: this.poolConfigState.quoteMint,
+            feeClaimer: partnerWithdrawSurplusParam.feeClaimer,
+            tokenQuoteProgram:
+                this.poolConfigState.quoteTokenFlag === TokenType.SPL
+                    ? TOKEN_PROGRAM_ID
+                    : TOKEN_2022_PROGRAM_ID,
             eventAuthority,
-            program: program.programId,
+            program: this.program.programId,
         }
 
-        return program.methods
+        return this.program.methods
             .partnerWithdrawSurplus()
             .accounts(accounts)
             .transaction()
@@ -526,6 +541,14 @@ export class VirtualCurveClient
     /////////////////////////
     // MIGRATION FUNCTIONS //
     /////////////////////////
+
+    /////////////
+    // DAMM V1 //
+    /////////////
+
+    /////////////
+    // DAMM V2 //
+    /////////////
 
     /**
      * Create metadata for the migration of Meteora DAMM
