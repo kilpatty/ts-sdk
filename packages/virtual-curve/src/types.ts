@@ -177,10 +177,10 @@ export type MigrateMeteoraDammLockLpTokenForPartnerParam = Omit<
     'program' | 'eventAuthority' | 'systemProgram'
 >
 
-export type ClaimProtocolFeeParam = Omit<
-    ClaimProtocolFeeAccounts,
-    'program' | 'eventAuthority' | 'systemProgram'
->
+export type ClaimProtocolFeeParam = {
+    operator: PublicKey
+    pool: PublicKey
+}
 
 export type ClaimTradingFeeParam = Omit<
     ClaimTradingFeeAccounts,
@@ -218,10 +218,10 @@ export type CloseClaimFeeOperatorParam = Omit<
     'program' | 'eventAuthority' | 'systemProgram'
 >
 
-export type ProtocolWithdrawSurplusParam = Omit<
-    ProtocolWithdrawSurplusAccounts,
-    'program' | 'eventAuthority' | 'systemProgram'
->
+export type ProtocolWithdrawSurplusParam = {
+    operator: PublicKey
+    virtualPool: PublicKey
+}
 
 export type PartnerWithdrawSurplusParam = Omit<
     PartnerWithdrawSurplusAccounts,
@@ -235,7 +235,14 @@ export type PartnerWithdrawSurplusParam = Omit<
 export interface VirtualCurveClientInterface {
     swap(swapParam: SwapParam): Promise<Transaction>
 }
-export interface VirtualCurveAdminInterface {}
+export interface VirtualCurveAdminInterface {
+    claimProtocolFee(
+        claimProtocolFeeParam: ClaimProtocolFeeParam
+    ): Promise<Transaction>
+    protocolWithdrawSurplus(
+        params: ProtocolWithdrawSurplusParam
+    ): Promise<Transaction>
+}
 
 export interface CurvePoint {
     sqrtPrice: BN

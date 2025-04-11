@@ -1,43 +1,126 @@
-import type {
-    ClaimProtocolFeeParam,
-    CloseClaimFeeOperatorParam,
-    CreateClaimFeeOperatorParam,
-    ProtocolWithdrawSurplusParam,
-    VirtualCurveAdminInterface,
+import {
+    TokenType,
+    type ClaimProtocolFeeParam,
+    type CloseClaimFeeOperatorParam,
+    type CreateClaimFeeOperatorParam,
+    type PoolConfigState,
+    type ProtocolWithdrawSurplusParam,
+    type VirtualCurveAdminInterface,
+    type VirtualPoolState,
 } from './types'
-import type { Connection, Transaction } from '@solana/web3.js'
+import type { Connection, PublicKey, Transaction } from '@solana/web3.js'
 import { VirtualCurve } from '.'
-import { createProgram } from './utils'
-import { deriveEventAuthority } from './derive'
+import { createProgram, findAssociatedTokenAddress } from './utils'
+import {
+    deriveClaimFeeOperatorAddress,
+    deriveEventAuthority,
+    derivePoolAuthority,
+} from './derive'
+import type { Program } from '@coral-xyz/anchor'
+import type { VirtualCurve as VirtualCurveIDL } from './idl/idl'
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 
 export class VirtualCurveAdmin
     extends VirtualCurve
     implements VirtualCurveAdminInterface
 {
-    constructor(connection: Connection) {
-        const { program } = createProgram(connection)
+    public pool: PublicKey
+    public virtualPoolState: VirtualPoolState
+    public poolConfigState: PoolConfigState
+
+    constructor(
+        program: Program<VirtualCurveIDL>,
+        pool: PublicKey,
+        virtualPoolState: VirtualPoolState,
+        poolConfigState: PoolConfigState
+    ) {
         super(program)
+
+        this.pool = pool
+        this.virtualPoolState = virtualPoolState
+        this.poolConfigState = poolConfigState
+    }
+
+    /**
+     * Create a VirtualCurveAdmin instance
+     * @param connection - The connection to the Solana network
+     * @param pool - The pool address
+     * @returns A VirtualCurveAdmin instance
+     */
+    static async create(
+        connection: Connection,
+        pool: PublicKey
+    ): Promise<VirtualCurveAdmin> {
+        const { program } = await createProgram(connection)
+        const virtualPoolState = await program.account.virtualPool.fetch(pool)
+        const poolConfigState = await program.account.poolConfig.fetch(
+            virtualPoolState.config
+        )
+
+        return new VirtualCurveAdmin(
+            program,
+            pool,
+            virtualPoolState,
+            poolConfigState
+        )
     }
 
     /**
      * Claim protocol fee
-     * @param connection - The connection to the Solana network
      * @param claimProtocolFeeParam - The parameters for the claim protocol fee
      * @returns A claim protocol fee transaction
      */
-    static async claimProtocolFee(
-        connection: Connection,
+    async claimProtocolFee(
         claimProtocolFeeParam: ClaimProtocolFeeParam
     ): Promise<Transaction> {
-        const { program } = createProgram(connection)
-        const eventAuthority = deriveEventAuthority(program.programId)
+        const eventAuthority = deriveEventAuthority(this.program.programId)
+        const poolAuthority = derivePoolAuthority(this.program.programId)
+
+        const tokenBaseAccount = findAssociatedTokenAddress(
+            claimProtocolFeeParam.operator,
+            this.virtualPoolState.baseMint,
+            this.virtualPoolState.poolType === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
+        )
+
+        const tokenQuoteAccount = findAssociatedTokenAddress(
+            claimProtocolFeeParam.operator,
+            this.poolConfigState.quoteMint,
+            this.poolConfigState.quoteTokenFlag === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
+        )
+
+        const claimFeeOperator = deriveClaimFeeOperatorAddress(
+            claimProtocolFeeParam.operator,
+            this.program.programId
+        )
         const accounts = {
-            ...claimProtocolFeeParam,
+            poolAuthority,
+            config: this.virtualPoolState.config,
+            pool: claimProtocolFeeParam.pool,
+            baseVault: this.virtualPoolState.baseVault,
+            quoteVault: this.virtualPoolState.quoteVault,
+            baseMint: this.virtualPoolState.baseMint,
+            quoteMint: this.poolConfigState.quoteMint,
+            tokenBaseAccount,
+            tokenQuoteAccount,
+            claimFeeOperator,
+            operator: claimProtocolFeeParam.operator,
             eventAuthority,
-            program: program.programId,
+            tokenBaseProgram:
+                this.virtualPoolState.poolType === TokenType.SPL
+                    ? TOKEN_PROGRAM_ID
+                    : TOKEN_2022_PROGRAM_ID,
+            tokenQuoteProgram:
+                this.poolConfigState.quoteTokenFlag === TokenType.SPL
+                    ? TOKEN_PROGRAM_ID
+                    : TOKEN_2022_PROGRAM_ID,
+            program: this.program.programId,
         }
 
-        return program.methods
+        return this.program.methods
             .claimProtocolFee()
             .accounts(accounts)
             .transaction()
@@ -93,23 +176,39 @@ export class VirtualCurveAdmin
 
     /**
      * Protocol withdraw surplus
-     * @param connection - The connection to the Solana network
      * @param params - The parameters for the protocol withdraw surplus
      * @returns A transaction
      */
-    static async protocolWithdrawSurplus(
-        connection: Connection,
+    async protocolWithdrawSurplus(
         params: ProtocolWithdrawSurplusParam
     ): Promise<Transaction> {
-        const { program } = createProgram(connection)
-        const eventAuthority = deriveEventAuthority(program.programId)
+        const poolAuthority = derivePoolAuthority(this.program.programId)
+        const eventAuthority = deriveEventAuthority(this.program.programId)
+
+        const tokenQuoteAccount = findAssociatedTokenAddress(
+            params.operator,
+            this.poolConfigState.quoteMint,
+            this.poolConfigState.quoteTokenFlag === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
+        )
+
         const accounts = {
-            ...params,
+            poolAuthority,
+            config: this.virtualPoolState.config,
+            virtualPool: params.virtualPool,
+            tokenQuoteAccount,
+            quoteVault: this.virtualPoolState.quoteVault,
+            quoteMint: this.poolConfigState.quoteMint,
+            tokenQuoteProgram:
+                this.poolConfigState.quoteTokenFlag === TokenType.SPL
+                    ? TOKEN_PROGRAM_ID
+                    : TOKEN_2022_PROGRAM_ID,
             eventAuthority,
-            program: program.programId,
+            program: this.program.programId,
         }
 
-        return program.methods
+        return this.program.methods
             .protocolWithdrawSurplus()
             .accounts(accounts)
             .transaction()

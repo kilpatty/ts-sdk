@@ -126,3 +126,20 @@ export function derivePartnerMetadata(
     )
     return partnerMetadata
 }
+
+/**
+ * Derive the claim fee operator address
+ * @param operator - The operator
+ * @param programId - The program ID
+ * @returns The claim fee operator address
+ */
+export function deriveClaimFeeOperatorAddress(
+    operator: PublicKey,
+    programId: PublicKey
+): PublicKey {
+    const [claimFeeOperator] = PublicKey.findProgramAddressSync(
+        [Buffer.from('cf_operator'), operator.toBuffer()],
+        programId
+    )
+    return claimFeeOperator
+}
