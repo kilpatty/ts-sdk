@@ -1,8 +1,8 @@
 import {
     TokenType,
-    type ClaimProtocolFeeParam,
     type ClaimTradingFeeParam,
     type CreateConfigParam,
+    type CreatePartnerMetadataParameters,
     type CreatePoolParam,
     type InitializeVirtualPoolWithSplTokenAccounts,
     type InitializeVirtualPoolWithToken2022Accounts,
@@ -11,6 +11,7 @@ import {
     type MigrateMeteoraDammLockLpTokenForCreatorParam,
     type MigrateMeteoraDammLockLpTokenForPartnerParam,
     type MigrateMeteoraDammParam,
+    type PartnerWithdrawSurplusParam,
     type PoolConfig,
     type PoolConfigState,
     type SwapAccounts,
@@ -29,6 +30,7 @@ import { VirtualCurve } from '.'
 import {
     deriveEventAuthority,
     deriveMetadata,
+    derivePartnerMetadata,
     derivePool,
     derivePoolAuthority,
     deriveTokenVault,
@@ -95,35 +97,9 @@ export class VirtualCurveClient
         )
     }
 
-    /**
-     * Create a new config
-     * @param connection - The connection to the Solana network
-     * @param createConfigParam - The parameters for the config
-     * @returns A new config
-     */
-    static async createConfig(
-        connection: Connection,
-        createConfigParam: CreateConfigParam
-    ): Promise<Transaction> {
-        const { program } = createProgram(connection)
-        const { config, feeClaimer, owner, quoteMint, payer, ...configParam } =
-            createConfigParam
-        const eventAuthority = deriveEventAuthority(program.programId)
-        const accounts = {
-            config,
-            feeClaimer,
-            owner,
-            quoteMint,
-            payer,
-            eventAuthority,
-            program: program.programId,
-        }
-
-        return program.methods
-            .createConfig(configParam)
-            .accounts(accounts)
-            .transaction()
-    }
+    ////////////////////
+    // MAIN FUNCTIONS //
+    ////////////////////
 
     /**
      * Create a new pool
@@ -355,25 +331,63 @@ export class VirtualCurveClient
     }
 
     /**
-     * Claim protocol fee
-     * @param connection - The connection to the Solana network
-     * @param claimProtocolFeeParam - The parameters for the claim protocol fee
-     * @returns A claim protocol fee transaction
+     * Swap quote
+     * @param virtualPool - The virtual pool
+     * @param config - The config
+     * @param swapBaseForQuote - Whether to swap base for quote
+     * @param amountIn - The amount in
+     * @param hasReferral - Whether the referral is enabled
+     * @param currentPoint - The current point
+     * @returns
      */
-    static async claimProtocolFee(
+    swapQuote(
+        virtualPool: VirtualPool,
+        config: PoolConfig,
+        swapBaseForQuote: boolean,
+        amountIn: BN,
+        hasReferral: boolean,
+        currentPoint: BN
+    ) {
+        return swapQuote(
+            virtualPool,
+            config,
+            swapBaseForQuote,
+            amountIn,
+            hasReferral,
+            currentPoint
+        )
+    }
+
+    ///////////////////////
+    // PARTNER FUNCTIONS //
+    ///////////////////////
+
+    /**
+     * Create a new config
+     * @param connection - The connection to the Solana network
+     * @param createConfigParam - The parameters for the config
+     * @returns A new config
+     */
+    static async createConfig(
         connection: Connection,
-        claimProtocolFeeParam: ClaimProtocolFeeParam
+        createConfigParam: CreateConfigParam
     ): Promise<Transaction> {
         const { program } = createProgram(connection)
+        const { config, feeClaimer, owner, quoteMint, payer, ...configParam } =
+            createConfigParam
         const eventAuthority = deriveEventAuthority(program.programId)
         const accounts = {
-            ...claimProtocolFeeParam,
+            config,
+            feeClaimer,
+            owner,
+            quoteMint,
+            payer,
             eventAuthority,
             program: program.programId,
         }
 
         return program.methods
-            .claimProtocolFee()
+            .createConfig(configParam)
             .accounts(accounts)
             .transaction()
     }
@@ -411,6 +425,81 @@ export class VirtualCurveClient
             .accounts(accounts)
             .transaction()
     }
+
+    /**
+     * Create partner metadata
+     * @param connection - The connection to the Solana network
+     * @param feeClaimer - The partner's fee claimer account (must be a signer)
+     * @param payer - The account paying for the metadata creation (must be a signer)
+     * @param name - Partner's name
+     * @param website - Partner's website
+     * @param logo - Partner's logo URL
+     * @returns A create partner metadata transaction
+     */
+    static async createPartnerMetadata(
+        connection: Connection,
+        feeClaimer: PublicKey,
+        payer: PublicKey,
+        name: string,
+        website: string,
+        logo: string
+    ): Promise<Transaction> {
+        const { program } = createProgram(connection)
+        const eventAuthority = deriveEventAuthority(program.programId)
+        const partnerMetadata = derivePartnerMetadata(
+            feeClaimer,
+            program.programId
+        )
+
+        const accounts = {
+            partnerMetadata,
+            payer,
+            feeClaimer,
+            systemProgram: SystemProgram.programId,
+            eventAuthority,
+            program: program.programId,
+        }
+
+        const createPartnerMetadataParam: CreatePartnerMetadataParameters = {
+            padding: Array(96).fill(new BN(0)),
+            name,
+            website,
+            logo,
+        }
+
+        return program.methods
+            .createPartnerMetadata(createPartnerMetadataParam)
+            .accounts(accounts)
+            .transaction()
+    }
+
+    /**
+     * Partner withdraw surplus
+     * @param connection - The connection to the Solana network
+     * @param params - The parameters for the partner withdraw surplus
+     * @returns A partner withdraw surplus transaction
+     */
+    static async partnerWithdrawSurplus(
+        connection: Connection,
+        params: PartnerWithdrawSurplusParam
+    ): Promise<Transaction> {
+        const { program } = createProgram(connection)
+        const eventAuthority = deriveEventAuthority(program.programId)
+        const accounts = {
+            ...params,
+            eventAuthority,
+            program: program.programId,
+        }
+
+        return program.methods
+            .partnerWithdrawSurplus()
+            .accounts(accounts)
+            .transaction()
+    }
+
+    /////////////////////////
+    // MIGRATION FUNCTIONS //
+    /////////////////////////
 
     /**
      * Create metadata for the migration of Meteora DAMM
@@ -511,23 +600,5 @@ export class VirtualCurveClient
             )
 
         return metadata
-    }
-
-    swapQuote(
-        virtualPool: VirtualPool,
-        config: PoolConfig,
-        swapBaseForQuote: boolean,
-        amountIn: BN,
-        hasReferral: boolean,
-        currentPoint: BN
-    ) {
-        return swapQuote(
-            virtualPool,
-            config,
-            swapBaseForQuote,
-            amountIn,
-            hasReferral,
-            currentPoint
-        )
     }
 }

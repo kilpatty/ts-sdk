@@ -9,6 +9,11 @@ const SEED = Object.freeze({
     EVENT_AUTHORITY: '__event_authority',
 })
 
+/**
+ * Derive the event authority
+ * @param programId - The program ID
+ * @returns The event authority
+ */
 export function deriveEventAuthority(programId: PublicKey): PublicKey {
     const [eventAuthority] = PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.EVENT_AUTHORITY)],
@@ -17,6 +22,11 @@ export function deriveEventAuthority(programId: PublicKey): PublicKey {
     return eventAuthority
 }
 
+/**
+ * Derive the pool authority
+ * @param programId - The program ID
+ * @returns The pool authority
+ */
 export function derivePoolAuthority(programId: PublicKey): PublicKey {
     const [poolAuthority] = PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.POOL_AUTHORITY)],
@@ -26,6 +36,14 @@ export function derivePoolAuthority(programId: PublicKey): PublicKey {
     return poolAuthority
 }
 
+/**
+ * Derive the pool
+ * @param quoteMint - The quote mint
+ * @param baseMint - The base mint
+ * @param config - The config
+ * @param programId - The program ID
+ * @returns The pool
+ */
 export function derivePool(
     quoteMint: PublicKey,
     baseMint: PublicKey,
@@ -54,6 +72,13 @@ export function derivePool(
     return pool
 }
 
+/**
+ * Derive the token vault
+ * @param pool - The pool
+ * @param mint - The mint
+ * @param programId - The program ID
+ * @returns The token vault
+ */
 export function deriveTokenVault(
     pool: PublicKey,
     mint: PublicKey,
@@ -67,6 +92,11 @@ export function deriveTokenVault(
     return tokenVault
 }
 
+/**
+ * Derive the metadata
+ * @param mint - The mint
+ * @returns The metadata
+ */
 export function deriveMetadata(mint: PublicKey): PublicKey {
     const [metadata] = PublicKey.findProgramAddressSync(
         [
@@ -78,4 +108,21 @@ export function deriveMetadata(mint: PublicKey): PublicKey {
     )
 
     return metadata
+}
+
+/**
+ * Derive the partner metadata
+ * @param feeClaimer - The fee claimer
+ * @param programId - The program ID
+ * @returns The partner metadata
+ */
+export function derivePartnerMetadata(
+    feeClaimer: PublicKey,
+    programId: PublicKey
+): PublicKey {
+    const [partnerMetadata] = PublicKey.findProgramAddressSync(
+        [Buffer.from('partner_metadata'), feeClaimer.toBuffer()],
+        programId
+    )
+    return partnerMetadata
 }

@@ -97,6 +97,8 @@ export type PoolFees = IdlTypes<VirtualCurve>['poolFees']
 export type BaseFeeConfig = IdlTypes<VirtualCurve>['baseFeeConfig']
 export type PoolMetrics = IdlTypes<VirtualCurve>['poolMetrics']
 export type SwapResult = IdlTypes<VirtualCurve>['swapResult']
+export type CreatePartnerMetadataParameters =
+    IdlTypes<VirtualCurve>['createPartnerMetadataParameters']
 
 //////////////////
 // IDL ACCOUNTS //
@@ -213,6 +215,16 @@ export type CreateClaimFeeOperatorParam = Omit<
 >
 export type CloseClaimFeeOperatorParam = Omit<
     CloseClaimFeeOperatorAccounts,
+    'program' | 'eventAuthority' | 'systemProgram'
+>
+
+export type ProtocolWithdrawSurplusParam = Omit<
+    ProtocolWithdrawSurplusAccounts,
+    'program' | 'eventAuthority' | 'systemProgram'
+>
+
+export type PartnerWithdrawSurplusParam = Omit<
+    PartnerWithdrawSurplusAccounts,
     'program' | 'eventAuthority' | 'systemProgram'
 >
 
