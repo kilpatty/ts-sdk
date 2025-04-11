@@ -182,12 +182,19 @@ export type ClaimProtocolFeeParam = {
     pool: PublicKey
 }
 
-export type ClaimTradingFeeParam = Omit<
-    ClaimTradingFeeAccounts,
-    'program' | 'eventAuthority' | 'systemProgram'
-> & {
-    maxAccountA: typeof BN | string | number
-    maxAccountB: typeof BN | string | number
+// export type ClaimTradingFeeParam = Omit<
+//     ClaimTradingFeeAccounts,
+//     'program' | 'eventAuthority' | 'systemProgram'
+// > & {
+//     maxAccountA: typeof BN | string | number
+//     maxAccountB: typeof BN | string | number
+// }
+
+export type ClaimTradingFeeParam = {
+    feeClaimer: PublicKey
+    pool: PublicKey
+    maxBaseAmount: BN
+    maxQuoteAmount: BN
 }
 
 export type CreatePoolParam = {
@@ -234,13 +241,16 @@ export type PartnerWithdrawSurplusParam = Omit<
 
 export interface VirtualCurveClientInterface {
     swap(swapParam: SwapParam): Promise<Transaction>
+    claimTradingFee(
+        claimTradingFeeParam: ClaimTradingFeeParam
+    ): Promise<Transaction>
 }
 export interface VirtualCurveAdminInterface {
     claimProtocolFee(
         claimProtocolFeeParam: ClaimProtocolFeeParam
     ): Promise<Transaction>
     protocolWithdrawSurplus(
-        params: ProtocolWithdrawSurplusParam
+        protocolWithdrawSurplusParam: ProtocolWithdrawSurplusParam
     ): Promise<Transaction>
 }
 

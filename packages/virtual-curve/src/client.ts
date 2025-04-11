@@ -398,30 +398,56 @@ export class VirtualCurveClient
      * @param claimTradingFeeParam - The parameters for the claim trading fee
      * @returns A claim trading fee transaction
      */
-    static async claimTradingFee(
-        connection: Connection,
+    async claimTradingFee(
         claimTradingFeeParam: ClaimTradingFeeParam
     ): Promise<Transaction> {
-        const { program } = createProgram(connection)
-        const eventAuthority = deriveEventAuthority(program.programId)
+        const poolAuthority = derivePoolAuthority(this.program.programId)
+        const eventAuthority = deriveEventAuthority(this.program.programId)
+
+        const tokenBaseAccount = findAssociatedTokenAddress(
+            claimTradingFeeParam.feeClaimer,
+            this.virtualPoolState.baseMint,
+            this.virtualPoolState.poolType === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
+        )
+
+        const tokenQuoteAccount = findAssociatedTokenAddress(
+            claimTradingFeeParam.feeClaimer,
+            this.poolConfigState.quoteMint,
+            this.poolConfigState.quoteTokenFlag === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
+        )
+
         const accounts = {
-            ...claimTradingFeeParam,
+            poolAuthority,
+            config: this.virtualPoolState.config,
+            pool: claimTradingFeeParam.pool,
+            tokenAAccount: tokenBaseAccount,
+            tokenBAccount: tokenQuoteAccount,
+            baseVault: this.virtualPoolState.baseVault,
+            quoteVault: this.virtualPoolState.quoteVault,
+            baseMint: this.virtualPoolState.baseMint,
+            quoteMint: this.poolConfigState.quoteMint,
+            feeClaimer: claimTradingFeeParam.feeClaimer,
+            tokenBaseProgram:
+                this.virtualPoolState.poolType === TokenType.SPL
+                    ? TOKEN_PROGRAM_ID
+                    : TOKEN_2022_PROGRAM_ID,
+            tokenQuoteProgram:
+                this.poolConfigState.quoteTokenFlag === TokenType.SPL
+                    ? TOKEN_PROGRAM_ID
+                    : TOKEN_2022_PROGRAM_ID,
             eventAuthority,
-            program: program.programId,
+            program: this.program.programId,
         }
 
-        // Convert to BN if needed
-        const amountA =
-            claimTradingFeeParam.maxAccountA instanceof BN
-                ? claimTradingFeeParam.maxAccountA
-                : new BN(claimTradingFeeParam.maxAccountA.toString())
-        const amountB =
-            claimTradingFeeParam.maxAccountB instanceof BN
-                ? claimTradingFeeParam.maxAccountB
-                : new BN(claimTradingFeeParam.maxAccountB.toString())
-
-        return program.methods
-            .claimTradingFee(amountA, amountB)
+        return this.program.methods
+            .claimTradingFee(
+                claimTradingFeeParam.maxBaseAmount,
+                claimTradingFeeParam.maxQuoteAmount
+            )
             .accounts(accounts)
             .transaction()
     }

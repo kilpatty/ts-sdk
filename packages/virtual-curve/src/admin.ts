@@ -65,6 +65,10 @@ export class VirtualCurveAdmin
         )
     }
 
+    /////////////////////
+    // ADMIN FUNCTIONS //
+    /////////////////////
+
     /**
      * Claim protocol fee
      * @param claimProtocolFeeParam - The parameters for the claim protocol fee
@@ -180,13 +184,13 @@ export class VirtualCurveAdmin
      * @returns A transaction
      */
     async protocolWithdrawSurplus(
-        params: ProtocolWithdrawSurplusParam
+        protocolWithdrawSurplusParam: ProtocolWithdrawSurplusParam
     ): Promise<Transaction> {
         const poolAuthority = derivePoolAuthority(this.program.programId)
         const eventAuthority = deriveEventAuthority(this.program.programId)
 
         const tokenQuoteAccount = findAssociatedTokenAddress(
-            params.operator,
+            protocolWithdrawSurplusParam.operator,
             this.poolConfigState.quoteMint,
             this.poolConfigState.quoteTokenFlag === TokenType.SPL
                 ? TOKEN_PROGRAM_ID
@@ -196,7 +200,7 @@ export class VirtualCurveAdmin
         const accounts = {
             poolAuthority,
             config: this.virtualPoolState.config,
-            virtualPool: params.virtualPool,
+            virtualPool: protocolWithdrawSurplusParam.virtualPool,
             tokenQuoteAccount,
             quoteVault: this.virtualPoolState.quoteVault,
             quoteMint: this.poolConfigState.quoteMint,
