@@ -256,6 +256,7 @@ export interface VirtualCurveClientInterface {
     partnerWithdrawSurplus(
         partnerWithdrawSurplusParam: PartnerWithdrawSurplusParam
     ): Promise<Transaction>
+    migrateToDamm(migrateToDammParam: MigrateToDammParam): Promise<Transaction>
 }
 export interface VirtualCurveAdminInterface {
     claimProtocolFee(
