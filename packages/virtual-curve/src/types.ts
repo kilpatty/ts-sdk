@@ -171,11 +171,6 @@ export type MigrateToDammParam = {
     migrateToDammV2: boolean
 }
 
-export type MigrateMeteoraDammParam = Omit<
-    MigrateMeteoraDammAccounts,
-    'program' | 'eventAuthority' | 'systemProgram'
->
-
 export type MigrateMeteoraDammLockLpTokenForCreatorParam = Omit<
     MigrateMeteoraDammLockLpTokenForCreatorAccounts,
     'program' | 'eventAuthority' | 'systemProgram'

@@ -7,8 +7,10 @@ import {
     type Connection,
     type GetProgramAccountsFilter,
 } from '@solana/web3.js'
-import Idl from './idl/virtual-curve/idl.json'
 import type { VirtualCurve } from './idl/virtual-curve/idl'
+import VirtualCurveIDL from './idl/virtual-curve/idl.json'
+import type { DynamicVault } from './idl/dynamic-vault/idl'
+import DynamicVaultIDL from './idl/dynamic-vault/idl.json'
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     createCloseAccountInstruction,
@@ -26,9 +28,25 @@ export function createProgram(connection: Connection) {
     const provider = new AnchorProvider(connection, null as unknown as Wallet, {
         commitment: 'confirmed',
     })
-    const program = new Program<VirtualCurve>(Idl, provider)
+    const program = new Program<VirtualCurve>(VirtualCurveIDL, provider)
 
     return { provider, program }
+}
+
+/**
+ * Create a vault program instance
+ * @param connection - The connection to the network
+ * @returns The vault program instance
+ */
+export function createVaultProgram(
+    connection: Connection
+): Program<DynamicVault> {
+    const provider = new AnchorProvider(connection, null as unknown as Wallet, {
+        commitment: 'confirmed',
+    })
+
+    const program = new Program<DynamicVault>(DynamicVaultIDL, provider)
+    return program
 }
 
 /**
@@ -111,38 +129,6 @@ export function unwrapSOLInstruction(
         return closedWrappedSolInstruction
     }
     return null
-}
-
-/**
- * Get the first key
- * @param key1 - The first key
- * @param key2 - The second key
- * @returns The first key
- */
-export function getFirstKey(key1: PublicKey, key2: PublicKey) {
-    const buf1 = key1.toBuffer()
-    const buf2 = key2.toBuffer()
-    // Buf1 > buf2
-    if (Buffer.compare(buf1, buf2) === 1) {
-        return buf1
-    }
-    return buf2
-}
-
-/**
- * Get the second key
- * @param key1 - The first key
- * @param key2 - The second key
- * @returns The second key
- */
-export function getSecondKey(key1: PublicKey, key2: PublicKey) {
-    const buf1 = key1.toBuffer()
-    const buf2 = key2.toBuffer()
-    // Buf1 > buf2
-    if (Buffer.compare(buf1, buf2) === 1) {
-        return buf2
-    }
-    return buf1
 }
 
 /**

@@ -18,6 +18,9 @@ export const DAMM_V1_PROGRAM_ID = new PublicKey(
 export const DAMM_V2_PROGRAM_ID = new PublicKey(
     'cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG'
 )
+export const VAULT_PROGRAM_ID = new PublicKey(
+    '24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi'
+)
 export const VAULT_BASE_KEY = new PublicKey(
     'HWzXGcGHy4tcpYfaRDCyLNzXqBTv3E6BttpCH2vJxArv'
 )
