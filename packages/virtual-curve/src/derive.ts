@@ -15,6 +15,7 @@ const SEED = Object.freeze({
     FEE: 'fee',
     POSITION: 'position',
     POSITION_NFT_ACCOUNT: 'position_nft_account',
+    LOCK_ESCROW: 'lock_escrow',
 })
 
 /**
@@ -258,6 +259,28 @@ export function deriveVaultLPAddress(
 ): PublicKey {
     return PublicKey.findProgramAddressSync(
         [vault.toBuffer(), pool.toBuffer()],
+        programId
+    )[0]
+}
+
+/**
+ * Derive the lock escrow address
+ * @param dammPool - The DAMM pool
+ * @param creator - The creator of the virtual pool
+ * @param programId - The program ID
+ * @returns The lock escrow address
+ */
+export function deriveLockEscrowAddress(
+    dammPool: PublicKey,
+    creator: PublicKey,
+    programId: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [
+            Buffer.from(SEED.LOCK_ESCROW),
+            dammPool.toBuffer(),
+            creator.toBuffer(),
+        ],
         programId
     )[0]
 }

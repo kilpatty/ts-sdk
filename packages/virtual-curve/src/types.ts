@@ -171,16 +171,6 @@ export type MigrateToDammParam = {
     migrateToDammV2: boolean
 }
 
-export type MigrateMeteoraDammLockLpTokenForCreatorParam = Omit<
-    MigrateMeteoraDammLockLpTokenForCreatorAccounts,
-    'program' | 'eventAuthority' | 'systemProgram'
->
-
-export type MigrateMeteoraDammLockLpTokenForPartnerParam = Omit<
-    MigrateMeteoraDammLockLpTokenForPartnerAccounts,
-    'program' | 'eventAuthority' | 'systemProgram'
->
-
 export type ClaimProtocolFeeParam = {
     operator: PublicKey
     pool: PublicKey
@@ -218,6 +208,13 @@ export type SwapParam = {
     amountIn: BN
     minimumAmountOut: BN
     swapBaseForQuote: boolean
+}
+
+export type LockDammLpTokenParam = {
+    payer: PublicKey
+    virtualPool: PublicKey
+    dammConfig: PublicKey
+    isPartner: boolean
 }
 
 export type CreateClaimFeeOperatorParam = Omit<
@@ -261,6 +258,7 @@ export interface VirtualCurveClientInterface {
         migrateToDammParam: MigrateToDammParam
     ): Promise<Transaction>
 }
+
 export interface VirtualCurveAdminInterface {
     claimProtocolFee(
         claimProtocolFeeParam: ClaimProtocolFeeParam

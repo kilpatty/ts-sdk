@@ -7,7 +7,7 @@ import {
 } from '@solana/web3.js'
 import { VAULT_BASE_KEY } from './constants'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
-import { createVaultProgram } from './utils'
+import { createDammV1Program, createVaultProgram } from './utils'
 
 export async function createInitializePermissionlessDynamicVaultIx(
     mint: PublicKey,
@@ -65,7 +65,7 @@ export async function createVaultIfNotExists(
     vaultPda: PublicKey
     tokenVaultPda: PublicKey
     lpMintPda: PublicKey
-    instruction?: TransactionInstruction
+    ix?: TransactionInstruction
 }> {
     const vaultIx = await createInitializePermissionlessDynamicVaultIx(
         mint,
@@ -74,16 +74,41 @@ export async function createVaultIfNotExists(
     )
 
     const vaultAccount = await connection.getAccountInfo(vaultIx.vaultKey)
-    let instruction: TransactionInstruction | undefined
+    let ix: TransactionInstruction | undefined
 
     if (!vaultAccount) {
-        instruction = vaultIx.instruction
+        ix = vaultIx.instruction
     }
 
     return {
         vaultPda: vaultIx.vaultKey,
         tokenVaultPda: vaultIx.tokenVaultKey,
         lpMintPda: vaultIx.lpMintKey,
-        instruction,
+        ix,
     }
+}
+
+export async function createLockEscrowIx(
+    connection: Connection,
+    payer: PublicKey,
+    pool: PublicKey,
+    lpMint: PublicKey,
+    escrowOwner: PublicKey,
+    lockEscrowKey: PublicKey
+): Promise<TransactionInstruction> {
+    const dammV1Program = createDammV1Program(connection)
+
+    const ix = await dammV1Program.methods
+        .createLockEscrow()
+        .accountsStrict({
+            pool,
+            lpMint,
+            owner: escrowOwner,
+            lockEscrow: lockEscrowKey,
+            systemProgram: SystemProgram.programId,
+            payer: payer,
+        })
+        .instruction()
+
+    return ix
 }

@@ -8,9 +8,8 @@ import {
     type CreatePoolParam,
     type InitializeVirtualPoolWithSplTokenAccounts,
     type InitializeVirtualPoolWithToken2022Accounts,
+    type LockDammLpTokenParam,
     type MeteoraDammMigrationMetadata,
-    type MigrateMeteoraDammLockLpTokenForCreatorParam,
-    type MigrateMeteoraDammLockLpTokenForPartnerParam,
     type MigrateToDammParam,
     type PartnerWithdrawSurplusParam,
     type PoolConfig,
@@ -28,11 +27,13 @@ import {
     SystemProgram,
     SYSVAR_RENT_PUBKEY,
     Transaction,
+    TransactionInstruction,
 } from '@solana/web3.js'
 import { VirtualCurve } from '.'
 import {
     deriveDammMigrationMetadataAddress,
     deriveEventAuthority,
+    deriveLockEscrowAddress,
     deriveLpMintAddress,
     deriveMetadata,
     derivePartnerMetadata,
@@ -68,7 +69,7 @@ import type { Program } from '@coral-xyz/anchor'
 import type { VirtualCurve as VirtualCurveIDL } from './idl/virtual-curve/idl'
 import BN from 'bn.js'
 import { swapQuote } from './math/swapQuote'
-import { createVaultIfNotExists } from './vault'
+import { createLockEscrowIx, createVaultIfNotExists } from './common'
 
 export class VirtualCurveClient
     extends VirtualCurve
@@ -741,25 +742,37 @@ export class VirtualCurveClient
                 ),
             ]
 
+            const preInstructions: TransactionInstruction[] = []
+
             const {
                 vaultPda: aVault,
                 tokenVaultPda: aTokenVault,
                 lpMintPda: aVaultLpMint,
+                ix: createAVaultIx,
             } = await createVaultIfNotExists(
                 virtualPoolState.baseMint,
                 connection,
                 migrateToDammParam.payer
             )
 
+            if (createAVaultIx) {
+                preInstructions.push(createAVaultIx)
+            }
+
             const {
                 vaultPda: bVault,
                 tokenVaultPda: bTokenVault,
                 lpMintPda: bVaultLpMint,
+                ix: createBVaultIx,
             } = await createVaultIfNotExists(
                 poolConfigState.quoteMint,
                 connection,
                 migrateToDammParam.payer
             )
+
+            if (createBVaultIx) {
+                preInstructions.push(createBVaultIx)
+            }
 
             const [aVaultLp, bVaultLp] = [
                 deriveVaultLPAddress(aVault, dammPool, DAMM_V1_PROGRAM_ID),
@@ -809,6 +822,7 @@ export class VirtualCurveClient
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                     systemProgram: SystemProgram.programId,
                 })
+                .preInstructions(preInstructions)
                 .transaction()
         }
     }
@@ -818,36 +832,136 @@ export class VirtualCurveClient
     /////////////
 
     /**
-     * Migrate Meteora DAMM lock LP token
+     * Lock DAMM LP token for creator or partner
      * @param connection - The connection to the Solana network
-     * @param lockLpTokenParam - The parameters for the migration
-     * @param isCreator - Whether the lock is for creator or partner
-     * @returns A migration transaction
+     * @param lockDammLpTokenParam - The parameters for the lock
+     * @returns A lock transaction
      */
-    static async migrateMeteoraDammLockLpToken(
+    async lockDammLpToken(
         connection: Connection,
-        lockLpTokenParam:
-            | MigrateMeteoraDammLockLpTokenForCreatorParam
-            | MigrateMeteoraDammLockLpTokenForPartnerParam,
-        isCreator: boolean
+        lockDammLpTokenParam: LockDammLpTokenParam
     ): Promise<Transaction> {
-        const { program } = createProgram(connection)
-        const eventAuthority = deriveEventAuthority(program.programId)
-        const accounts = {
-            ...lockLpTokenParam,
-            eventAuthority,
-            program: program.programId,
+        const virtualPoolState = this.virtualPoolState
+        const poolConfigState = this.poolConfigState
+
+        const poolAuthority = derivePoolAuthority(this.program.programId)
+
+        const dammPool = derivePool(
+            lockDammLpTokenParam.dammConfig,
+            virtualPoolState.baseMint,
+            poolConfigState.quoteMint,
+            DAMM_V1_PROGRAM_ID
+        )
+
+        const migrationMetadata = deriveDammMigrationMetadataAddress(
+            lockDammLpTokenParam.virtualPool,
+            DAMM_V1_PROGRAM_ID,
+            false
+        )
+
+        const [
+            { vaultPda: aVault, lpMintPda: aVaultLpMint },
+            { vaultPda: bVault, lpMintPda: bVaultLpMint },
+        ] = await Promise.all([
+            createVaultIfNotExists(
+                virtualPoolState.baseMint,
+                connection,
+                lockDammLpTokenParam.payer
+            ),
+            createVaultIfNotExists(
+                poolConfigState.quoteMint,
+                connection,
+                lockDammLpTokenParam.payer
+            ),
+        ])
+
+        const [aVaultLp, bVaultLp] = [
+            deriveVaultLPAddress(aVault, dammPool, DAMM_V1_PROGRAM_ID),
+            deriveVaultLPAddress(bVault, dammPool, DAMM_V1_PROGRAM_ID),
+        ]
+
+        const lpMint = deriveLpMintAddress(dammPool, DAMM_V1_PROGRAM_ID)
+
+        const lockEscrowKey = deriveLockEscrowAddress(
+            dammPool,
+            virtualPoolState.creator,
+            DAMM_V1_PROGRAM_ID
+        )
+
+        const lockEscrowData = await connection.getAccountInfo(lockEscrowKey)
+
+        const preInstructions: TransactionInstruction[] = []
+
+        if (!lockEscrowData) {
+            const ix = await createLockEscrowIx(
+                connection,
+                lockDammLpTokenParam.payer,
+                dammPool,
+                lpMint,
+                virtualPoolState.creator,
+                lockEscrowKey
+            )
+
+            preInstructions.push(ix)
         }
 
-        if (isCreator) {
-            return program.methods
-                .migrateMeteoraDammLockLpTokenForCreator()
-                .accounts(accounts)
+        const escrowVault = getAssociatedTokenAddressSync(
+            lpMint,
+            lockEscrowKey,
+            true,
+            TOKEN_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        )
+
+        if (!escrowVault) {
+            const createEscrowVaultIx =
+                createAssociatedTokenAccountIdempotentInstruction(
+                    lockDammLpTokenParam.payer,
+                    escrowVault,
+                    lockEscrowKey,
+                    lpMint,
+                    TOKEN_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID
+                )
+            preInstructions.push(createEscrowVaultIx)
+        }
+
+        const sourceTokens = getAssociatedTokenAddressSync(
+            lpMint,
+            poolAuthority,
+            true
+        )
+
+        const accounts = {
+            migrationMetadata,
+            poolAuthority,
+            pool: dammPool,
+            lpMint,
+            lockEscrow: lockEscrowKey,
+            owner: virtualPoolState.creator,
+            sourceTokens,
+            escrowVault,
+            ammProgram: DAMM_V1_PROGRAM_ID,
+            aVault,
+            bVault,
+            aVaultLp,
+            bVaultLp,
+            aVaultLpMint,
+            bVaultLpMint,
+            tokenProgram: TOKEN_PROGRAM_ID,
+        }
+
+        if (lockDammLpTokenParam.isPartner) {
+            return this.program.methods
+                .migrateMeteoraDammLockLpTokenForPartner()
+                .accountsStrict(accounts)
+                .preInstructions(preInstructions)
                 .transaction()
         } else {
-            return program.methods
-                .migrateMeteoraDammLockLpTokenForPartner()
-                .accounts(accounts)
+            return this.program.methods
+                .migrateMeteoraDammLockLpTokenForCreator()
+                .accountsStrict(accounts)
+                .preInstructions(preInstructions)
                 .transaction()
         }
     }
@@ -872,8 +986,4 @@ export class VirtualCurveClient
 
         return metadata
     }
-
-    /////////////
-    // DAMM V2 //
-    /////////////
 }
