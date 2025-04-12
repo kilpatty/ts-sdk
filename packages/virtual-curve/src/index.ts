@@ -6,13 +6,13 @@ import {
     type VirtualCurveProgram,
     type VirtualPoolState,
 } from './types'
-import type { VirtualCurve as VirtualCurveIDL } from './idl/idl'
+import type { VirtualCurve as VirtualCurveIDL } from './idl/virtual-curve/idl'
 import {
     Connection,
     PublicKey,
     type GetProgramAccountsFilter,
 } from '@solana/web3.js'
-import { createProgram } from './utils'
+import { createProgram, createProgramAccountFilter } from './utils'
 
 export class VirtualCurve {
     protected program: VirtualCurveProgram
@@ -25,14 +25,14 @@ export class VirtualCurve {
      * Get virtual pool
      * @param connection - The connection to the Solana network
      * @param poolAddress - The address of the pool
-     * @returns A virtual pool
+     * @returns A virtual pool or null if not found
      */
     static async getPool(
         connection: Connection,
         poolAddress: PublicKey | string
-    ): Promise<VirtualPoolState> {
+    ): Promise<VirtualPoolState | null> {
         const { program } = createProgram(connection)
-        const pool = await program.account.virtualPool.fetch(
+        const pool = await program.account.virtualPool.fetchNullable(
             poolAddress instanceof PublicKey
                 ? poolAddress
                 : new PublicKey(poolAddress)
@@ -51,19 +51,9 @@ export class VirtualCurve {
         owner?: PublicKey | string
     ): Promise<ProgramAccount<VirtualPoolState>[]> {
         const { program } = createProgram(connection)
-        const filters: GetProgramAccountsFilter[] = []
-
-        if (owner) {
-            const ownerKey =
-                typeof owner === 'string' ? new PublicKey(owner) : owner
-            filters.push({
-                memcmp: {
-                    offset: 292, // Correct offset for the owner field after the discriminator and other fields
-                    bytes: ownerKey.toBase58(),
-                    encoding: 'base58',
-                },
-            })
-        }
+        const filters: GetProgramAccountsFilter[] = owner
+            ? createProgramAccountFilter(owner, 292)
+            : []
 
         return await program.account.virtualPool.all(filters)
     }
@@ -118,19 +108,9 @@ export class VirtualCurve {
         owner?: PublicKey | string
     ): Promise<ProgramAccount<PoolConfigState>[]> {
         const { program } = createProgram(connection)
-        const filters: GetProgramAccountsFilter[] = []
-
-        if (owner) {
-            const ownerKey =
-                typeof owner === 'string' ? new PublicKey(owner) : owner
-            filters.push({
-                memcmp: {
-                    offset: 72,
-                    bytes: ownerKey.toBase58(),
-                    encoding: 'base58',
-                },
-            })
-        }
+        const filters: GetProgramAccountsFilter[] = owner
+            ? createProgramAccountFilter(owner, 72)
+            : []
 
         return await program.account.poolConfig.all(filters)
     }

@@ -1,5 +1,10 @@
 import { PublicKey } from '@solana/web3.js'
-import { METADATA_PROGRAM_ID } from './constants'
+import {
+    DAMM_V1_PROGRAM_ID,
+    DAMM_V2_PROGRAM_ID,
+    METADATA_PROGRAM_ID,
+} from './constants'
+import { getFirstKey, getSecondKey } from './utils'
 
 const SEED = Object.freeze({
     POOL_AUTHORITY: 'pool_authority',
@@ -142,4 +147,106 @@ export function deriveClaimFeeOperatorAddress(
         programId
     )
     return claimFeeOperator
+}
+
+/**
+ * Derive the migration metadata address for DAMM V1
+ * @param virtual_pool - The virtual pool
+ * @param programId - The program ID
+ * @returns The migration metadata address
+ */
+export function deriveDammV1MigrationMetadataAddress(
+    virtual_pool: PublicKey,
+    programId: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('meteora'), virtual_pool.toBuffer()],
+        programId
+    )[0]
+}
+
+/**
+ * Derive the migration metadata address for DAMM V2
+ * @param virtual_pool - The virtual pool
+ * @param programId - The program ID
+ * @returns The migration metadata address
+ */
+export function deriveDammV2MigrationMetadataAddress(
+    virtual_pool: PublicKey,
+    programId: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('damm_v2'), virtual_pool.toBuffer()],
+        programId
+    )[0]
+}
+
+/**
+ * Derive the DAMM V1 pool address
+ * @param config - The config
+ * @param tokenAMint - The token A mint
+ * @param tokenBMint - The token B mint
+ * @returns The DAMM V1 pool address
+ */
+export function deriveDammV1PoolAddress(
+    config: PublicKey,
+    tokenAMint: PublicKey,
+    tokenBMint: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [
+            getFirstKey(tokenAMint, tokenBMint),
+            getSecondKey(tokenAMint, tokenBMint),
+            config.toBuffer(),
+        ],
+        DAMM_V1_PROGRAM_ID
+    )[0]
+}
+
+/**
+ * Derive the DAMM V2 pool address
+ * @param config - The config
+ * @param tokenAMint - The token A mint
+ * @param tokenBMint - The token B mint
+ * @returns The DAMM V2 pool address
+ */
+export function deriveDammV2PoolAddress(
+    config: PublicKey,
+    tokenAMint: PublicKey,
+    tokenBMint: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [
+            Buffer.from('pool'),
+            config.toBuffer(),
+            getFirstKey(tokenAMint, tokenBMint),
+            getSecondKey(tokenAMint, tokenBMint),
+        ],
+        DAMM_V2_PROGRAM_ID
+    )[0]
+}
+
+/**
+ * Derive the LP mint address
+ * @param pool - The pool
+ * @returns The LP mint address
+ */
+export function deriveDammV1LpMintAddress(pool: PublicKey) {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('lp_mint'), pool.toBuffer()],
+        DAMM_V1_PROGRAM_ID
+    )[0]
+}
+
+/**
+ * Derive the protocol fee address for DAMM V1
+ * @param mint - The mint
+ * @param pool - The pool
+ * @returns The protocol fee address
+ */
+export function deriveDammV1ProtocolFeeAddress(mint: PublicKey, pool: PublicKey) {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('fee'), mint.toBuffer(), pool.toBuffer()],
+        DAMM_V1_PROGRAM_ID
+    )[0]
 }

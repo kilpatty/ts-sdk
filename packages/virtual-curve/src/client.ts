@@ -2,13 +2,13 @@ import {
     TokenType,
     type ClaimTradingFeeParam,
     type CreateConfigParam,
+    type CreateDammMigrationMetadataParam,
     type CreatePartnerMetadataParam,
     type CreatePartnerMetadataParameters,
     type CreatePoolParam,
     type InitializeVirtualPoolWithSplTokenAccounts,
     type InitializeVirtualPoolWithToken2022Accounts,
     type MeteoraDammMigrationMetadata,
-    type MigrateMeteoraDammCreateMetadataParam,
     type MigrateMeteoraDammLockLpTokenForCreatorParam,
     type MigrateMeteoraDammLockLpTokenForPartnerParam,
     type MigrateMeteoraDammParam,
@@ -29,6 +29,8 @@ import {
 } from '@solana/web3.js'
 import { VirtualCurve } from '.'
 import {
+    deriveDammV1MigrationMetadataAddress,
+    deriveDammV2MigrationMetadataAddress,
     deriveEventAuthority,
     deriveMetadata,
     derivePartnerMetadata,
@@ -50,7 +52,7 @@ import {
     wrapSOLInstruction,
 } from './utils'
 import type { Program } from '@coral-xyz/anchor'
-import type { VirtualCurve as VirtualCurveIDL } from './idl/idl'
+import type { VirtualCurve as VirtualCurveIDL } from './idl/virtual-curve/idl'
 import BN from 'bn.js'
 import { swapQuote } from './math/swapQuote'
 
@@ -542,42 +544,67 @@ export class VirtualCurveClient
     // MIGRATION FUNCTIONS //
     /////////////////////////
 
+    /**
+     * Create metadata for the migration of Meteora DAMM V1 or DAMM V2
+     * @param connection - The connection to the Solana network
+     * @param createDammMigrationMetadataParam - The parameters for the migration
+     * @returns A migration transaction
+     */
+    static async createDammMigrationMetadata(
+        connection: Connection,
+        createDammMigrationMetadataParam: CreateDammMigrationMetadataParam
+    ): Promise<Transaction> {
+        const { program } = createProgram(connection)
+        const eventAuthority = deriveEventAuthority(program.programId)
+
+        if (createDammMigrationMetadataParam.migrateToDammV2) {
+            const dammV2MigrationMetadata =
+                deriveDammV2MigrationMetadataAddress(
+                    createDammMigrationMetadataParam.virtualPool,
+                    program.programId
+                )
+
+            const accounts = {
+                virtualPool: createDammMigrationMetadataParam.virtualPool,
+                config: createDammMigrationMetadataParam.config,
+                migrationMetadata: dammV2MigrationMetadata,
+                payer: createDammMigrationMetadataParam.payer,
+                eventAuthority,
+                program: program.programId,
+            }
+
+            return program.methods
+                .migrationDammV2CreateMetadata()
+                .accounts(accounts)
+                .transaction()
+        } else {
+            const dammV1MigrationMetadata =
+                deriveDammV1MigrationMetadataAddress(
+                    createDammMigrationMetadataParam.virtualPool,
+                    program.programId
+                )
+
+            const accounts = {
+                virtualPool: createDammMigrationMetadataParam.virtualPool,
+                config: createDammMigrationMetadataParam.config,
+                migrationMetadata: dammV1MigrationMetadata,
+                payer: createDammMigrationMetadataParam.payer,
+                eventAuthority,
+                program: program.programId,
+            }
+
+            return program.methods
+                .migrationMeteoraDammCreateMetadata()
+                .accounts(accounts)
+                .transaction()
+        }
+    }
+
     /////////////
     // DAMM V1 //
     /////////////
 
-    /////////////
-    // DAMM V2 //
-    /////////////
-
-    /**
-     * Create metadata for the migration of Meteora DAMM
-     * @param connection - The connection to the Solana network
-     * @param MigrateMeteoraDammCreateMetadataParam - The parameters for the migration
-     * @returns A migration transaction
-     */
-    static async migrationMeteoraDammCreateMetadata(
-        connection: Connection,
-        MigrateMeteoraDammCreateMetadataParam: MigrateMeteoraDammCreateMetadataParam
-    ): Promise<Transaction> {
-        const { program } = createProgram(connection)
-
-        return program.methods
-            .migrationMeteoraDammCreateMetadata()
-            .accounts({
-                ...MigrateMeteoraDammCreateMetadataParam,
-                program: program.programId,
-            })
-            .transaction()
-    }
-
-    /**
-     * Migrate Meteora DAMM
-     * @param connection - The connection to the Solana network
-     * @param migrateMeteoraDammParam - The parameters for the migration
-     * @returns A migration transaction
-     */
-    static async migrateMeteoraDamm(
+    static async migrateToDammV1(
         connection: Connection,
         migrateMeteoraDammParam: MigrateMeteoraDammParam
     ): Promise<Transaction> {
@@ -650,4 +677,8 @@ export class VirtualCurveClient
 
         return metadata
     }
+
+    /////////////
+    // DAMM V2 //
+    /////////////
 }

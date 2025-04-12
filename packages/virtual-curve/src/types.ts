@@ -5,7 +5,7 @@ import type {
     IdlTypes,
     Program,
 } from '@coral-xyz/anchor'
-import type { VirtualCurve } from './idl/idl'
+import type { VirtualCurve } from './idl/virtual-curve/idl'
 import type { PublicKey, Transaction } from '@solana/web3.js'
 
 export type VirtualCurveProgram = Program<VirtualCurve>
@@ -157,10 +157,19 @@ export type CreateConfigParam = Omit<
 > &
     ConfigParameters
 
-export type MigrateMeteoraDammCreateMetadataParam = Omit<
-    MigrationDammV2CreateMetadataAccounts,
-    'program' | 'eventAuthority' | 'systemProgram'
->
+export type CreateDammMigrationMetadataParam = {
+    payer: PublicKey
+    virtualPool: PublicKey
+    config: PublicKey
+    migrateToDammV2: boolean
+}
+
+export type MigrateToDammParam = {
+    payer: PublicKey
+    virtualPool: PublicKey
+    dammConfig: PublicKey
+    migrateToDammV2: boolean
+}
 
 export type MigrateMeteoraDammParam = Omit<
     MigrateMeteoraDammAccounts,

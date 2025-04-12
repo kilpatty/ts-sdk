@@ -17,7 +17,7 @@ import {
     derivePoolAuthority,
 } from './derive'
 import type { Program } from '@coral-xyz/anchor'
-import type { VirtualCurve as VirtualCurveIDL } from './idl/idl'
+import type { VirtualCurve as VirtualCurveIDL } from './idl/virtual-curve/idl'
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 
 export class VirtualCurveAdmin
