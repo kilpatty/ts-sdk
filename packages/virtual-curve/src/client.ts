@@ -8,7 +8,7 @@ import {
     type CreatePoolParam,
     type InitializeVirtualPoolWithSplTokenAccounts,
     type InitializeVirtualPoolWithToken2022Accounts,
-    type LockDammLpTokenParam,
+    type DammLpTokenParam,
     type MeteoraDammMigrationMetadata,
     type MigrateToDammParam,
     type PartnerWithdrawSurplusParam,
@@ -839,7 +839,7 @@ export class VirtualCurveClient
      */
     async lockDammLpToken(
         connection: Connection,
-        lockDammLpTokenParam: LockDammLpTokenParam
+        lockDammLpTokenParam: DammLpTokenParam
     ): Promise<Transaction> {
         const virtualPoolState = this.virtualPoolState
         const poolConfigState = this.poolConfigState
@@ -913,18 +913,16 @@ export class VirtualCurveClient
             ASSOCIATED_TOKEN_PROGRAM_ID
         )
 
-        if (!escrowVault) {
-            const createEscrowVaultIx =
-                createAssociatedTokenAccountIdempotentInstruction(
-                    lockDammLpTokenParam.payer,
-                    escrowVault,
-                    lockEscrowKey,
-                    lpMint,
-                    TOKEN_PROGRAM_ID,
-                    ASSOCIATED_TOKEN_PROGRAM_ID
-                )
-            preInstructions.push(createEscrowVaultIx)
-        }
+        const createEscrowVaultIx =
+            createAssociatedTokenAccountIdempotentInstruction(
+                lockDammLpTokenParam.payer,
+                escrowVault,
+                lockEscrowKey,
+                lpMint,
+                TOKEN_PROGRAM_ID,
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+        preInstructions.push(createEscrowVaultIx)
 
         const sourceTokens = getAssociatedTokenAddressSync(
             lpMint,
@@ -966,6 +964,87 @@ export class VirtualCurveClient
         }
     }
 
+    /**
+     * Claim DAMM LP token for creator or partner
+     * @param connection - The connection to the Solana network
+     * @param claimDammLpTokenParam - The parameters for the claim
+     * @returns A claim transaction
+     */
+    async claimDammLpToken(
+        connection: Connection,
+        claimDammLpTokenParam: DammLpTokenParam
+    ): Promise<Transaction> {
+        const virtualPoolState = this.virtualPoolState
+        const poolConfigState = this.poolConfigState
+
+        const poolAuthority = derivePoolAuthority(this.program.programId)
+
+        const dammPool = derivePool(
+            claimDammLpTokenParam.dammConfig,
+            virtualPoolState.baseMint,
+            poolConfigState.quoteMint,
+            DAMM_V1_PROGRAM_ID
+        )
+
+        const migrationMetadata = deriveDammMigrationMetadataAddress(
+            claimDammLpTokenParam.virtualPool,
+            DAMM_V1_PROGRAM_ID,
+            false
+        )
+
+        const lpMint = deriveLpMintAddress(dammPool, DAMM_V1_PROGRAM_ID)
+
+        const preInstructions: TransactionInstruction[] = []
+        const destinationToken = getAssociatedTokenAddressSync(
+            lpMint,
+            claimDammLpTokenParam.payer,
+            true,
+            TOKEN_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        )
+
+        const createDestinationTokenIx =
+            createAssociatedTokenAccountIdempotentInstruction(
+                claimDammLpTokenParam.payer,
+                destinationToken,
+                claimDammLpTokenParam.payer,
+                lpMint,
+                TOKEN_PROGRAM_ID,
+                ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+        preInstructions.push(createDestinationTokenIx)
+
+        const sourceToken = getAssociatedTokenAddressSync(
+            lpMint,
+            poolAuthority,
+            true
+        )
+
+        const accounts = {
+            migrationMetadata,
+            poolAuthority,
+            pool: dammPool,
+            lpMint,
+            sourceToken,
+            destinationToken,
+            sender: claimDammLpTokenParam.payer,
+            tokenProgram: TOKEN_PROGRAM_ID,
+        }
+
+        if (claimDammLpTokenParam.isPartner) {
+            return this.program.methods
+                .migrateMeteoraDammPartnerClaimLpToken()
+                .accounts(accounts)
+                .preInstructions(preInstructions)
+                .transaction()
+        } else {
+            return this.program.methods
+                .migrateMeteoraDammCreatorClaimLpToken()
+                .accounts(accounts)
+                .preInstructions(preInstructions)
+                .transaction()
+        }
+    }
     /**
      * Get meteora DAMM migration metadata
      * @param connection - The connection to the Solana network

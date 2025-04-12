@@ -210,7 +210,7 @@ export type SwapParam = {
     swapBaseForQuote: boolean
 }
 
-export type LockDammLpTokenParam = {
+export type DammLpTokenParam = {
     payer: PublicKey
     virtualPool: PublicKey
     dammConfig: PublicKey
@@ -230,11 +230,6 @@ export type ProtocolWithdrawSurplusParam = {
     operator: PublicKey
     virtualPool: PublicKey
 }
-
-// export type PartnerWithdrawSurplusParam = Omit<
-//     PartnerWithdrawSurplusAccounts,
-//     'program' | 'eventAuthority' | 'systemProgram'
-// >
 
 export type PartnerWithdrawSurplusParam = {
     feeClaimer: PublicKey
@@ -256,6 +251,14 @@ export interface VirtualCurveClientInterface {
     migrateToDamm(
         connection: Connection,
         migrateToDammParam: MigrateToDammParam
+    ): Promise<Transaction>
+    lockDammLpToken(
+        connection: Connection,
+        lockDammLpTokenParam: DammLpTokenParam
+    ): Promise<Transaction>
+    claimDammLpToken(
+        connection: Connection,
+        claimDammLpTokenParam: DammLpTokenParam
     ): Promise<Transaction>
 }
 
