@@ -6,7 +6,7 @@ import type {
     Program,
 } from '@coral-xyz/anchor'
 import type { VirtualCurve } from './idl/virtual-curve/idl'
-import type { PublicKey, Transaction } from '@solana/web3.js'
+import type { Connection, PublicKey, Transaction } from '@solana/web3.js'
 
 export type VirtualCurveProgram = Program<VirtualCurve>
 
@@ -256,7 +256,10 @@ export interface VirtualCurveClientInterface {
     partnerWithdrawSurplus(
         partnerWithdrawSurplusParam: PartnerWithdrawSurplusParam
     ): Promise<Transaction>
-    migrateToDamm(migrateToDammParam: MigrateToDammParam): Promise<Transaction>
+    migrateToDamm(
+        connection: Connection,
+        migrateToDammParam: MigrateToDammParam
+    ): Promise<Transaction>
 }
 export interface VirtualCurveAdminInterface {
     claimProtocolFee(
