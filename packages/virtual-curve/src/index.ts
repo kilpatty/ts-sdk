@@ -12,7 +12,11 @@ import {
     PublicKey,
     type GetProgramAccountsFilter,
 } from '@solana/web3.js'
-import { createProgram, createProgramAccountFilter } from './utils'
+import {
+    createProgram,
+    createProgramAccountFilter,
+    getAccountData,
+} from './utils'
 
 export class VirtualCurve {
     protected program: VirtualCurveProgram
@@ -68,14 +72,7 @@ export class VirtualCurve {
         connection: Connection,
         configAddress: PublicKey | string
     ): Promise<Config> {
-        const { program } = createProgram(connection)
-        const config = await program.account.config.fetch(
-            configAddress instanceof PublicKey
-                ? configAddress
-                : new PublicKey(configAddress)
-        )
-
-        return config
+        return getAccountData<Config>(connection, configAddress, 'config')
     }
 
     /**
@@ -125,13 +122,10 @@ export class VirtualCurve {
         connection: Connection,
         operatorAddress: PublicKey | string
     ): Promise<ClaimFeeOperator> {
-        const { program } = createProgram(connection)
-        const feeOperator = await program.account.claimFeeOperator.fetch(
-            operatorAddress instanceof PublicKey
-                ? operatorAddress
-                : new PublicKey(operatorAddress)
+        return getAccountData<ClaimFeeOperator>(
+            connection,
+            operatorAddress,
+            'claimFeeOperator'
         )
-
-        return feeOperator
     }
 }
