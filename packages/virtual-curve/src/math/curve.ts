@@ -1,4 +1,5 @@
 import BN from 'bn.js'
+import Decimal from 'decimal.js'
 
 const U64_MAX = new BN('FFFFFFFFFFFFFFFF', 16) // 2^64 - 1
 
@@ -41,23 +42,33 @@ function getDeltaAmountBaseUnchecked(
         throw new Error('DivisionByZero')
     }
 
+    const liquidityDec = new Decimal(liquidity.toString())
+    const lowerSqrtPriceDec = new Decimal(lowerSqrtPrice.toString())
+    const upperSqrtPriceDec = new Decimal(upperSqrtPrice.toString())
+
     // Calculate (√P_upper - √P_lower)
-    const deltaSqrtPrice = upperSqrtPrice.sub(lowerSqrtPrice)
+    const deltaSqrtPrice = upperSqrtPriceDec.minus(lowerSqrtPriceDec)
 
     // Calculate denominator: √P_upper * √P_lower
-    const denominator = upperSqrtPrice.mul(lowerSqrtPrice)
+    const denominator = upperSqrtPriceDec.mul(lowerSqrtPriceDec)
 
     if (denominator.isZero()) {
         throw new Error('DivisionByZero')
     }
 
     // L * (√P_upper - √P_lower)
-    const numerator = liquidity.mul(deltaSqrtPrice)
+    const numerator = liquidityDec.mul(deltaSqrtPrice)
 
+    // Perform division with proper rounding
+    let result: Decimal
     if (roundUp) {
-        return numerator.add(denominator.subn(1)).div(denominator)
+        result = numerator.div(denominator).ceil()
+    } else {
+        result = numerator.div(denominator).floor()
     }
-    return numerator.div(denominator)
+
+    // Convert back to BN, ensuring we don't lose precision
+    return new BN(result.toString())
 }
 
 // Δb = L (√P_upper - √P_lower)
@@ -167,16 +178,27 @@ export function mulDiv(x: BN, y: BN, denominator: BN, roundUp: boolean): BN {
         throw new Error('DivisionByZero')
     }
 
-    // Use BN's built-in multiplication which handles large numbers
-    const prod = x.mul(y)
+    // Convert inputs to BN for full precision
+    const xBN = new BN(x)
+    const yBN = new BN(y)
+    const denominatorBN = new BN(denominator)
+
+    // Perform multiplication with full precision
+    const prod = xBN.mul(yBN)
 
     let result: BN
     if (roundUp) {
-        // Match Rust's div_ceil behavior
-        result = prod.add(denominator.sub(new BN(1))).div(denominator)
+        // Add denominator - 1 before division to round up
+        result = prod.add(denominatorBN.subn(1)).div(denominatorBN)
     } else {
         // Match Rust's div_rem behavior
-        result = prod.div(denominator)
+        result = prod.div(denominatorBN)
+    }
+
+    // Check if result fits in U256 (2^256 - 1)
+    const U256_MAX = new BN(1).shln(256).subn(1)
+    if (result.gt(U256_MAX)) {
+        throw new Error('MathOverflow')
     }
 
     return result
