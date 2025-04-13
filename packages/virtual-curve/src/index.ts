@@ -35,14 +35,11 @@ export class VirtualCurve {
         connection: Connection,
         poolAddress: PublicKey | string
     ): Promise<VirtualPoolState | null> {
-        const { program } = createProgram(connection)
-        const pool = await program.account.virtualPool.fetchNullable(
-            poolAddress instanceof PublicKey
-                ? poolAddress
-                : new PublicKey(poolAddress)
+        return getAccountData<VirtualPoolState>(
+            connection,
+            poolAddress,
+            'virtualPool'
         )
-
-        return pool
     }
 
     /**
@@ -50,7 +47,7 @@ export class VirtualCurve {
      * @param owner - Optional PublicKey or string to filter pools by owner
      * @returns Array of pool accounts with their addresses
      */
-    async getPools(
+    static async getPools(
         connection: Connection,
         owner?: PublicKey | string
     ): Promise<ProgramAccount<VirtualPoolState>[]> {
@@ -85,13 +82,11 @@ export class VirtualCurve {
         connection: Connection,
         poolConfigAddress: PublicKey | string
     ): Promise<PoolConfigState> {
-        const { program } = createProgram(connection)
-        const poolConfig = await program.account.poolConfig.fetch(
-            poolConfigAddress instanceof PublicKey
-                ? poolConfigAddress
-                : new PublicKey(poolConfigAddress)
+        return getAccountData<PoolConfigState>(
+            connection,
+            poolConfigAddress,
+            'poolConfig'
         )
-        return poolConfig
     }
 
     /**

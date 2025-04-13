@@ -105,12 +105,12 @@ export type CreatePartnerMetadataParameters =
 //////////////////
 export type ClaimFeeOperator = IdlAccounts<VirtualCurve>['claimFeeOperator']
 export type Config = IdlAccounts<VirtualCurve>['config']
-export type PoolConfig = IdlAccounts<VirtualCurve>['poolConfig']
 export type MeteoraDammMigrationMetadata =
-    IdlAccounts<VirtualCurve>['meteoraDammMigrationMetadata']
+IdlAccounts<VirtualCurve>['meteoraDammMigrationMetadata']
 export type VolatilityTracker = IdlTypes<VirtualCurve>['volatilityTracker']
 export type VirtualPool = IdlAccounts<VirtualCurve>['virtualPool']
 export type VirtualPoolState = IdlAccounts<VirtualCurve>['virtualPool']
+export type PoolConfig = IdlAccounts<VirtualCurve>['poolConfig']
 export type PoolConfigState = IdlAccounts<VirtualCurve>['poolConfig']
 
 ///////////

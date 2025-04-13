@@ -202,5 +202,5 @@ export async function getAccountData<T>(
             ? accountAddress
             : new PublicKey(accountAddress)
 
-    return (await program.account[accountType].fetch(address)) as T
+    return (await program.account[accountType].fetchNullable(address)) as T
 }
