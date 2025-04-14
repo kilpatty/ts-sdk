@@ -1,5 +1,5 @@
 import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor'
-import { AccountLayout, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
+import { TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import {
     PublicKey,
     SystemProgram,
@@ -146,21 +146,6 @@ export function unwrapSOLInstruction(
         return closedWrappedSolInstruction
     }
     return null
-}
-
-/**
- * Get token account information
- * @param connection - The connection to the Solana network
- * @param key - The token account public key
- * @returns The token account state or null if account doesn't exist
- */
-export async function getTokenAccount(connection: Connection, key: PublicKey) {
-    const accountInfo = await connection.getAccountInfo(key)
-    if (!accountInfo) {
-        return null
-    }
-    const tokenAccountState = AccountLayout.decode(accountInfo.data)
-    return tokenAccountState
 }
 
 /**

@@ -14,6 +14,13 @@ import type { DammV1 } from './idl/damm-v1/idl'
 import type { PrepareSwapParams, TokenType } from './types'
 import { getTokenProgram } from './utils'
 
+/**
+ * Create a permissionless dynamic vault
+ * @param mint - The mint of the vault
+ * @param payer - The payer of the vault
+ * @param vaultProgram - The vault program
+ * @returns The vault key, token vault key, and lp mint key
+ */
 export async function createInitializePermissionlessDynamicVaultIx(
     mint: PublicKey,
     payer: PublicKey,
@@ -58,6 +65,14 @@ export async function createInitializePermissionlessDynamicVaultIx(
     }
 }
 
+/**
+ * Create a vault if it doesn't exist
+ * @param mint - The mint of the vault
+ * @param vaultProgram - The vault program
+ * @param payer - The payer of the vault
+ * @param connection - The connection to the Solana network
+ * @returns The vault key, token vault key, and lp mint key
+ */
 export async function createVaultIfNotExists(
     mint: PublicKey,
     vaultProgram: Program<DynamicVault>,
@@ -105,6 +120,17 @@ export async function createVaultIfNotExists(
     }
 }
 
+/**
+ * Create a lock escrow instruction
+ * @param connection - The connection to the Solana network
+ * @param payer - The payer of the lock escrow
+ * @param pool - The pool address
+ * @param lpMint - The lp mint address
+ * @param escrowOwner - The owner of the escrow
+ * @param lockEscrowKey - The lock escrow key
+ * @param dammV1Program - The DAMM V1 program
+ * @returns The lock escrow instruction
+ */
 export async function createLockEscrowIx(
     connection: Connection,
     payer: PublicKey,
@@ -129,6 +155,13 @@ export async function createLockEscrowIx(
     return ix
 }
 
+/**
+ * Prepare swap parameters
+ * @param swapBaseForQuote - Whether to swap base for quote
+ * @param virtualPoolState - The virtual pool state
+ * @param poolConfigState - The pool config state
+ * @returns The prepare swap parameters
+ */
 export function prepareSwapParams(
     swapBaseForQuote: boolean,
     virtualPoolState: {
