@@ -164,11 +164,16 @@ export type CreateDammMigrationMetadataParam = {
     migrateToDammV2: boolean
 }
 
-export type MigrateToDammParam = {
+export type MigrateToDammV1Param = {
     payer: PublicKey
     virtualPool: PublicKey
     dammConfig: PublicKey
-    migrateToDammV2: boolean
+}
+
+export type MigrateToDammV2Param = {
+    payer: PublicKey
+    virtualPool: PublicKey
+    dammConfig: PublicKey
 }
 
 export type ClaimProtocolFeeParam = {
@@ -248,9 +253,13 @@ export interface VirtualCurveClientInterface {
     partnerWithdrawSurplus(
         partnerWithdrawSurplusParam: PartnerWithdrawSurplusParam
     ): Promise<Transaction>
-    migrateToDamm(
+    migrateToDammV1(
         connection: Connection,
-        migrateToDammParam: MigrateToDammParam
+        migrateToDammV1Param: MigrateToDammV1Param
+    ): Promise<Transaction>
+    migrateToDammV2(
+        connection: Connection,
+        migrateToDammV2Param: MigrateToDammV2Param
     ): Promise<Transaction>
     lockDammLpToken(
         connection: Connection,
