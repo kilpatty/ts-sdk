@@ -24,7 +24,6 @@ const SEED = Object.freeze({
 
 /**
  * Derive the event authority
- * @param programId - The program ID
  * @returns The event authority
  */
 export function deriveEventAuthority(): PublicKey {
