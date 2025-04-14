@@ -206,9 +206,9 @@ export function createProgramAccountFilter(
 export async function getAccountData<T>(
     connection: Connection,
     accountAddress: PublicKey | string,
-    accountType: keyof Program<VirtualCurve>['account']
+    accountType: keyof Program<VirtualCurve>['account'],
+    program: Program<VirtualCurve>
 ): Promise<T> {
-    const { program } = createProgram(connection)
     const address =
         accountAddress instanceof PublicKey
             ? accountAddress

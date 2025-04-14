@@ -35,10 +35,12 @@ export class VirtualCurve {
         connection: Connection,
         poolAddress: PublicKey | string
     ): Promise<VirtualPoolState | null> {
+        const { program } = createProgram(connection)
         return getAccountData<VirtualPoolState>(
             connection,
             poolAddress,
-            'virtualPool'
+            'virtualPool',
+            program
         )
     }
 
@@ -69,7 +71,13 @@ export class VirtualCurve {
         connection: Connection,
         configAddress: PublicKey | string
     ): Promise<Config> {
-        return getAccountData<Config>(connection, configAddress, 'config')
+        const { program } = createProgram(connection)
+        return getAccountData<Config>(
+            connection,
+            configAddress,
+            'config',
+            program
+        )
     }
 
     /**
@@ -82,10 +90,12 @@ export class VirtualCurve {
         connection: Connection,
         poolConfigAddress: PublicKey | string
     ): Promise<PoolConfigState> {
+        const { program } = createProgram(connection)
         return getAccountData<PoolConfigState>(
             connection,
             poolConfigAddress,
-            'poolConfig'
+            'poolConfig',
+            program
         )
     }
 
@@ -117,10 +127,12 @@ export class VirtualCurve {
         connection: Connection,
         operatorAddress: PublicKey | string
     ): Promise<ClaimFeeOperator> {
+        const { program } = createProgram(connection)
         return getAccountData<ClaimFeeOperator>(
             connection,
             operatorAddress,
-            'claimFeeOperator'
+            'claimFeeOperator',
+            program
         )
     }
 }

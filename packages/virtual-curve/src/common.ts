@@ -69,24 +69,39 @@ export async function createVaultIfNotExists(
     lpMintPda: PublicKey
     ix?: TransactionInstruction
 }> {
+    const vaultKey = PublicKey.findProgramAddressSync(
+        [Buffer.from('vault'), mint.toBuffer(), VAULT_BASE_KEY.toBuffer()],
+        vaultProgram.programId
+    )[0]
+
+    const vaultAccount = await connection.getAccountInfo(vaultKey)
+
+    if (vaultAccount) {
+        const tokenVaultKey = PublicKey.findProgramAddressSync(
+            [Buffer.from('token_vault'), vaultKey.toBuffer()],
+            vaultProgram.programId
+        )[0]
+        const lpMintKey = deriveLpMintAddress(vaultKey, vaultProgram.programId)
+
+        return {
+            vaultPda: vaultKey,
+            tokenVaultPda: tokenVaultKey,
+            lpMintPda: lpMintKey,
+            ix: undefined,
+        }
+    }
+
     const vaultIx = await createInitializePermissionlessDynamicVaultIx(
         mint,
         payer,
         vaultProgram
     )
 
-    const vaultAccount = await connection.getAccountInfo(vaultIx.vaultKey)
-    let ix: TransactionInstruction | undefined
-
-    if (!vaultAccount) {
-        ix = vaultIx.instruction
-    }
-
     return {
         vaultPda: vaultIx.vaultKey,
         tokenVaultPda: vaultIx.tokenVaultKey,
         lpMintPda: vaultIx.lpMintKey,
-        ix,
+        ix: vaultIx.instruction,
     }
 }
 
