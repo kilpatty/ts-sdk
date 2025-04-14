@@ -433,17 +433,19 @@ export class VirtualCurveClient
         const poolAuthority = derivePoolAuthority(this.program.programId)
         const eventAuthority = deriveEventAuthority()
 
-        const tokenBaseAccount = findAssociatedTokenAddress(
-            claimTradingFeeParam.feeClaimer,
+        const tokenBaseAccount = getAssociatedTokenAddressSync(
             this.virtualPoolState.baseMint,
+            claimTradingFeeParam.feeClaimer,
+            true,
             this.virtualPoolState.poolType === TokenType.SPL
                 ? TOKEN_PROGRAM_ID
                 : TOKEN_2022_PROGRAM_ID
         )
 
-        const tokenQuoteAccount = findAssociatedTokenAddress(
-            claimTradingFeeParam.feeClaimer,
+        const tokenQuoteAccount = getAssociatedTokenAddressSync(
             this.poolConfigState.quoteMint,
+            claimTradingFeeParam.feeClaimer,
+            true,
             this.poolConfigState.quoteTokenFlag === TokenType.SPL
                 ? TOKEN_PROGRAM_ID
                 : TOKEN_2022_PROGRAM_ID
