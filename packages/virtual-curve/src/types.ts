@@ -6,7 +6,7 @@ import type {
     Program,
 } from '@coral-xyz/anchor'
 import type { VirtualCurve } from './idl/virtual-curve/idl'
-import type { Connection, PublicKey, Transaction } from '@solana/web3.js'
+import type { PublicKey } from '@solana/web3.js'
 
 export type VirtualCurveProgram = Program<VirtualCurve>
 
@@ -225,32 +225,6 @@ export type PartnerWithdrawSurplusParam = {
 ////////////////
 // INTERFACES //
 ////////////////
-
-export interface VirtualCurveClientInterface {
-    swap(swapParam: SwapParam): Promise<Transaction>
-    claimTradingFee(
-        claimTradingFeeParam: ClaimTradingFeeParam
-    ): Promise<Transaction>
-    partnerWithdrawSurplus(
-        partnerWithdrawSurplusParam: PartnerWithdrawSurplusParam
-    ): Promise<Transaction>
-    migrateToDammV1(
-        connection: Connection,
-        migrateToDammV1Param: MigrateToDammV1Param
-    ): Promise<Transaction>
-    migrateToDammV2(
-        connection: Connection,
-        migrateToDammV2Param: MigrateToDammV2Param
-    ): Promise<Transaction>
-    lockDammLpToken(
-        connection: Connection,
-        lockDammLpTokenParam: DammLpTokenParam
-    ): Promise<Transaction>
-    claimDammLpToken(
-        connection: Connection,
-        claimDammLpTokenParam: DammLpTokenParam
-    ): Promise<Transaction>
-}
 
 export interface CurvePoint {
     sqrtPrice: BN

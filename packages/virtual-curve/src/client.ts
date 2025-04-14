@@ -11,15 +11,16 @@ import {
     type DammLpTokenParam,
     type MeteoraDammMigrationMetadata,
     type PartnerWithdrawSurplusParam,
-    type PoolConfig,
     type PoolConfigState,
     type SwapAccounts,
     type SwapParam,
-    type VirtualCurveClientInterface,
-    type VirtualPool,
     type VirtualPoolState,
     type MigrateToDammV1Param,
     type MigrateToDammV2Param,
+    type PoolConfig,
+    type VirtualPool,
+    type Config,
+    type ClaimFeeOperator,
 } from './types'
 import {
     Connection,
@@ -30,7 +31,6 @@ import {
     Transaction,
     TransactionInstruction,
 } from '@solana/web3.js'
-import { VirtualCurve } from '.'
 import {
     deriveDammMigrationMetadataAddress,
     deriveDammV2EventAuthority,
@@ -65,11 +65,13 @@ import {
     createProgram,
     createVaultProgram,
     findAssociatedTokenAddress,
+    getAccountData,
     isNativeSol,
     unwrapSOLInstruction,
     wrapSOLInstruction,
+    createProgramAccountFilter,
 } from './utils'
-import type { Program } from '@coral-xyz/anchor'
+import type { Program, ProgramAccount } from '@coral-xyz/anchor'
 import type { VirtualCurve as VirtualCurveIDL } from './idl/virtual-curve/idl'
 import BN from 'bn.js'
 import { swapQuote } from './math/swapQuote'
@@ -79,53 +81,151 @@ import {
     prepareSwapParams,
 } from './common'
 
-export class VirtualCurveClient
-    extends VirtualCurve
-    implements VirtualCurveClientInterface
-{
-    public pool: PublicKey
-    public virtualPoolState: VirtualPoolState
-    public poolConfigState: PoolConfigState
+export class VirtualCurveProgramClient {
+    private program: Program<VirtualCurveIDL>
 
-    constructor(
-        program: Program<VirtualCurveIDL>,
-        pool: PublicKey,
-        virtualPoolState: VirtualPoolState,
-        poolConfigState: PoolConfigState
-    ) {
-        super(program)
-
-        this.pool = pool
-        this.virtualPoolState = virtualPoolState
-        this.poolConfigState = poolConfigState
+    constructor(connection: Connection) {
+        const { program } = createProgram(connection)
+        this.program = program
     }
 
     /**
-     * Create a new VirtualCurveClient instance
-     * @param connection - The connection to the Solana network
-     * @param pool - The public key of the pool
-     * @returns A new VirtualCurveClient instance
+     * Get the underlying program instance
+     * @returns The program instance
      */
-    static async create(
+    getProgram(): Program<VirtualCurveIDL> {
+        return this.program
+    }
+
+    /**
+     * Get virtual pool
+     * @param connection - The connection to the Solana network
+     * @param poolAddress - The address of the pool
+     * @returns A virtual pool or null if not found
+     */
+    async getPool(
         connection: Connection,
-        pool: PublicKey
-    ): Promise<VirtualCurveClient> {
-        const { program } = createProgram(connection)
-        const virtualPoolState = await program.account.virtualPool.fetch(pool)
-        const poolConfigState = await program.account.poolConfig.fetch(
-            virtualPoolState.config
-        )
-        return new VirtualCurveClient(
-            program,
-            pool,
-            virtualPoolState,
-            poolConfigState
+        poolAddress: PublicKey | string
+    ): Promise<VirtualPoolState | null> {
+        return getAccountData<VirtualPoolState>(
+            connection,
+            poolAddress,
+            'virtualPool',
+            this.program
         )
     }
 
-    ////////////////////
-    // MAIN FUNCTIONS //
-    ////////////////////
+    /**
+     * Retrieves all virtual pools
+     * @param connection - The connection to the Solana network
+     * @returns Array of pool accounts with their addresses
+     */
+    async getPools(): Promise<ProgramAccount<VirtualPoolState>[]> {
+        return await this.program.account.virtualPool.all()
+    }
+
+    /**
+     * Get config
+     * @param connection - The connection to the Solana network
+     * @param configAddress - The address of the config
+     * @returns A config
+     */
+    async getConfig(
+        connection: Connection,
+        configAddress: PublicKey | string
+    ): Promise<Config> {
+        return getAccountData<Config>(
+            connection,
+            configAddress,
+            'config',
+            this.program
+        )
+    }
+
+    /**
+     * Get pool config (partner config)
+     * @param connection - The connection to the Solana network
+     * @param poolConfigAddress - The address of the pool config
+     * @returns A pool config
+     */
+    async getPoolConfig(
+        connection: Connection,
+        poolConfigAddress: PublicKey | string
+    ): Promise<PoolConfigState> {
+        return getAccountData<PoolConfigState>(
+            connection,
+            poolConfigAddress,
+            'poolConfig',
+            this.program
+        )
+    }
+
+    /**
+     * Retrieve all pool configs (list of all configs launched by partner)
+     * @param connection - The connection to the Solana network
+     * @param owner - The owner of the pool configs
+     * @returns An array of pool configs
+     */
+    async getPoolConfigs(
+        owner?: PublicKey | string
+    ): Promise<ProgramAccount<PoolConfigState>[]> {
+        const filters = owner ? createProgramAccountFilter(owner, 72) : []
+
+        return await this.program.account.poolConfig.all(filters)
+    }
+
+    /**
+     * Get claim fee operator
+     * @param connection - The connection to the Solana network
+     * @param operatorAddress - The address of the claim fee operator
+     * @returns A claim fee operator
+     */
+    async getClaimFeeOperator(
+        connection: Connection,
+        operatorAddress: PublicKey | string
+    ): Promise<ClaimFeeOperator> {
+        return getAccountData<ClaimFeeOperator>(
+            connection,
+            operatorAddress,
+            'claimFeeOperator',
+            this.program
+        )
+    }
+
+    /**
+     * Calculate the amount out for a swap (quote)
+     * @param virtualPool - The virtual pool
+     * @param config - The config
+     * @param swapBaseForQuote - Whether to swap base for quote
+     * @param amountIn - The amount in
+     * @param hasReferral - Whether the referral is enabled
+     * @param currentPoint - The current point
+     * @returns The swap quote result
+     */
+    swapQuote(
+        virtualPool: VirtualPool,
+        config: PoolConfig,
+        swapBaseForQuote: boolean,
+        amountIn: BN,
+        hasReferral: boolean,
+        currentPoint: BN
+    ) {
+        return swapQuote(
+            virtualPool,
+            config,
+            swapBaseForQuote,
+            amountIn,
+            hasReferral,
+            currentPoint
+        )
+    }
+}
+
+/**
+ * Pool-related operations
+ */
+export class PoolService {
+    constructor(private programClient: VirtualCurveProgramClient) {}
 
     /**
      * Create a new pool
@@ -133,11 +233,8 @@ export class VirtualCurveClient
      * @param createPoolParam - The parameters for the pool
      * @returns A new pool
      */
-    static async createPool(
-        connection: Connection,
-        createPoolParam: CreatePoolParam
-    ): Promise<Transaction> {
-        const { program } = createProgram(connection)
+    async createPool(createPoolParam: CreatePoolParam): Promise<Transaction> {
+        const program = this.programClient.getProgram()
         const {
             quoteMint,
             baseMint,
@@ -232,22 +329,42 @@ export class VirtualCurveClient
 
     /**
      * Swap between base and quote
+     * @param pool - The pool address
      * @param swapParam - The parameters for the swap
      * @returns A swap transaction
      */
-    async swap(swapParam: SwapParam): Promise<Transaction> {
+    async swap(
+        pool: PublicKey,
+        swapParam: SwapParam,
+        connection: Connection
+    ): Promise<Transaction> {
+        const program = this.programClient.getProgram()
+
+        const virtualPoolState = await this.programClient.getPool(
+            connection,
+            pool
+        )
+        if (!virtualPoolState) {
+            throw new Error(`Pool not found: ${pool.toString()}`)
+        }
+
+        const poolConfigState = await this.programClient.getPoolConfig(
+            connection,
+            virtualPoolState.config
+        )
+
         const { amountIn, minimumAmountOut, swapBaseForQuote, owner } =
             swapParam
 
         const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
             prepareSwapParams(
                 swapBaseForQuote,
-                this.virtualPoolState,
-                this.poolConfigState
+                virtualPoolState,
+                poolConfigState
             )
 
         const eventAuthority = deriveEventAuthority()
-        const poolAuthority = derivePoolAuthority(this.program.programId)
+        const poolAuthority = derivePoolAuthority(program.programId)
 
         const inputTokenAccount = findAssociatedTokenAddress(
             owner,
@@ -282,7 +399,10 @@ export class VirtualCurveClient
                     BigInt(amountIn.toString())
                 )
             )
-            cleanupIxs.push(unwrapSOLInstruction(owner))
+            const unwrapIx = unwrapSOLInstruction(owner)
+            if (unwrapIx) {
+                cleanupIxs.push(unwrapIx)
+            }
         }
 
         ixs.push(
@@ -295,16 +415,19 @@ export class VirtualCurveClient
         )
 
         if (isSOLOutput) {
-            cleanupIxs.push(unwrapSOLInstruction(owner))
+            const unwrapIx = unwrapSOLInstruction(owner)
+            if (unwrapIx) {
+                cleanupIxs.push(unwrapIx)
+            }
         }
 
         const accounts: SwapAccounts = {
-            baseMint: this.virtualPoolState.baseMint,
-            quoteMint: this.poolConfigState.quoteMint,
-            pool: this.pool,
-            baseVault: this.virtualPoolState.baseVault,
-            quoteVault: this.virtualPoolState.quoteVault,
-            config: this.virtualPoolState.config,
+            baseMint: virtualPoolState.baseMint,
+            quoteMint: poolConfigState.quoteMint,
+            pool: pool,
+            baseVault: virtualPoolState.baseVault,
+            quoteVault: virtualPoolState.quoteVault,
+            config: virtualPoolState.config,
             eventAuthority,
             poolAuthority,
             referralTokenAccount: null,
@@ -317,50 +440,115 @@ export class VirtualCurveClient
             tokenQuoteProgram: swapBaseForQuote
                 ? outputTokenProgram
                 : inputTokenProgram,
-            program: this.program.programId,
+            program: program.programId,
         }
 
-        const transaction = await this.program.methods
+        const transaction = await program.methods
             .swap({
                 amountIn,
                 minimumAmountOut,
             })
             .accounts(accounts)
             .transaction()
+
+        // Add pre and post instructions
+        if (ixs.length > 0) {
+            transaction.add(...ixs)
+        }
+
+        if (cleanupIxs.length > 0) {
+            transaction.add(...cleanupIxs)
+        }
+
         return transaction
     }
 
     /**
-     * Calculate the amount out for a swap (quote)
-     * @param virtualPool - The virtual pool
-     * @param config - The config
-     * @param swapBaseForQuote - Whether to swap base for quote
-     * @param amountIn - The amount in
-     * @param hasReferral - Whether the referral is enabled
-     * @param currentPoint - The current point
-     * @returns
+     * Claim trading fee
+     * @param pool - The pool address
+     * @param claimTradingFeeParam - The parameters for the claim trading fee
+     * @returns A claim trading fee transaction
      */
-    swapQuote(
-        virtualPool: VirtualPool,
-        config: PoolConfig,
-        swapBaseForQuote: boolean,
-        amountIn: BN,
-        hasReferral: boolean,
-        currentPoint: BN
-    ) {
-        return swapQuote(
-            virtualPool,
-            config,
-            swapBaseForQuote,
-            amountIn,
-            hasReferral,
-            currentPoint
-        )
-    }
+    async claimTradingFee(
+        pool: PublicKey,
+        claimTradingFeeParam: ClaimTradingFeeParam,
+        connection: Connection
+    ): Promise<Transaction> {
+        const program = this.programClient.getProgram()
 
-    ///////////////////////
-    // PARTNER FUNCTIONS //
-    ///////////////////////
+        // Fetch pool and config data on-demand
+        const virtualPoolState = await this.programClient.getPool(
+            connection,
+            pool
+        )
+        if (!virtualPoolState) {
+            throw new Error(`Pool not found: ${pool.toString()}`)
+        }
+
+        const poolConfigState = await this.programClient.getPoolConfig(
+            connection,
+            virtualPoolState.config
+        )
+
+        const poolAuthority = derivePoolAuthority(program.programId)
+        const eventAuthority = deriveEventAuthority()
+
+        const tokenBaseAccount = getAssociatedTokenAddressSync(
+            virtualPoolState.baseMint,
+            claimTradingFeeParam.feeClaimer,
+            true,
+            virtualPoolState.poolType === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
+        )
+
+        const tokenQuoteAccount = getAssociatedTokenAddressSync(
+            poolConfigState.quoteMint,
+            claimTradingFeeParam.feeClaimer,
+            true,
+            poolConfigState.quoteTokenFlag === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
+        )
+
+        const accounts = {
+            poolAuthority,
+            config: virtualPoolState.config,
+            pool: claimTradingFeeParam.pool,
+            tokenAAccount: tokenBaseAccount,
+            tokenBAccount: tokenQuoteAccount,
+            baseVault: virtualPoolState.baseVault,
+            quoteVault: virtualPoolState.quoteVault,
+            baseMint: virtualPoolState.baseMint,
+            quoteMint: poolConfigState.quoteMint,
+            feeClaimer: claimTradingFeeParam.feeClaimer,
+            tokenBaseProgram:
+                virtualPoolState.poolType === TokenType.SPL
+                    ? TOKEN_PROGRAM_ID
+                    : TOKEN_2022_PROGRAM_ID,
+            tokenQuoteProgram:
+                poolConfigState.quoteTokenFlag === TokenType.SPL
+                    ? TOKEN_PROGRAM_ID
+                    : TOKEN_2022_PROGRAM_ID,
+            eventAuthority,
+            program: program.programId,
+        }
+
+        return program.methods
+            .claimTradingFee(
+                claimTradingFeeParam.maxBaseAmount,
+                claimTradingFeeParam.maxQuoteAmount
+            )
+            .accounts(accounts)
+            .transaction()
+    }
+}
+
+/**
+ * Partner-related operations
+ */
+export class PartnerService {
+    constructor(private programClient: VirtualCurveProgramClient) {}
 
     /**
      * Create a new config
@@ -368,11 +556,10 @@ export class VirtualCurveClient
      * @param createConfigParam - The parameters for the config
      * @returns A new config
      */
-    static async createConfig(
-        connection: Connection,
+    async createConfig(
         createConfigParam: CreateConfigParam
     ): Promise<Transaction> {
-        const { program } = createProgram(connection)
+        const program = this.programClient.getProgram()
         const { config, feeClaimer, owner, quoteMint, payer, ...configParam } =
             createConfigParam
         const eventAuthority = deriveEventAuthority()
@@ -393,82 +580,15 @@ export class VirtualCurveClient
     }
 
     /**
-     * Claim trading fee
-     * @param connection - The connection to the Solana network
-     * @param claimTradingFeeParam - The parameters for the claim trading fee
-     * @returns A claim trading fee transaction
-     */
-    async claimTradingFee(
-        claimTradingFeeParam: ClaimTradingFeeParam
-    ): Promise<Transaction> {
-        const poolAuthority = derivePoolAuthority(this.program.programId)
-        const eventAuthority = deriveEventAuthority()
-
-        const tokenBaseAccount = getAssociatedTokenAddressSync(
-            this.virtualPoolState.baseMint,
-            claimTradingFeeParam.feeClaimer,
-            true,
-            this.virtualPoolState.poolType === TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
-        )
-
-        const tokenQuoteAccount = getAssociatedTokenAddressSync(
-            this.poolConfigState.quoteMint,
-            claimTradingFeeParam.feeClaimer,
-            true,
-            this.poolConfigState.quoteTokenFlag === TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
-        )
-
-        const accounts = {
-            poolAuthority,
-            config: this.virtualPoolState.config,
-            pool: claimTradingFeeParam.pool,
-            tokenAAccount: tokenBaseAccount,
-            tokenBAccount: tokenQuoteAccount,
-            baseVault: this.virtualPoolState.baseVault,
-            quoteVault: this.virtualPoolState.quoteVault,
-            baseMint: this.virtualPoolState.baseMint,
-            quoteMint: this.poolConfigState.quoteMint,
-            feeClaimer: claimTradingFeeParam.feeClaimer,
-            tokenBaseProgram:
-                this.virtualPoolState.poolType === TokenType.SPL
-                    ? TOKEN_PROGRAM_ID
-                    : TOKEN_2022_PROGRAM_ID,
-            tokenQuoteProgram:
-                this.poolConfigState.quoteTokenFlag === TokenType.SPL
-                    ? TOKEN_PROGRAM_ID
-                    : TOKEN_2022_PROGRAM_ID,
-            eventAuthority,
-            program: this.program.programId,
-        }
-
-        return this.program.methods
-            .claimTradingFee(
-                claimTradingFeeParam.maxBaseAmount,
-                claimTradingFeeParam.maxQuoteAmount
-            )
-            .accounts(accounts)
-            .transaction()
-    }
-
-    /**
      * Create partner metadata
      * @param connection - The connection to the Solana network
-     * @param feeClaimer - The partner's fee claimer account (must be a signer)
-     * @param payer - The account paying for the metadata creation (must be a signer)
-     * @param name - Partner's name
-     * @param website - Partner's website
-     * @param logo - Partner's logo URL
+     * @param createPartnerMetadataParam - The parameters for the partner metadata
      * @returns A create partner metadata transaction
      */
-    static async createPartnerMetadata(
-        connection: Connection,
+    async createPartnerMetadata(
         createPartnerMetadataParam: CreatePartnerMetadataParam
     ): Promise<Transaction> {
-        const { program } = createProgram(connection)
+        const program = this.programClient.getProgram()
         const eventAuthority = deriveEventAuthority()
         const partnerMetadata = derivePartnerMetadata(
             createPartnerMetadataParam.feeClaimer,
@@ -499,49 +619,70 @@ export class VirtualCurveClient
 
     /**
      * Partner withdraw surplus
-     * @param connection - The connection to the Solana network
-     * @param params - The parameters for the partner withdraw surplus
+     * @param virtualPool - The virtual pool address
+     * @param partnerWithdrawSurplusParam - The parameters for the partner withdraw surplus
      * @returns A partner withdraw surplus transaction
      */
     async partnerWithdrawSurplus(
-        partnerWithdrawSurplusParam: PartnerWithdrawSurplusParam
+        virtualPool: PublicKey,
+        partnerWithdrawSurplusParam: PartnerWithdrawSurplusParam,
+        connection: Connection
     ): Promise<Transaction> {
-        const poolAuthority = derivePoolAuthority(this.program.programId)
+        const program = this.programClient.getProgram()
+
+        // Fetch pool and config data on-demand
+        const virtualPoolState = await this.programClient.getPool(
+            connection,
+            virtualPool
+        )
+        if (!virtualPoolState) {
+            throw new Error(`Pool not found: ${virtualPool.toString()}`)
+        }
+
+        const poolConfigState = await this.programClient.getPoolConfig(
+            connection,
+            virtualPoolState.config
+        )
+
+        const poolAuthority = derivePoolAuthority(program.programId)
         const eventAuthority = deriveEventAuthority()
 
         const tokenQuoteAccount = findAssociatedTokenAddress(
             partnerWithdrawSurplusParam.feeClaimer,
-            this.poolConfigState.quoteMint,
-            this.poolConfigState.quoteTokenFlag === TokenType.SPL
+            poolConfigState.quoteMint,
+            poolConfigState.quoteTokenFlag === TokenType.SPL
                 ? TOKEN_PROGRAM_ID
                 : TOKEN_2022_PROGRAM_ID
         )
 
         const accounts = {
             poolAuthority,
-            config: this.virtualPoolState.config,
+            config: virtualPoolState.config,
             virtualPool: partnerWithdrawSurplusParam.virtualPool,
             tokenQuoteAccount,
-            quoteVault: this.virtualPoolState.quoteVault,
-            quoteMint: this.poolConfigState.quoteMint,
+            quoteVault: virtualPoolState.quoteVault,
+            quoteMint: poolConfigState.quoteMint,
             feeClaimer: partnerWithdrawSurplusParam.feeClaimer,
             tokenQuoteProgram:
-                this.poolConfigState.quoteTokenFlag === TokenType.SPL
+                poolConfigState.quoteTokenFlag === TokenType.SPL
                     ? TOKEN_PROGRAM_ID
                     : TOKEN_2022_PROGRAM_ID,
             eventAuthority,
-            program: this.program.programId,
+            program: program.programId,
         }
 
-        return this.program.methods
+        return program.methods
             .partnerWithdrawSurplus()
             .accounts(accounts)
             .transaction()
     }
+}
 
-    /////////////////////////
-    // MIGRATION FUNCTIONS //
-    /////////////////////////
+/**
+ * Migration-related operations
+ */
+export class MigrationService {
+    constructor(private programClient: VirtualCurveProgramClient) {}
 
     /**
      * Create metadata for the migration of Meteora DAMM V1 or DAMM V2
@@ -549,11 +690,10 @@ export class VirtualCurveClient
      * @param createDammMigrationMetadataParam - The parameters for the migration
      * @returns A migration transaction
      */
-    static async createDammMigrationMetadata(
-        connection: Connection,
+    async createDammMigrationMetadata(
         createDammMigrationMetadataParam: CreateDammMigrationMetadataParam
     ): Promise<Transaction> {
-        const { program } = createProgram(connection)
+        const program = this.programClient.getProgram()
 
         const migrationMetadata = deriveDammMigrationMetadataAddress(
             createDammMigrationMetadataParam.virtualPool,
@@ -585,23 +725,37 @@ export class VirtualCurveClient
     /**
      * Migrate to DAMM V1
      * @param connection - The connection to the Solana network
-     * @param migrateToDammParam - The parameters for the migration
+     * @param virtualPool - The virtual pool address
+     * @param migrateToDammV1Param - The parameters for the migration
      * @returns A migrate transaction
      */
     async migrateToDammV1(
         connection: Connection,
+        virtualPool: PublicKey,
         migrateToDammV1Param: MigrateToDammV1Param
     ): Promise<Transaction> {
-        const virtualPoolState = this.virtualPoolState
-        const poolConfigState = this.poolConfigState
+        const program = this.programClient.getProgram()
+
+        const virtualPoolState = await this.programClient.getPool(
+            connection,
+            virtualPool
+        )
+        if (!virtualPoolState) {
+            throw new Error(`Pool not found: ${virtualPool.toString()}`)
+        }
+
+        const poolConfigState = await this.programClient.getPoolConfig(
+            connection,
+            virtualPoolState.config
+        )
 
         const migrationMetadata = deriveDammMigrationMetadataAddress(
             migrateToDammV1Param.virtualPool,
-            this.program.programId,
+            program.programId,
             false
         )
 
-        const poolAuthority = derivePoolAuthority(this.program.programId)
+        const poolAuthority = derivePoolAuthority(program.programId)
 
         const dammPool = derivePool(
             virtualPoolState.baseMint,
@@ -676,7 +830,7 @@ export class VirtualCurveClient
             ASSOCIATED_TOKEN_PROGRAM_ID
         )
 
-        return this.program.methods
+        return program.methods
             .migrateMeteoraDamm()
             .accountsStrict({
                 virtualPool: migrateToDammV1Param.virtualPool,
@@ -718,19 +872,33 @@ export class VirtualCurveClient
     /**
      * Migrate to DAMM V2
      * @param connection - The connection to the Solana network
-     * @param migrateToDammParam - The parameters for the migration
+     * @param virtualPool - The virtual pool address
+     * @param migrateToDammV2Param - The parameters for the migration
      * @returns A migrate transaction
      */
     async migrateToDammV2(
         connection: Connection,
+        virtualPool: PublicKey,
         migrateToDammV2Param: MigrateToDammV2Param
     ): Promise<Transaction> {
-        const virtualPoolState = this.virtualPoolState
-        const poolConfigState = this.poolConfigState
+        const program = this.programClient.getProgram()
+
+        const virtualPoolState = await this.programClient.getPool(
+            connection,
+            virtualPool
+        )
+        if (!virtualPoolState) {
+            throw new Error(`Pool not found: ${virtualPool.toString()}`)
+        }
+
+        const poolConfigState = await this.programClient.getPoolConfig(
+            connection,
+            virtualPoolState.config
+        )
 
         const migrationMetadata = deriveDammMigrationMetadataAddress(
             migrateToDammV2Param.virtualPool,
-            this.program.programId,
+            program.programId,
             true
         )
 
@@ -786,7 +954,7 @@ export class VirtualCurveClient
                 ? TOKEN_PROGRAM_ID
                 : TOKEN_2022_PROGRAM_ID
 
-        return this.program.methods
+        return program.methods
             .migrationDammV2()
             .accountsStrict({
                 virtualPool: migrateToDammV2Param.virtualPool,
@@ -825,34 +993,64 @@ export class VirtualCurveClient
             .transaction()
     }
 
-    /////////////
-    // DAMM V1 //
-    /////////////
+    /**
+     * Get DAMM V1 migration metadata
+     * @param connection - The connection to the Solana network
+     * @param metadataAddress - The address of the meteora DAMM migration metadata
+     * @returns A meteora DAMM migration metadata
+     */
+    async getDammV1MigrationMetadata(
+        metadataAddress: PublicKey | string
+    ): Promise<MeteoraDammMigrationMetadata> {
+        const program = this.programClient.getProgram()
+        const metadata =
+            await program.account.meteoraDammMigrationMetadata.fetch(
+                metadataAddress instanceof PublicKey
+                    ? metadataAddress
+                    : new PublicKey(metadataAddress)
+            )
+
+        return metadata
+    }
 
     /**
-     * Lock DAMM LP token for creator or partner
+     * Lock DAMM V1 LP token for creator or partner
      * @param connection - The connection to the Solana network
+     * @param virtualPool - The virtual pool address
      * @param lockDammLpTokenParam - The parameters for the lock
      * @returns A lock transaction
      */
-    async lockDammLpToken(
+    async lockDammV1LpToken(
         connection: Connection,
-        lockDammLpTokenParam: DammLpTokenParam
+        virtualPool: PublicKey,
+        lockDammV1LpTokenParam: DammLpTokenParam
     ): Promise<Transaction> {
-        const virtualPoolState = this.virtualPoolState
-        const poolConfigState = this.poolConfigState
+        const program = this.programClient.getProgram()
 
-        const poolAuthority = derivePoolAuthority(this.program.programId)
+        const virtualPoolState = await this.programClient.getPool(
+            connection,
+            virtualPool
+        )
+        if (!virtualPoolState) {
+            throw new Error(`Pool not found: ${virtualPool.toString()}`)
+        }
+
+        const poolConfigState = await this.programClient.getPoolConfig(
+            connection,
+            virtualPoolState.config
+        )
+
+        const poolAuthority = derivePoolAuthority(program.programId)
 
         const dammPool = derivePool(
-            lockDammLpTokenParam.dammConfig,
+            lockDammV1LpTokenParam.dammConfig,
             virtualPoolState.baseMint,
             poolConfigState.quoteMint,
             DAMM_V1_PROGRAM_ID
         )
 
         const migrationMetadata = deriveDammMigrationMetadataAddress(
-            lockDammLpTokenParam.virtualPool,
+            lockDammV1LpTokenParam.virtualPool,
             DAMM_V1_PROGRAM_ID,
             false
         )
@@ -866,13 +1064,13 @@ export class VirtualCurveClient
             createVaultIfNotExists(
                 virtualPoolState.baseMint,
                 vaultProgram,
-                lockDammLpTokenParam.payer,
+                lockDammV1LpTokenParam.payer,
                 connection
             ),
             createVaultIfNotExists(
                 poolConfigState.quoteMint,
                 vaultProgram,
-                lockDammLpTokenParam.payer,
+                lockDammV1LpTokenParam.payer,
                 connection
             ),
         ])
@@ -899,7 +1097,7 @@ export class VirtualCurveClient
         if (!lockEscrowData) {
             const ix = await createLockEscrowIx(
                 connection,
-                lockDammLpTokenParam.payer,
+                lockDammV1LpTokenParam.payer,
                 dammPool,
                 lpMint,
                 virtualPoolState.creator,
@@ -920,7 +1118,7 @@ export class VirtualCurveClient
 
         const createEscrowVaultIx =
             createAssociatedTokenAccountIdempotentInstruction(
-                lockDammLpTokenParam.payer,
+                lockDammV1LpTokenParam.payer,
                 escrowVault,
                 lockEscrowKey,
                 lpMint,
@@ -954,14 +1152,14 @@ export class VirtualCurveClient
             tokenProgram: TOKEN_PROGRAM_ID,
         }
 
-        if (lockDammLpTokenParam.isPartner) {
-            return this.program.methods
+        if (lockDammV1LpTokenParam.isPartner) {
+            return program.methods
                 .migrateMeteoraDammLockLpTokenForPartner()
                 .accountsStrict(accounts)
                 .preInstructions(preInstructions)
                 .transaction()
         } else {
-            return this.program.methods
+            return program.methods
                 .migrateMeteoraDammLockLpTokenForCreator()
                 .accountsStrict(accounts)
                 .preInstructions(preInstructions)
@@ -970,29 +1168,43 @@ export class VirtualCurveClient
     }
 
     /**
-     * Claim DAMM LP token for creator or partner
+     * Claim DAMM V1 LP token for creator or partner
      * @param connection - The connection to the Solana network
+     * @param virtualPool - The virtual pool address
      * @param claimDammLpTokenParam - The parameters for the claim
      * @returns A claim transaction
      */
-    async claimDammLpToken(
+    async claimDammV1LpToken(
         connection: Connection,
-        claimDammLpTokenParam: DammLpTokenParam
+        virtualPool: PublicKey,
+        claimDammV1LpTokenParam: DammLpTokenParam
     ): Promise<Transaction> {
-        const virtualPoolState = this.virtualPoolState
-        const poolConfigState = this.poolConfigState
+        const program = this.programClient.getProgram()
 
-        const poolAuthority = derivePoolAuthority(this.program.programId)
+        const virtualPoolState = await this.programClient.getPool(
+            connection,
+            virtualPool
+        )
+        if (!virtualPoolState) {
+            throw new Error(`Pool not found: ${virtualPool.toString()}`)
+        }
+
+        const poolConfigState = await this.programClient.getPoolConfig(
+            connection,
+            virtualPoolState.config
+        )
+
+        const poolAuthority = derivePoolAuthority(program.programId)
 
         const dammPool = derivePool(
-            claimDammLpTokenParam.dammConfig,
+            claimDammV1LpTokenParam.dammConfig,
             virtualPoolState.baseMint,
             poolConfigState.quoteMint,
             DAMM_V1_PROGRAM_ID
         )
 
         const migrationMetadata = deriveDammMigrationMetadataAddress(
-            claimDammLpTokenParam.virtualPool,
+            claimDammV1LpTokenParam.virtualPool,
             DAMM_V1_PROGRAM_ID,
             false
         )
@@ -1002,7 +1214,7 @@ export class VirtualCurveClient
         const preInstructions: TransactionInstruction[] = []
         const destinationToken = getAssociatedTokenAddressSync(
             lpMint,
-            claimDammLpTokenParam.payer,
+            claimDammV1LpTokenParam.payer,
             true,
             TOKEN_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
@@ -1010,9 +1222,9 @@ export class VirtualCurveClient
 
         const createDestinationTokenIx =
             createAssociatedTokenAccountIdempotentInstruction(
-                claimDammLpTokenParam.payer,
+                claimDammV1LpTokenParam.payer,
                 destinationToken,
-                claimDammLpTokenParam.payer,
+                claimDammV1LpTokenParam.payer,
                 lpMint,
                 TOKEN_PROGRAM_ID,
                 ASSOCIATED_TOKEN_PROGRAM_ID
@@ -1032,42 +1244,59 @@ export class VirtualCurveClient
             lpMint,
             sourceToken,
             destinationToken,
-            sender: claimDammLpTokenParam.payer,
+            sender: claimDammV1LpTokenParam.payer,
             tokenProgram: TOKEN_PROGRAM_ID,
         }
 
-        if (claimDammLpTokenParam.isPartner) {
-            return this.program.methods
+        if (claimDammV1LpTokenParam.isPartner) {
+            return program.methods
                 .migrateMeteoraDammPartnerClaimLpToken()
                 .accounts(accounts)
                 .preInstructions(preInstructions)
                 .transaction()
         } else {
-            return this.program.methods
+            return program.methods
                 .migrateMeteoraDammCreatorClaimLpToken()
                 .accounts(accounts)
                 .preInstructions(preInstructions)
                 .transaction()
         }
     }
-    /**
-     * Get meteora DAMM migration metadata
-     * @param connection - The connection to the Solana network
-     * @param metadataAddress - The address of the meteora DAMM migration metadata
-     * @returns A meteora DAMM migration metadata
-     */
-    static async getMeteoraDammMigrationMetadata(
-        connection: Connection,
-        metadataAddress: PublicKey | string
-    ): Promise<MeteoraDammMigrationMetadata> {
-        const { program } = createProgram(connection)
-        const metadata =
-            await program.account.meteoraDammMigrationMetadata.fetch(
-                metadataAddress instanceof PublicKey
-                    ? metadataAddress
-                    : new PublicKey(metadataAddress)
-            )
+}
 
-        return metadata
+/**
+ * Main client class
+ */
+export class VirtualCurveClient {
+    private programClient: VirtualCurveProgramClient
+    public pools: PoolService
+    public partners: PartnerService
+    public migrations: MigrationService
+
+    constructor(connection: Connection) {
+        this.programClient = new VirtualCurveProgramClient(connection)
+        this.pools = new PoolService(this.programClient)
+        this.partners = new PartnerService(this.programClient)
+        this.migrations = new MigrationService(this.programClient)
+    }
+
+    /**
+     * Get the underlying program client
+     * @returns The program client
+     */
+    getProgramClient(): VirtualCurveProgramClient {
+        return this.programClient
+    }
+
+    /**
+     * Static method to create a client instance for a specific pool
+     * This is provided for backward compatibility with the old API
+     * @param connection - The connection to the Solana network
+     * @param pool - The public key of the pool
+     * @returns A VirtualCurveClient instance
+     */
+    static async create(connection: Connection): Promise<VirtualCurveClient> {
+        const client = new VirtualCurveClient(connection)
+        return client
     }
 }
