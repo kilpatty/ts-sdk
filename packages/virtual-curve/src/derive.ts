@@ -140,23 +140,6 @@ export function derivePartnerMetadata(
 }
 
 /**
- * Derive the claim fee operator address
- * @param operator - The operator
- * @param programId - The program ID
- * @returns The claim fee operator address
- */
-export function deriveClaimFeeOperatorAddress(
-    operator: PublicKey,
-    programId: PublicKey
-): PublicKey {
-    const [claimFeeOperator] = PublicKey.findProgramAddressSync(
-        [Buffer.from(SEED.CLAIM_FEE_OPERATOR), operator.toBuffer()],
-        programId
-    )
-    return claimFeeOperator
-}
-
-/**
  * Derive the DAMM migration metadata address
  * @param virtual_pool - The virtual pool
  * @param programId - The program ID

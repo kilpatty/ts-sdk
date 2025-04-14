@@ -176,11 +176,6 @@ export type MigrateToDammV2Param = {
     dammConfig: PublicKey
 }
 
-export type ClaimProtocolFeeParam = {
-    operator: PublicKey
-    pool: PublicKey
-}
-
 export type ClaimTradingFeeParam = {
     feeClaimer: PublicKey
     pool: PublicKey
@@ -222,20 +217,6 @@ export type DammLpTokenParam = {
     isPartner: boolean
 }
 
-export type CreateClaimFeeOperatorParam = Omit<
-    CreateClaimFeeOperatorAccounts,
-    'program' | 'eventAuthority' | 'systemProgram'
->
-export type CloseClaimFeeOperatorParam = Omit<
-    CloseClaimFeeOperatorAccounts,
-    'program' | 'eventAuthority' | 'systemProgram'
->
-
-export type ProtocolWithdrawSurplusParam = {
-    operator: PublicKey
-    virtualPool: PublicKey
-}
-
 export type PartnerWithdrawSurplusParam = {
     feeClaimer: PublicKey
     virtualPool: PublicKey
@@ -268,15 +249,6 @@ export interface VirtualCurveClientInterface {
     claimDammLpToken(
         connection: Connection,
         claimDammLpTokenParam: DammLpTokenParam
-    ): Promise<Transaction>
-}
-
-export interface VirtualCurveAdminInterface {
-    claimProtocolFee(
-        claimProtocolFeeParam: ClaimProtocolFeeParam
-    ): Promise<Transaction>
-    protocolWithdrawSurplus(
-        protocolWithdrawSurplusParam: ProtocolWithdrawSurplusParam
     ): Promise<Transaction>
 }
 
