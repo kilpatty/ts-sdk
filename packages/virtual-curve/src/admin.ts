@@ -77,7 +77,7 @@ export class VirtualCurveAdmin
     async claimProtocolFee(
         claimProtocolFeeParam: ClaimProtocolFeeParam
     ): Promise<Transaction> {
-        const eventAuthority = deriveEventAuthority(this.program.programId)
+        const eventAuthority = deriveEventAuthority()
         const poolAuthority = derivePoolAuthority(this.program.programId)
 
         const tokenBaseAccount = findAssociatedTokenAddress(
@@ -141,7 +141,7 @@ export class VirtualCurveAdmin
         params: CloseClaimFeeOperatorParam
     ): Promise<Transaction> {
         const { program } = createProgram(connection)
-        const eventAuthority = deriveEventAuthority(program.programId)
+        const eventAuthority = deriveEventAuthority()
         const accounts = {
             ...params,
             eventAuthority,
@@ -165,7 +165,7 @@ export class VirtualCurveAdmin
         createClaimFeeOperatorParam: CreateClaimFeeOperatorParam
     ): Promise<Transaction> {
         const { program } = createProgram(connection)
-        const eventAuthority = deriveEventAuthority(program.programId)
+        const eventAuthority = deriveEventAuthority()
         const accounts = {
             ...createClaimFeeOperatorParam,
             eventAuthority,
@@ -187,7 +187,7 @@ export class VirtualCurveAdmin
         protocolWithdrawSurplusParam: ProtocolWithdrawSurplusParam
     ): Promise<Transaction> {
         const poolAuthority = derivePoolAuthority(this.program.programId)
-        const eventAuthority = deriveEventAuthority(this.program.programId)
+        const eventAuthority = deriveEventAuthority()
 
         const tokenQuoteAccount = findAssociatedTokenAddress(
             protocolWithdrawSurplusParam.operator,

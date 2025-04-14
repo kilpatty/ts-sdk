@@ -7,19 +7,21 @@ import {
 } from '@solana/web3.js'
 import { VAULT_BASE_KEY } from './constants'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
-import { createDammV1Program, createVaultProgram } from './utils'
+import { deriveLpMintAddress } from './derive'
+import type { DynamicVault } from './idl/dynamic-vault/idl'
+import type { Program } from '@coral-xyz/anchor'
+import type { DammV1 } from './idl/damm-v1/idl'
 
 export async function createInitializePermissionlessDynamicVaultIx(
     mint: PublicKey,
     payer: PublicKey,
-    connection: Connection
+    vaultProgram: Program<DynamicVault>
 ): Promise<{
     vaultKey: PublicKey
     tokenVaultKey: PublicKey
     lpMintKey: PublicKey
     instruction: TransactionInstruction
 }> {
-    const vaultProgram = createVaultProgram(connection)
     const vaultKey = PublicKey.findProgramAddressSync(
         [Buffer.from('vault'), mint.toBuffer(), VAULT_BASE_KEY.toBuffer()],
         vaultProgram.programId
@@ -30,10 +32,7 @@ export async function createInitializePermissionlessDynamicVaultIx(
         vaultProgram.programId
     )[0]
 
-    const lpMintKey = PublicKey.findProgramAddressSync(
-        [Buffer.from('lp_mint'), vaultKey.toBuffer()],
-        vaultProgram.programId
-    )[0]
+    const lpMintKey = deriveLpMintAddress(vaultKey, vaultProgram.programId)
 
     const ix = await vaultProgram.methods
         .initialize()
@@ -59,8 +58,9 @@ export async function createInitializePermissionlessDynamicVaultIx(
 
 export async function createVaultIfNotExists(
     mint: PublicKey,
-    connection: Connection,
-    payer: PublicKey
+    vaultProgram: Program<DynamicVault>,
+    payer: PublicKey,
+    connection: Connection
 ): Promise<{
     vaultPda: PublicKey
     tokenVaultPda: PublicKey
@@ -70,7 +70,7 @@ export async function createVaultIfNotExists(
     const vaultIx = await createInitializePermissionlessDynamicVaultIx(
         mint,
         payer,
-        connection
+        vaultProgram
     )
 
     const vaultAccount = await connection.getAccountInfo(vaultIx.vaultKey)
@@ -94,10 +94,9 @@ export async function createLockEscrowIx(
     pool: PublicKey,
     lpMint: PublicKey,
     escrowOwner: PublicKey,
-    lockEscrowKey: PublicKey
+    lockEscrowKey: PublicKey,
+    dammV1Program: Program<DammV1>
 ): Promise<TransactionInstruction> {
-    const dammV1Program = createDammV1Program(connection)
-
     const ix = await dammV1Program.methods
         .createLockEscrow()
         .accountsStrict({

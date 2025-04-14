@@ -32,6 +32,7 @@ import {
 import { VirtualCurve } from '.'
 import {
     deriveDammMigrationMetadataAddress,
+    deriveDammV2EventAuthority,
     deriveEventAuthority,
     deriveLockEscrowAddress,
     deriveLpMintAddress,
@@ -60,7 +61,9 @@ import {
     VAULT_PROGRAM_ID,
 } from './constants'
 import {
+    createDammV1Program,
     createProgram,
+    createVaultProgram,
     findAssociatedTokenAddress,
     unwrapSOLInstruction,
     wrapSOLInstruction,
@@ -142,7 +145,7 @@ export class VirtualCurveClient
             creator,
         } = createPoolParam
 
-        const eventAuthority = deriveEventAuthority(program.programId)
+        const eventAuthority = deriveEventAuthority()
         const poolAuthority = derivePoolAuthority(program.programId)
         const pool = derivePool(quoteMint, baseMint, config, program.programId)
         const baseVault = deriveTokenVaultAddress(
@@ -272,7 +275,7 @@ export class VirtualCurveClient
                 }
             })()
 
-        const eventAuthority = deriveEventAuthority(this.program.programId)
+        const eventAuthority = deriveEventAuthority()
         const poolAuthority = derivePoolAuthority(this.program.programId)
 
         const inputTokenAccount = findAssociatedTokenAddress(
@@ -401,7 +404,7 @@ export class VirtualCurveClient
         const { program } = createProgram(connection)
         const { config, feeClaimer, owner, quoteMint, payer, ...configParam } =
             createConfigParam
-        const eventAuthority = deriveEventAuthority(program.programId)
+        const eventAuthority = deriveEventAuthority()
         const accounts = {
             config,
             feeClaimer,
@@ -428,7 +431,7 @@ export class VirtualCurveClient
         claimTradingFeeParam: ClaimTradingFeeParam
     ): Promise<Transaction> {
         const poolAuthority = derivePoolAuthority(this.program.programId)
-        const eventAuthority = deriveEventAuthority(this.program.programId)
+        const eventAuthority = deriveEventAuthority()
 
         const tokenBaseAccount = findAssociatedTokenAddress(
             claimTradingFeeParam.feeClaimer,
@@ -493,7 +496,7 @@ export class VirtualCurveClient
         createPartnerMetadataParam: CreatePartnerMetadataParam
     ): Promise<Transaction> {
         const { program } = createProgram(connection)
-        const eventAuthority = deriveEventAuthority(program.programId)
+        const eventAuthority = deriveEventAuthority()
         const partnerMetadata = derivePartnerMetadata(
             createPartnerMetadataParam.feeClaimer,
             program.programId
@@ -531,7 +534,7 @@ export class VirtualCurveClient
         partnerWithdrawSurplusParam: PartnerWithdrawSurplusParam
     ): Promise<Transaction> {
         const poolAuthority = derivePoolAuthority(this.program.programId)
-        const eventAuthority = deriveEventAuthority(this.program.programId)
+        const eventAuthority = deriveEventAuthority()
 
         const tokenQuoteAccount = findAssociatedTokenAddress(
             partnerWithdrawSurplusParam.feeClaimer,
@@ -628,7 +631,7 @@ export class VirtualCurveClient
         if (migrateToDammParam.migrateToDammV2) {
             const poolAuthority = derivePoolAuthority(DAMM_V2_PROGRAM_ID)
             const dammPoolAuthority = derivePoolAuthority(DAMM_V2_PROGRAM_ID)
-            const dammEventAuthority = deriveEventAuthority(DAMM_V2_PROGRAM_ID)
+            const dammEventAuthority = deriveDammV2EventAuthority()
 
             const dammPool = derivePool(
                 virtualPoolState.baseMint,
@@ -744,6 +747,8 @@ export class VirtualCurveClient
 
             const preInstructions: TransactionInstruction[] = []
 
+            const vaultProgram = createVaultProgram(connection)
+
             const {
                 vaultPda: aVault,
                 tokenVaultPda: aTokenVault,
@@ -751,8 +756,9 @@ export class VirtualCurveClient
                 ix: createAVaultIx,
             } = await createVaultIfNotExists(
                 virtualPoolState.baseMint,
-                connection,
-                migrateToDammParam.payer
+                vaultProgram,
+                migrateToDammParam.payer,
+                connection
             )
 
             if (createAVaultIx) {
@@ -766,8 +772,9 @@ export class VirtualCurveClient
                 ix: createBVaultIx,
             } = await createVaultIfNotExists(
                 poolConfigState.quoteMint,
-                connection,
-                migrateToDammParam.payer
+                vaultProgram,
+                migrateToDammParam.payer,
+                connection
             )
 
             if (createBVaultIx) {
@@ -859,19 +866,23 @@ export class VirtualCurveClient
             false
         )
 
+        const vaultProgram = createVaultProgram(connection)
+
         const [
             { vaultPda: aVault, lpMintPda: aVaultLpMint },
             { vaultPda: bVault, lpMintPda: bVaultLpMint },
         ] = await Promise.all([
             createVaultIfNotExists(
                 virtualPoolState.baseMint,
-                connection,
-                lockDammLpTokenParam.payer
+                vaultProgram,
+                lockDammLpTokenParam.payer,
+                connection
             ),
             createVaultIfNotExists(
                 poolConfigState.quoteMint,
-                connection,
-                lockDammLpTokenParam.payer
+                vaultProgram,
+                lockDammLpTokenParam.payer,
+                connection
             ),
         ])
 
@@ -892,6 +903,8 @@ export class VirtualCurveClient
 
         const preInstructions: TransactionInstruction[] = []
 
+        const dammV1Program = createDammV1Program(connection)
+
         if (!lockEscrowData) {
             const ix = await createLockEscrowIx(
                 connection,
@@ -899,7 +912,8 @@ export class VirtualCurveClient
                 dammPool,
                 lpMint,
                 virtualPoolState.creator,
-                lockEscrowKey
+                lockEscrowKey,
+                dammV1Program
             )
 
             preInstructions.push(ix)

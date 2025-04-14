@@ -1,5 +1,9 @@
 import { PublicKey } from '@solana/web3.js'
-import { METADATA_PROGRAM_ID } from './constants'
+import {
+    DAMM_V2_PROGRAM_ID,
+    METADATA_PROGRAM_ID,
+    VIRTUAL_CURVE_PROGRAM_ID,
+} from './constants'
 
 const SEED = Object.freeze({
     POOL_AUTHORITY: 'pool_authority',
@@ -23,10 +27,10 @@ const SEED = Object.freeze({
  * @param programId - The program ID
  * @returns The event authority
  */
-export function deriveEventAuthority(programId: PublicKey): PublicKey {
+export function deriveEventAuthority(): PublicKey {
     const [eventAuthority] = PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.EVENT_AUTHORITY)],
-        programId
+        VIRTUAL_CURVE_PROGRAM_ID
     )
     return eventAuthority
 }
@@ -283,4 +287,16 @@ export function deriveLockEscrowAddress(
         ],
         programId
     )[0]
+}
+
+/**
+ * Derive the DAMM V2 event authority
+ * @returns The event authority
+ */
+export function deriveDammV2EventAuthority(): PublicKey {
+    const [eventAuthority] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.EVENT_AUTHORITY)],
+        DAMM_V2_PROGRAM_ID
+    )
+    return eventAuthority
 }

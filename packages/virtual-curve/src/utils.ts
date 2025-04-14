@@ -32,7 +32,7 @@ export function createProgram(connection: Connection) {
     })
     const program = new Program<VirtualCurve>(VirtualCurveIDL, provider)
 
-    return { provider, program }
+    return { program }
 }
 
 /**
