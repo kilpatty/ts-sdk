@@ -11,6 +11,8 @@ import { deriveLpMintAddress } from './derive'
 import type { DynamicVault } from './idl/dynamic-vault/idl'
 import type { Program } from '@coral-xyz/anchor'
 import type { DammV1 } from './idl/damm-v1/idl'
+import type { PrepareSwapParams, TokenType } from './types'
+import { getTokenProgram } from './utils'
 
 export async function createInitializePermissionlessDynamicVaultIx(
     mint: PublicKey,
@@ -110,4 +112,32 @@ export async function createLockEscrowIx(
         .instruction()
 
     return ix
+}
+
+export function prepareSwapParams(
+    swapBaseForQuote: boolean,
+    virtualPoolState: {
+        baseMint: PublicKey
+        poolType: TokenType
+    },
+    poolConfigState: {
+        quoteMint: PublicKey
+        quoteTokenFlag: TokenType
+    }
+): PrepareSwapParams {
+    if (swapBaseForQuote) {
+        return {
+            inputMint: new PublicKey(virtualPoolState.baseMint),
+            outputMint: new PublicKey(poolConfigState.quoteMint),
+            inputTokenProgram: getTokenProgram(virtualPoolState.poolType),
+            outputTokenProgram: getTokenProgram(poolConfigState.quoteTokenFlag),
+        }
+    } else {
+        return {
+            inputMint: new PublicKey(poolConfigState.quoteMint),
+            outputMint: new PublicKey(virtualPoolState.baseMint),
+            inputTokenProgram: getTokenProgram(poolConfigState.quoteTokenFlag),
+            outputTokenProgram: getTokenProgram(virtualPoolState.poolType),
+        }
+    }
 }

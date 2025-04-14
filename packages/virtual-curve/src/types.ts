@@ -106,7 +106,7 @@ export type CreatePartnerMetadataParameters =
 export type ClaimFeeOperator = IdlAccounts<VirtualCurve>['claimFeeOperator']
 export type Config = IdlAccounts<VirtualCurve>['config']
 export type MeteoraDammMigrationMetadata =
-IdlAccounts<VirtualCurve>['meteoraDammMigrationMetadata']
+    IdlAccounts<VirtualCurve>['meteoraDammMigrationMetadata']
 export type VolatilityTracker = IdlTypes<VirtualCurve>['volatilityTracker']
 export type VirtualPool = IdlAccounts<VirtualCurve>['virtualPool']
 export type VirtualPoolState = IdlAccounts<VirtualCurve>['virtualPool']
@@ -322,4 +322,11 @@ export interface FeeOnAmountResult {
     protocolFee: BN // Final protocol fee (after referral deduction)
     tradingFee: BN // Portion of trading fee NOT going to protocol
     referralFee: BN // Referral fee amount
+}
+
+export interface PrepareSwapParams {
+    inputMint: PublicKey
+    outputMint: PublicKey
+    inputTokenProgram: PublicKey
+    outputTokenProgram: PublicKey
 }

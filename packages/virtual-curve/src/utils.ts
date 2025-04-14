@@ -1,5 +1,5 @@
 import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor'
-import { AccountLayout } from '@solana/spl-token'
+import { AccountLayout, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import {
     PublicKey,
     SystemProgram,
@@ -20,6 +20,7 @@ import {
     NATIVE_MINT,
     TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
+import { TokenType } from './types'
 
 /**
  * Create a program instance
@@ -163,6 +164,17 @@ export async function getTokenAccount(connection: Connection, key: PublicKey) {
 }
 
 /**
+ * Get the token program for a given token type
+ * @param tokenType - The token type
+ * @returns The token program
+ */
+export function getTokenProgram(tokenType: TokenType): PublicKey {
+    return tokenType === TokenType.SPL
+        ? TOKEN_PROGRAM_ID
+        : TOKEN_2022_PROGRAM_ID
+}
+
+/**
  * Create a memcmp filter for owner-based filtering
  * @param owner - The owner public key or string
  * @param offset - The offset where the owner field is located in the account data
@@ -203,4 +215,13 @@ export async function getAccountData<T>(
             : new PublicKey(accountAddress)
 
     return (await program.account[accountType].fetchNullable(address)) as T
+}
+
+/**
+ * Check if a mint is the native SOL mint
+ * @param mint - The mint to check
+ * @returns Whether the mint is the native SOL mint
+ */
+export function isNativeSol(mint: PublicKey): boolean {
+    return mint.toString() === NATIVE_MINT.toString()
 }

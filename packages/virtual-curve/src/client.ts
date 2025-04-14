@@ -65,6 +65,7 @@ import {
     createProgram,
     createVaultProgram,
     findAssociatedTokenAddress,
+    isNativeSol,
     unwrapSOLInstruction,
     wrapSOLInstruction,
 } from './utils'
@@ -72,7 +73,11 @@ import type { Program } from '@coral-xyz/anchor'
 import type { VirtualCurve as VirtualCurveIDL } from './idl/virtual-curve/idl'
 import BN from 'bn.js'
 import { swapQuote } from './math/swapQuote'
-import { createLockEscrowIx, createVaultIfNotExists } from './common'
+import {
+    createLockEscrowIx,
+    createVaultIfNotExists,
+    prepareSwapParams,
+} from './common'
 
 export class VirtualCurveClient
     extends VirtualCurve
@@ -235,45 +240,11 @@ export class VirtualCurveClient
             swapParam
 
         const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
-            (() => {
-                if (swapBaseForQuote) {
-                    return {
-                        inputMint: new PublicKey(
-                            this.virtualPoolState.baseMint
-                        ),
-                        outputMint: new PublicKey(
-                            this.poolConfigState.quoteMint
-                        ),
-                        inputTokenProgram:
-                            this.virtualPoolState.poolType === TokenType.SPL
-                                ? TOKEN_PROGRAM_ID
-                                : TOKEN_2022_PROGRAM_ID,
-                        outputTokenProgram:
-                            this.poolConfigState.quoteTokenFlag ===
-                            TokenType.SPL
-                                ? TOKEN_PROGRAM_ID
-                                : TOKEN_2022_PROGRAM_ID,
-                    }
-                } else {
-                    return {
-                        inputMint: new PublicKey(
-                            this.poolConfigState.quoteMint
-                        ),
-                        outputMint: new PublicKey(
-                            this.virtualPoolState.baseMint
-                        ),
-                        inputTokenProgram:
-                            this.poolConfigState.quoteTokenFlag ===
-                            TokenType.SPL
-                                ? TOKEN_PROGRAM_ID
-                                : TOKEN_2022_PROGRAM_ID,
-                        outputTokenProgram:
-                            this.virtualPoolState.poolType === TokenType.SPL
-                                ? TOKEN_PROGRAM_ID
-                                : TOKEN_2022_PROGRAM_ID,
-                    }
-                }
-            })()
+            prepareSwapParams(
+                swapBaseForQuote,
+                this.virtualPoolState,
+                this.poolConfigState
+            )
 
         const eventAuthority = deriveEventAuthority()
         const poolAuthority = derivePoolAuthority(this.program.programId)
@@ -290,8 +261,8 @@ export class VirtualCurveClient
             outputTokenProgram
         )
 
-        const isSOLInput = inputMint.toString() === NATIVE_MINT.toString()
-        const isSOLOutput = outputMint.toString() === NATIVE_MINT.toString()
+        const isSOLInput = isNativeSol(inputMint)
+        const isSOLOutput = isNativeSol(outputMint)
 
         const ixs = []
         const cleanupIxs = []
