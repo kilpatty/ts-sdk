@@ -34,10 +34,31 @@ export function decimalToBN(
     decimal: Decimal,
     round: Rounding = Rounding.Down
 ): BN {
-    if (round === Rounding.Up) {
-        return new BN(decimal.ceil().toString())
-    } else {
-        return new BN(decimal.floor().toString())
+    try {
+        // Ensure the decimal is a valid number
+        if (!decimal.isFinite()) {
+            throw new Error('Invalid decimal value: not finite')
+        }
+
+        // Convert to string and remove any scientific notation
+        const str = decimal.toFixed(0)
+
+        // Validate the string is a valid number
+        if (!/^-?\d+$/.test(str)) {
+            throw new Error(`Invalid decimal string: ${str}`)
+        }
+
+        if (round === Rounding.Up) {
+            return new BN(str)
+        } else {
+            return new BN(str)
+        }
+    } catch (error: unknown) {
+        console.error('Error converting decimal to BN:', {
+            decimal: decimal.toString(),
+            error: error instanceof Error ? error.message : String(error),
+        })
+        throw error
     }
 }
 

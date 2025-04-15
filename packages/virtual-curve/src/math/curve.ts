@@ -70,23 +70,43 @@ export function getDeltaAmountQuoteUnsigned(
         return new BN(0)
     }
 
-    // Convert to Decimal for higher precision in one batch
-    const [lowerSqrtPriceDecimal, upperSqrtPriceDecimal, liquidityDecimal] =
-        batchBnToDecimal(lowerSqrtPrice, upperSqrtPrice, liquidity)
+    try {
+        // Convert to Decimal for higher precision in one batch
+        const [lowerSqrtPriceDecimal, upperSqrtPriceDecimal, liquidityDecimal] =
+            batchBnToDecimal(lowerSqrtPrice, upperSqrtPrice, liquidity)
 
-    // Batch operations in Decimal
-    const deltaSqrtPrice = upperSqrtPriceDecimal
-        ? upperSqrtPriceDecimal.sub(lowerSqrtPriceDecimal ?? new Decimal(0))
-        : new Decimal(0)
-    const denominator = new Decimal(2).pow(RESOLUTION * 2)
+        // Validate inputs
+        if (
+            !lowerSqrtPriceDecimal ||
+            !upperSqrtPriceDecimal ||
+            !liquidityDecimal
+        ) {
+            throw new Error('Failed to convert BN to Decimal')
+        }
 
-    // Calculate with Decimal.js in one operation
-    const result = liquidityDecimal
-        ? liquidityDecimal.mul(deltaSqrtPrice).div(denominator)
-        : new Decimal(0)
+        // Batch operations in Decimal
+        const deltaSqrtPrice = upperSqrtPriceDecimal.sub(lowerSqrtPriceDecimal)
+        const denominator = new Decimal(2).pow(RESOLUTION * 2)
 
-    // Convert back to BN with appropriate rounding
-    return decimalToBN(result, round)
+        // Calculate with Decimal.js in one operation
+        const result = liquidityDecimal.mul(deltaSqrtPrice).div(denominator)
+
+        // Validate result
+        if (!result.isFinite()) {
+            throw new Error('Invalid calculation result: not finite')
+        }
+
+        // Convert back to BN with appropriate rounding
+        return decimalToBN(result, round)
+    } catch (error: unknown) {
+        console.error('Error in getDeltaAmountQuoteUnsigned:', {
+            lowerSqrtPrice: lowerSqrtPrice.toString(),
+            upperSqrtPrice: upperSqrtPrice.toString(),
+            liquidity: liquidity.toString(),
+            error: error instanceof Error ? error.message : String(error),
+        })
+        throw error
+    }
 }
 
 /**
