@@ -285,3 +285,13 @@ export interface PrepareSwapParams {
     inputTokenProgram: PublicKey
     outputTokenProgram: PublicKey
 }
+
+export enum CollectFeeMode {
+    QuoteToken = 0,
+    OutputToken = 1,
+}
+
+export enum FeeSchedulerMode {
+    Linear = 0,
+    Exponential = 1,
+}

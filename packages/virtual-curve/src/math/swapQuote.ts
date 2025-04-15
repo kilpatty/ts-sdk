@@ -8,6 +8,8 @@ import {
     type FeeOnAmountResult,
     type PoolFeesConfig,
     type VolatilityTracker,
+    CollectFeeMode,
+    FeeSchedulerMode,
 } from '../types'
 import {
     getDeltaAmountBaseUnsigned,
@@ -17,17 +19,11 @@ import {
     mulDiv,
 } from './curve'
 import { getDynamicFee, getFeeInPeriod } from './feeMath'
-import { FEE_DENOMINATOR, MAX_CURVE_POINT, MAX_FEE_NUMERATOR } from '../constants'
-
-enum CollectFeeMode {
-    QuoteToken = 0,
-    OutputToken = 1,
-}
-
-enum FeeSchedulerMode {
-    Linear = 0,
-    Exponential = 1,
-}
+import {
+    FEE_DENOMINATOR,
+    MAX_CURVE_POINT,
+    MAX_FEE_NUMERATOR,
+} from '../constants'
 
 /**
  * Calculate quote for a swap with exact input amount
