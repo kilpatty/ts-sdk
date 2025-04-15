@@ -17,11 +17,7 @@ import {
     mulDiv,
 } from './curve'
 import { getDynamicFee, getFeeInPeriod } from './feeMath'
-
-// Constants to match Rust
-const MAX_CURVE_POINT = 20
-const FEE_DENOMINATOR = new BN(1_000_000_000)
-const MAX_FEE_NUMERATOR = new BN(500_000_000)
+import { FEE_DENOMINATOR, MAX_CURVE_POINT, MAX_FEE_NUMERATOR } from '../constants'
 
 enum CollectFeeMode {
     QuoteToken = 0,

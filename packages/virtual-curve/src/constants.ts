@@ -8,6 +8,12 @@ export const U64_MAX: BN = new BN('18446744073709551615')
 export const MIN_SQRT_PRICE: BN = new BN('4295048016')
 export const MAX_SQRT_PRICE: BN = new BN('79226673521066979257578248091')
 
+// Curve constants
+export const MAX_CURVE_POINT = 20
+export const FEE_DENOMINATOR = new BN(1_000_000_000)
+export const MAX_FEE_NUMERATOR = new BN(500_000_000)
+export const MAX_TOKEN_SUPPLY = new BN('1000000000')
+
 // Pubkey
 export const VIRTUAL_CURVE_PROGRAM_ID = new PublicKey(
     'virEFLZsQm1iFAs8py1XnziJ67gTzW2bfCWhxNPfccD'
