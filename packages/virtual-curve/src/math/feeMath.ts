@@ -246,7 +246,7 @@ export function getDynamicFee(
     dynamicFee: DynamicFeeConfig,
     volatilityTracker: VolatilityTracker
 ): BN {
-    if (!dynamicFee.initialized) {
+    if (dynamicFee.variableFeeControl === 0) {
         return new BN(0)
     }
 

@@ -12,7 +12,7 @@ export const MAX_SQRT_PRICE: BN = new BN('79226673521066979257578248091')
 export const VIRTUAL_CURVE_PROGRAM_ID = new PublicKey(
     'virEFLZsQm1iFAs8py1XnziJ67gTzW2bfCWhxNPfccD'
 )
-export const METADATA_PROGRAM_ID = new PublicKey(
+export const METAPLEX_PROGRAM_ID = new PublicKey(
     'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'
 )
 export const DAMM_V1_PROGRAM_ID = new PublicKey(
@@ -26,4 +26,7 @@ export const VAULT_PROGRAM_ID = new PublicKey(
 )
 export const VAULT_BASE_KEY = new PublicKey(
     'HWzXGcGHy4tcpYfaRDCyLNzXqBTv3E6BttpCH2vJxArv'
+)
+export const LOCKER_PROGRAM_ID = new PublicKey(
+    'LocpQgucEQHbqNABEYvBvwoxCPsSbG91A1QaQhQQqjn'
 )

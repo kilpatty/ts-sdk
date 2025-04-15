@@ -16,7 +16,7 @@ import {
     getNextSqrtPriceFromInput,
     mulDiv,
 } from './curve'
-import { getFeeInPeriod } from './feeMath'
+import { getDynamicFee, getFeeInPeriod } from './feeMath'
 
 // Constants to match Rust
 const MAX_CURVE_POINT = 20
@@ -299,7 +299,7 @@ function calculateFees(
     activationPoint: BN
 ): FeeOnAmountResult {
     // Get total trading fee numerator
-    const tradeFeeNumerator = getTotalTradingFee(
+    const tradeFeeNumerator = getTotalTradingFeeNumerator(
         poolFees,
         volatilityTracker,
         currentPoint,
@@ -400,7 +400,7 @@ export function getFeeMode(
 /**
  * Matches Rust's get_total_trading_fee
  */
-function getTotalTradingFee(
+function getTotalTradingFeeNumerator(
     poolFees: PoolFeesConfig,
     volatilityTracker: VolatilityTracker,
     currentPoint: BN,
@@ -411,7 +411,7 @@ function getTotalTradingFee(
         currentPoint,
         activationPoint
     )
-    const variableFee = getVariableFee(poolFees.dynamicFee, volatilityTracker)
+    const variableFee = getDynamicFee(poolFees.dynamicFee, volatilityTracker)
     return baseFeeNumerator.add(variableFee)
 }
 
@@ -448,25 +448,4 @@ function getCurrentBaseFeeNumerator(
         default:
             throw new Error('Invalid fee scheduler mode')
     }
-}
-
-/**
- * Matches Rust's get_variable_fee
- */
-function getVariableFee(
-    dynamicFee: PoolFeesConfig['dynamicFee'],
-    volatilityTracker: VolatilityTracker
-): BN {
-    if (!dynamicFee.initialized) {
-        return new BN(0)
-    }
-
-    const squareVfaBin = volatilityTracker.volatilityAccumulator
-        .mul(new BN(dynamicFee.binStep))
-        .pow(new BN(2))
-
-    const vFee = squareVfaBin.mul(new BN(dynamicFee.variableFeeControl))
-
-    // Match Rust's scaling: (v_fee + 99_999_999_999) / 100_000_000_000
-    return vFee.add(new BN('99999999999')).div(new BN('100000000000'))
 }

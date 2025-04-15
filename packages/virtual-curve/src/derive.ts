@@ -1,7 +1,7 @@
 import { PublicKey } from '@solana/web3.js'
 import {
     DAMM_V2_PROGRAM_ID,
-    METADATA_PROGRAM_ID,
+    METAPLEX_PROGRAM_ID,
     VIRTUAL_CURVE_PROGRAM_ID,
 } from './constants'
 
@@ -113,10 +113,10 @@ export function deriveMetadata(mint: PublicKey): PublicKey {
     const [metadata] = PublicKey.findProgramAddressSync(
         [
             Buffer.from(SEED.METADATA),
-            METADATA_PROGRAM_ID.toBuffer(),
+            METAPLEX_PROGRAM_ID.toBuffer(),
             mint.toBuffer(),
         ],
-        METADATA_PROGRAM_ID
+        METAPLEX_PROGRAM_ID
     )
 
     return metadata

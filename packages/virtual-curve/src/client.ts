@@ -57,7 +57,7 @@ import {
 import {
     DAMM_V1_PROGRAM_ID,
     DAMM_V2_PROGRAM_ID,
-    METADATA_PROGRAM_ID,
+    METAPLEX_PROGRAM_ID,
     VAULT_PROGRAM_ID,
 } from './constants'
 import {
@@ -280,7 +280,7 @@ export class PoolService {
                 quoteVault,
                 quoteMint,
                 eventAuthority,
-                metadataProgram: METADATA_PROGRAM_ID,
+                metadataProgram: METAPLEX_PROGRAM_ID,
                 systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
             }
@@ -858,7 +858,7 @@ export class MigrationService {
                 payer: migrateToDammV1Param.payer,
                 rent: SYSVAR_RENT_PUBKEY,
                 mintMetadata,
-                metadataProgram: METADATA_PROGRAM_ID,
+                metadataProgram: METAPLEX_PROGRAM_ID,
                 ammProgram: DAMM_V1_PROGRAM_ID,
                 vaultProgram: VAULT_PROGRAM_ID,
                 tokenProgram: TOKEN_PROGRAM_ID,
