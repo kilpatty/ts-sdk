@@ -8,6 +8,7 @@ import type {
 import type { VirtualCurve } from './idl/virtual-curve/idl'
 import type { PublicKey } from '@solana/web3.js'
 
+// Program Type
 export type VirtualCurveProgram = Program<VirtualCurve>
 
 /////////////////
@@ -91,10 +92,8 @@ export type LiquidityDistributionParameters =
     IdlTypes<VirtualCurve>['liquidityDistributionParameters']
 export type PoolFeesConfig = IdlTypes<VirtualCurve>['poolFeesConfig']
 export type DynamicFeeConfig = IdlTypes<VirtualCurve>['dynamicFeeConfig']
-export type LiquidityDistributionConfig =
-    IdlTypes<VirtualCurve>['liquidityDistributionParameters']
-export type PoolFees = IdlTypes<VirtualCurve>['poolFees']
 export type BaseFeeConfig = IdlTypes<VirtualCurve>['baseFeeConfig']
+export type PoolFees = IdlTypes<VirtualCurve>['poolFees']
 export type PoolMetrics = IdlTypes<VirtualCurve>['poolMetrics']
 export type SwapResult = IdlTypes<VirtualCurve>['swapResult']
 export type CreatePartnerMetadataParameters =
@@ -109,18 +108,11 @@ export type MeteoraDammMigrationMetadata =
     IdlAccounts<VirtualCurve>['meteoraDammMigrationMetadata']
 export type VolatilityTracker = IdlTypes<VirtualCurve>['volatilityTracker']
 export type VirtualPool = IdlAccounts<VirtualCurve>['virtualPool']
-export type VirtualPoolState = IdlAccounts<VirtualCurve>['virtualPool']
 export type PoolConfig = IdlAccounts<VirtualCurve>['poolConfig']
-export type PoolConfigState = IdlAccounts<VirtualCurve>['poolConfig']
 
 ///////////
 // ENUMS //
 ///////////
-
-export enum SwapDirection {
-    BaseToQuote,
-    QuoteToBase,
-}
 
 export enum ActivationType {
     Slot = 0,
@@ -140,6 +132,29 @@ export enum CollectFeeMode {
 export enum MigrationOption {
     MET_DAMM = 0,
     MET_DAMM_V2 = 1,
+}
+
+export enum CollectFeeMode {
+    QuoteToken = 0,
+    OutputToken = 1,
+}
+
+export enum FeeSchedulerMode {
+    Linear = 0,
+    Exponential = 1,
+}
+
+/**
+ * Trade direction
+ */
+export enum TradeDirection {
+    BaseToQuote = 0,
+    QuoteToBase = 1,
+}
+
+export enum Rounding {
+    Up,
+    Down,
 }
 
 ///////////
@@ -221,11 +236,6 @@ export type PartnerWithdrawSurplusParam = {
 // INTERFACES //
 ////////////////
 
-export interface CurvePoint {
-    sqrtPrice: BN
-    liquidity: BN
-}
-
 export interface FeeResult {
     amount: BN
     protocolFee: BN
@@ -237,13 +247,6 @@ export interface FeeMode {
     feesOnInput: boolean
     feesOnBaseToken: boolean
     hasReferral: boolean
-}
-
-export interface QuoteParams {
-    amountIn: BN
-    direction: SwapDirection
-    slippage?: number
-    pool: VirtualPoolState
 }
 
 export interface QuoteResult {
@@ -261,12 +264,6 @@ export interface QuoteResult {
     }
 }
 
-export interface FeeMode {
-    feesOnInput: boolean
-    feesOnBaseToken: boolean
-    hasReferral: boolean
-}
-
 export interface FeeOnAmountResult {
     amount: BN // Amount remaining after taking trading fee
     protocolFee: BN // Final protocol fee (after referral deduction)
@@ -281,36 +278,7 @@ export interface PrepareSwapParams {
     outputTokenProgram: PublicKey
 }
 
-export enum CollectFeeMode {
-    QuoteToken = 0,
-    OutputToken = 1,
-}
-
-export enum FeeSchedulerMode {
-    Linear = 0,
-    Exponential = 1,
-}
-
-/**
- * Trade direction
- */
-export enum TradeDirection {
-    BaseToQuote = 0,
-    QuoteToBase = 1,
-}
-
-/**
- * Swap amount result
- */
 export interface SwapAmount {
     outputAmount: BN
     nextSqrtPrice: BN
-}
-
-/**
- * Rounding direction
- */
-export enum Rounding {
-    Up,
-    Down,
 }

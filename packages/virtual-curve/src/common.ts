@@ -5,7 +5,6 @@ import {
     SYSVAR_RENT_PUBKEY,
     TransactionInstruction,
 } from '@solana/web3.js'
-import { VAULT_BASE_KEY } from './constants'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { deriveLpMintAddress } from './derive'
 import type { DynamicVault } from './idl/dynamic-vault/idl'
@@ -32,7 +31,7 @@ export async function createInitializePermissionlessDynamicVaultIx(
     instruction: TransactionInstruction
 }> {
     const vaultKey = PublicKey.findProgramAddressSync(
-        [Buffer.from('vault'), mint.toBuffer(), VAULT_BASE_KEY.toBuffer()],
+        [Buffer.from('vault'), mint.toBuffer(), payer.toBuffer()],
         vaultProgram.programId
     )[0]
 
@@ -85,7 +84,7 @@ export async function createVaultIfNotExists(
     ix?: TransactionInstruction
 }> {
     const vaultKey = PublicKey.findProgramAddressSync(
-        [Buffer.from('vault'), mint.toBuffer(), VAULT_BASE_KEY.toBuffer()],
+        [Buffer.from('vault'), mint.toBuffer(), payer.toBuffer()],
         vaultProgram.programId
     )[0]
 

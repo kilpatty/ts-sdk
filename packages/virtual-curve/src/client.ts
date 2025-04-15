@@ -11,10 +11,8 @@ import {
     type DammLpTokenParam,
     type MeteoraDammMigrationMetadata,
     type PartnerWithdrawSurplusParam,
-    type PoolConfigState,
     type SwapAccounts,
     type SwapParam,
-    type VirtualPoolState,
     type MigrateToDammV1Param,
     type MigrateToDammV2Param,
     type PoolConfig,
@@ -106,8 +104,8 @@ export class VirtualCurveProgramClient {
     async getPool(
         connection: Connection,
         poolAddress: PublicKey | string
-    ): Promise<VirtualPoolState | null> {
-        return getAccountData<VirtualPoolState>(
+    ): Promise<VirtualPool | null> {
+        return getAccountData<VirtualPool>(
             connection,
             poolAddress,
             'virtualPool',
@@ -120,7 +118,7 @@ export class VirtualCurveProgramClient {
      * @param connection - The connection to the Solana network
      * @returns Array of pool accounts with their addresses
      */
-    async getPools(): Promise<ProgramAccount<VirtualPoolState>[]> {
+    async getPools(): Promise<ProgramAccount<VirtualPool>[]> {
         return await this.program.account.virtualPool.all()
     }
 
@@ -151,8 +149,8 @@ export class VirtualCurveProgramClient {
     async getPoolConfig(
         connection: Connection,
         poolConfigAddress: PublicKey | string
-    ): Promise<PoolConfigState> {
-        return getAccountData<PoolConfigState>(
+    ): Promise<PoolConfig> {
+        return getAccountData<PoolConfig>(
             connection,
             poolConfigAddress,
             'poolConfig',
@@ -168,7 +166,7 @@ export class VirtualCurveProgramClient {
      */
     async getPoolConfigs(
         owner?: PublicKey | string
-    ): Promise<ProgramAccount<PoolConfigState>[]> {
+    ): Promise<ProgramAccount<PoolConfig>[]> {
         const filters = owner ? createProgramAccountFilter(owner, 72) : []
 
         return await this.program.account.poolConfig.all(filters)
