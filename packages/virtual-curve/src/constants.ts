@@ -15,6 +15,9 @@ export const MAX_FEE_NUMERATOR = new BN(500_000_000)
 export const MAX_TOKEN_SUPPLY = new BN('1000000000')
 export const SCALE_OFFSET = 64
 export const ONE = new BN(1).shln(SCALE_OFFSET)
+export const RESOLUTION = 64
+export const ONE_Q64 = new BN(1).shln(RESOLUTION)
+export const PARTNER_SURPLUS_SHARE = 20
 
 // Pubkey
 export const VIRTUAL_CURVE_PROGRAM_ID = new PublicKey(

@@ -1,129 +1,101 @@
 import BN from 'bn.js'
 import Decimal from 'decimal.js'
+import { decimalToBN, batchBnToDecimal } from './utilsMath'
+import { RESOLUTION } from '../constants'
+import { Rounding } from '../types'
 
-const U64_MAX = new BN('FFFFFFFFFFFFFFFF', 16) // 2^64 - 1
-
-// Add precise Q64.64 handling constants
-const Q64 = new BN(1).shln(64)
-const Q128 = Q64.mul(Q64)
-
-// Δa = L * (√P_upper - √P_lower) / (√P_upper * √P_lower)
+/**
+ * Gets the delta amount_base for given liquidity and price range
+ * Formula: Δa = L * (1 / √P_lower - 1 / √P_upper)
+ * i.e. L * (√P_upper - √P_lower) / (√P_upper * √P_lower)
+ * @param lowerSqrtPrice Lower sqrt price
+ * @param upperSqrtPrice Upper sqrt price
+ * @param liquidity Liquidity
+ * @param round Rounding direction
+ * @returns Delta amount base
+ */
 export function getDeltaAmountBaseUnsigned(
     lowerSqrtPrice: BN,
     upperSqrtPrice: BN,
     liquidity: BN,
-    roundUp: boolean
+    round: Rounding
 ): BN {
-    if (liquidity.isZero()) throw new Error('MathOverflow')
-    if (lowerSqrtPrice.gte(upperSqrtPrice)) throw new Error('InvalidPrice')
+    // Skip calculation for zero liquidity
+    if (liquidity.isZero()) {
+        return new BN(0)
+    }
 
-    const result = getDeltaAmountBaseUnchecked(
-        lowerSqrtPrice,
-        upperSqrtPrice,
-        liquidity,
-        roundUp
-    )
+    // Convert to Decimal for higher precision in one batch
+    const [lowerSqrtPriceDecimal, upperSqrtPriceDecimal, liquidityDecimal] =
+        batchBnToDecimal(lowerSqrtPrice, upperSqrtPrice, liquidity)
 
-    if (result.gt(U64_MAX)) throw new Error('MathOverflow')
-    return result
+    // Batch operations in Decimal
+    const numerator = upperSqrtPriceDecimal
+        ? upperSqrtPriceDecimal.sub(lowerSqrtPriceDecimal ?? new Decimal(0))
+        : new Decimal(0)
+    const denominator = lowerSqrtPriceDecimal
+        ? lowerSqrtPriceDecimal.mul(upperSqrtPriceDecimal ?? new Decimal(0))
+        : new Decimal(0)
+
+    if (denominator.isZero()) {
+        throw new Error('Denominator cannot be zero')
+    }
+
+    // Calculate with Decimal.js in one operation
+    const result = liquidityDecimal
+        ? liquidityDecimal.mul(numerator).div(denominator)
+        : new Decimal(0)
+
+    // Convert back to BN with appropriate rounding
+    return decimalToBN(result, round)
 }
 
 /**
- * Calculate delta amount base unsigned, matching Rust's get_delta_amount_base_unsigned_unchecked
- * Formula: L * (√P_upper - √P_lower) / (√P_upper * √P_lower)
+ * Gets the delta amount_quote for given liquidity and price range
+ * Formula: Δb = L (√P_upper - √P_lower)
+ * @param lowerSqrtPrice Lower sqrt price
+ * @param upperSqrtPrice Upper sqrt price
+ * @param liquidity Liquidity
+ * @param round Rounding direction
+ * @returns Delta amount quote
  */
-function getDeltaAmountBaseUnchecked(
-    lowerSqrtPrice: BN,
-    upperSqrtPrice: BN,
-    liquidity: BN,
-    roundUp: boolean
-): BN {
-    if (lowerSqrtPrice.isZero() || upperSqrtPrice.isZero()) {
-        throw new Error('DivisionByZero')
-    }
-
-    const liquidityDec = new Decimal(liquidity.toString())
-    const lowerSqrtPriceDec = new Decimal(lowerSqrtPrice.toString())
-    const upperSqrtPriceDec = new Decimal(upperSqrtPrice.toString())
-
-    // Calculate (√P_upper - √P_lower)
-    const deltaSqrtPrice = upperSqrtPriceDec.minus(lowerSqrtPriceDec)
-
-    // Calculate denominator: √P_upper * √P_lower
-    const denominator = upperSqrtPriceDec.mul(lowerSqrtPriceDec)
-
-    if (denominator.isZero()) {
-        throw new Error('DivisionByZero')
-    }
-
-    // L * (√P_upper - √P_lower)
-    const numerator = liquidityDec.mul(deltaSqrtPrice)
-
-    // Perform division with proper rounding
-    let result: Decimal
-    if (roundUp) {
-        result = numerator.div(denominator).ceil()
-    } else {
-        result = numerator.div(denominator).floor()
-    }
-
-    // Convert back to BN, ensuring we don't lose precision
-    return new BN(result.toString())
-}
-
-// Δb = L (√P_upper - √P_lower)
 export function getDeltaAmountQuoteUnsigned(
     lowerSqrtPrice: BN,
     upperSqrtPrice: BN,
     liquidity: BN,
-    roundUp: boolean
+    round: Rounding
 ): BN {
-    if (liquidity.isZero()) throw new Error('MathOverflow')
-    if (lowerSqrtPrice.gte(upperSqrtPrice)) throw new Error('InvalidPrice')
+    // Skip calculation for zero liquidity
+    if (liquidity.isZero()) {
+        return new BN(0)
+    }
 
-    const result = getDeltaAmountQuoteUnchecked(
-        lowerSqrtPrice,
-        upperSqrtPrice,
-        liquidity,
-        roundUp
-    )
-    if (result.gt(U64_MAX)) throw new Error('MathOverflow')
-    return result
+    // Convert to Decimal for higher precision in one batch
+    const [lowerSqrtPriceDecimal, upperSqrtPriceDecimal, liquidityDecimal] =
+        batchBnToDecimal(lowerSqrtPrice, upperSqrtPrice, liquidity)
+
+    // Batch operations in Decimal
+    const deltaSqrtPrice = upperSqrtPriceDecimal
+        ? upperSqrtPriceDecimal.sub(lowerSqrtPriceDecimal ?? new Decimal(0))
+        : new Decimal(0)
+    const denominator = new Decimal(2).pow(RESOLUTION * 2)
+
+    // Calculate with Decimal.js in one operation
+    const result = liquidityDecimal
+        ? liquidityDecimal.mul(deltaSqrtPrice).div(denominator)
+        : new Decimal(0)
+
+    // Convert back to BN with appropriate rounding
+    return decimalToBN(result, round)
 }
 
 /**
- * Get delta amount quote unsigned unchecked
- * @param lowerSqrtPrice - The lower sqrt price
- * @param upperSqrtPrice - The upper sqrt price
- * @param liquidity - The liquidity in the pool
- * @param roundUp - Whether to round up
- */
-export function getDeltaAmountQuoteUnchecked(
-    lowerSqrtPrice: BN,
-    upperSqrtPrice: BN,
-    liquidity: BN,
-    roundUp: boolean
-): BN {
-    const deltaPrice = upperSqrtPrice.sub(lowerSqrtPrice)
-
-    // Match Rust's RESOLUTION constant
-    const RESOLUTION = 64
-    const shift = RESOLUTION * 2
-    const denominator = new BN(1).shln(shift)
-
-    // Use mulDivU256 for precise calculation
-    const result = mulDiv(liquidity, deltaPrice, denominator, roundUp)
-
-    return result
-}
-
-/**
- * Get next sqrt price from input
- * @param sqrtPrice - The current sqrt price
- * @param liquidity - The liquidity in the pool
- * @param amountIn - The amount in to add to the pool
- * @param baseForQuote - Whether the amount in is in the base token
- * @returns The new sqrt price
+ * Gets the next sqrt price given an input amount of token_a or token_b
+ * @param sqrtPrice Current sqrt price
+ * @param liquidity Liquidity
+ * @param amountIn Input amount
+ * @param baseForQuote Whether the input is base token for quote token
+ * @returns Next sqrt price
  */
 export function getNextSqrtPriceFromInput(
     sqrtPrice: BN,
@@ -131,75 +103,103 @@ export function getNextSqrtPriceFromInput(
     amountIn: BN,
     baseForQuote: boolean
 ): BN {
-    if (liquidity.isZero()) throw new Error('MathOverflow')
-    if (amountIn.isZero()) return sqrtPrice
+    if (sqrtPrice.isZero() || liquidity.isZero()) {
+        throw new Error('Price or liquidity cannot be zero')
+    }
 
+    // Round off to make sure that we don't pass the target price
     if (baseForQuote) {
-        const product = amountIn.mul(sqrtPrice)
-
-        const denominator = liquidity.add(product)
-
-        const result = mulDiv(liquidity, sqrtPrice, denominator, true)
-        return result
+        return getNextSqrtPriceFromAmountBaseRoundingUp(
+            sqrtPrice,
+            liquidity,
+            amountIn
+        )
     } else {
-        const quotient = amountIn.shln(128).div(liquidity)
-        return sqrtPrice.add(quotient)
+        return getNextSqrtPriceFromAmountQuoteRoundingDown(
+            sqrtPrice,
+            liquidity,
+            amountIn
+        )
     }
 }
 
 /**
- * Get next sqrt price from amount quote
- * @param sqrtPrice - The current sqrt price
- * @param liquidity - The liquidity in the pool
- * @param amountIn - The amount in to add to the pool
- * @returns The new sqrt price
+ * Gets the next sqrt price from amount base rounding up
+ * Formula: √P' = √P * L / (L + Δx * √P)
+ * @param sqrtPrice Current sqrt price
+ * @param liquidity Liquidity
+ * @param amount Input amount
+ * @returns Next sqrt price
  */
-export function getNextSqrtPriceFromAmountQuote(
+export function getNextSqrtPriceFromAmountBaseRoundingUp(
     sqrtPrice: BN,
     liquidity: BN,
-    amountIn: BN
+    amount: BN
 ): BN {
-    if (liquidity.isZero()) throw new Error('MathOverflow')
+    // Early return for zero amount
+    if (amount.isZero()) {
+        return sqrtPrice
+    }
 
-    // Match Rust: shift by 128 bits (2*RESOLUTION)
-    const scaled = amountIn.shln(128)
-    const quotient = scaled.div(liquidity)
+    // Convert to Decimal for higher precision in one batch
+    const [sqrtPriceDecimal, liquidityDecimal, amountDecimal] =
+        batchBnToDecimal(sqrtPrice, liquidity, amount)
 
-    return sqrtPrice.add(quotient)
+    // Batch operations in Decimal
+    const product = amountDecimal
+        ? amountDecimal.mul(sqrtPriceDecimal ?? new Decimal(0))
+        : new Decimal(0)
+    const denominator = liquidityDecimal
+        ? liquidityDecimal.add(product)
+        : new Decimal(0)
+
+    // Calculate with Decimal.js in one operation
+    const result = liquidityDecimal
+        ? liquidityDecimal
+              .mul(sqrtPriceDecimal ?? new Decimal(0))
+              .div(denominator)
+        : new Decimal(0)
+
+    // Convert back to BN with ceiling rounding
+    return decimalToBN(result, Rounding.Up)
 }
 
 /**
- * Matches Rust's mul_div_u256 function
- * Performs multiplication and division with precise rounding
- * Returns null if result overflows or denominator is zero
+ * Gets the next sqrt price given a delta of token_quote
+ * Formula: √P' = √P + Δy / L
+ * @param sqrtPrice Current sqrt price
+ * @param liquidity Liquidity
+ * @param amount Input amount
+ * @returns Next sqrt price
  */
-export function mulDiv(x: BN, y: BN, denominator: BN, roundUp: boolean): BN {
-    if (denominator.isZero()) {
-        throw new Error('DivisionByZero')
+export function getNextSqrtPriceFromAmountQuoteRoundingDown(
+    sqrtPrice: BN,
+    liquidity: BN,
+    amount: BN
+): BN {
+    // Early return for zero amount
+    if (amount.isZero()) {
+        return sqrtPrice
     }
 
-    // Convert inputs to BN for full precision
-    const xBN = new BN(x)
-    const yBN = new BN(y)
-    const denominatorBN = new BN(denominator)
+    // Convert to Decimal for higher precision in one batch
+    const [sqrtPriceDecimal, liquidityDecimal, amountDecimal] =
+        batchBnToDecimal(sqrtPrice, liquidity, amount)
 
-    // Perform multiplication with full precision
-    const prod = xBN.mul(yBN)
+    // Batch operations in Decimal
+    const scaleFactor = new Decimal(2).pow(RESOLUTION * 2)
 
-    let result: BN
-    if (roundUp) {
-        // Add denominator - 1 before division to round up
-        result = prod.add(denominatorBN.subn(1)).div(denominatorBN)
-    } else {
-        // Match Rust's div_rem behavior
-        result = prod.div(denominatorBN)
-    }
+    // Calculate with Decimal.js in one operation
+    const result = sqrtPriceDecimal
+        ? sqrtPriceDecimal.add(
+              amountDecimal
+                  ? amountDecimal
+                        .mul(scaleFactor)
+                        .div(liquidityDecimal ?? new Decimal(0))
+                  : new Decimal(0)
+          )
+        : new Decimal(0)
 
-    // Check if result fits in U256 (2^256 - 1)
-    const U256_MAX = new BN(1).shln(256).subn(1)
-    if (result.gt(U256_MAX)) {
-        throw new Error('MathOverflow')
-    }
-
-    return result
+    // Convert back to BN with floor rounding
+    return decimalToBN(result, Rounding.Down)
 }

@@ -1,263 +1,286 @@
 import BN from 'bn.js'
-import type { DynamicFeeConfig, VolatilityTracker } from '../types'
-
-// Constants matching Rust implementation
-export const MAX_EXPONENTIAL = 0x80000 // 1048576
-export const SCALE_OFFSET = 64
-export const ONE = new BN(1).shln(SCALE_OFFSET)
-export const BASIS_POINT_MAX = new BN(10000)
+import Decimal from 'decimal.js'
+import { SafeMath } from './safeMath'
+import {
+    safeMulDivCastU64,
+    bnToDecimal,
+    decimalToBN,
+    batchBnToDecimal,
+    mulDivBN,
+} from './utilsMath'
+import {
+    BASIS_POINT_MAX,
+    FEE_DENOMINATOR,
+    MAX_FEE_NUMERATOR,
+} from '../constants'
+import {
+    FeeSchedulerMode,
+    Rounding,
+    type BaseFeeConfig,
+    type DynamicFeeConfig,
+    type FeeOnAmountResult,
+    type PoolFeesConfig,
+    type VolatilityTracker,
+} from '../types'
 
 /**
- * Calculate fee for exponential decay: cliff_fee_numerator * (1-reduction_factor/10_000)^passed_period
+ * Get fee in period for exponential fee scheduler
+ * @param cliffFeeNumerator Cliff fee numerator
+ * @param reductionFactor Reduction factor
+ * @param period Period
+ * @returns Fee numerator
  */
 export function getFeeInPeriod(
     cliffFeeNumerator: BN,
     reductionFactor: BN,
-    passedPeriod: BN
+    period: number
 ): BN {
-    // Make bin_step into Q64x64, and divided by BASIS_POINT_MAX
-    const bps = reductionFactor.shln(SCALE_OFFSET).div(BASIS_POINT_MAX)
-
-    // Add 1 to bps, we get 1.0001 in Q64.64
-    const base = ONE.sub(bps)
-
-    // Calculate power
-    const result = pow(base, passedPeriod.toNumber())
-    if (!result) {
-        throw new Error('MathOverflow')
+    // Early return for period 0
+    if (period === 0) {
+        return cliffFeeNumerator
     }
 
-    // Calculate final fee
-    const fee = result.mul(cliffFeeNumerator).shrn(SCALE_OFFSET)
+    // Early return for period 1 with simple calculation
+    if (period === 1) {
+        const basisPointMax = new BN(BASIS_POINT_MAX)
+        return mulDivBN(
+            cliffFeeNumerator,
+            basisPointMax.sub(reductionFactor),
+            basisPointMax,
+            Rounding.Down
+        )
+    }
 
-    return fee
+    // Convert to Decimal for higher precision in one batch
+    const [cliffFeeDecimal, reductionFactorDecimal] = batchBnToDecimal(
+        cliffFeeNumerator,
+        reductionFactor
+    )
+    const basisPointMaxDecimal = new Decimal(BASIS_POINT_MAX)
+
+    // Batch operations in Decimal
+    // Calculate (1 - reduction_factor/10_000)
+    if (!basisPointMaxDecimal || !reductionFactorDecimal) {
+        throw new Error('GetFeeInPeriod: conversion to Decimal failed')
+    }
+    const multiplier = basisPointMaxDecimal
+        .sub(reductionFactorDecimal)
+        .div(basisPointMaxDecimal)
+
+    // Calculate (1 - reduction_factor/10_000)^period in one operation
+    if (!cliffFeeDecimal) {
+        throw new Error('GetFeeInPeriod: conversion to Decimal failed')
+    }
+    const feeNumeratorDecimal = cliffFeeDecimal.mul(multiplier.pow(period))
+
+    // Convert back to BN
+    return decimalToBN(feeNumeratorDecimal, Rounding.Down)
 }
 
 /**
- * Power function matching Rust implementation exactly
+ * Get current base fee numerator
+ * @param baseFee Base fee parameters
+ * @param currentPoint Current point
+ * @param activationPoint Activation point
+ * @returns Current base fee numerator
  */
-export function pow(base: BN, exp: number): BN | null {
-    // If exponent is negative. We will invert the result later by 1 / base^exp.abs()
-    let invert = exp < 0
-
-    // When exponential is 0, result will always be 1
-    if (exp === 0) {
-        return ONE
-    }
-
-    // Make the exponential positive
-    exp = Math.abs(exp)
-
-    // No point to continue the calculation as it will overflow
-    if (exp >= MAX_EXPONENTIAL) {
-        return null
-    }
-
-    let squaredBase = base
-    let result = ONE
-
-    // When multiply the base twice, the number of bits double from 128 -> 256, which overflow.
-    // The trick here is to inverse the calculation, which make the upper 64 bits (number bits) to be 0s.
-    if (squaredBase.gte(result)) {
-        // This inverse the base: 1 / base
-        squaredBase = new BN(2).pow(new BN(128)).sub(new BN(1)).div(squaredBase)
-        // If exponent is negative, the above already inverted the result
-        invert = !invert
-    }
-
-    // Binary exponentiation implementation matching Rust exactly
-    if (exp & 0x1) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x2) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x4) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x8) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x10) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x20) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x40) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x80) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x100) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x200) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x400) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x800) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x1000) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x2000) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x4000) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x8000) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x10000) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x20000) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    squaredBase = squaredBase.mul(squaredBase).shrn(SCALE_OFFSET)
-    if (exp & 0x40000) {
-        result = result.mul(squaredBase).shrn(SCALE_OFFSET)
-    }
-
-    // Stop here as the next is 20th bit, which > MAX_EXPONENTIAL
-    if (result.isZero()) {
-        return null
-    }
-
-    if (invert) {
-        result = new BN(2).pow(new BN(128)).sub(new BN(1)).div(result)
-    }
-
-    return result
-}
-
-/**
- * Calculate total trading fee including base and dynamic fees
- */
-export function getTotalTradingFee(
-    poolFees: any, // Update with proper type
+export function getCurrentBaseFeeNumerator(
+    baseFee: BaseFeeConfig,
     currentPoint: BN,
     activationPoint: BN
 ): BN {
-    // Get base fee numerator
+    // Early return for zero period frequency
+    if (baseFee.periodFrequency.isZero()) {
+        return baseFee.cliffFeeNumerator
+    }
+
+    // Convert to Decimal for higher precision in one batch
+    const [
+        currentPointDecimal,
+        activationPointDecimal,
+        periodFrequencyDecimal,
+        cliffFeeNumeratorDecimal,
+        reductionFactorDecimal,
+    ] = batchBnToDecimal(
+        currentPoint,
+        activationPoint,
+        baseFee.periodFrequency,
+        baseFee.cliffFeeNumerator,
+        baseFee.reductionFactor
+    )
+
+    // Calculate period
+    let periodDecimal: Decimal
+    if (
+        currentPointDecimal &&
+        activationPointDecimal &&
+        currentPointDecimal.lt(activationPointDecimal)
+    ) {
+        // Before activation point, use max period (min fee)
+        periodDecimal = new Decimal(baseFee.numberOfPeriod)
+    } else {
+        // Calculate elapsed periods
+        periodDecimal = currentPointDecimal
+            ? currentPointDecimal
+                  .sub(activationPointDecimal ?? new Decimal(0))
+                  .div(periodFrequencyDecimal ?? new Decimal(0))
+                  .floor()
+            : new Decimal(0)
+
+        // Cap at max number of periods
+        if (periodDecimal.gt(new Decimal(baseFee.numberOfPeriod))) {
+            periodDecimal = new Decimal(baseFee.numberOfPeriod)
+        }
+    }
+
+    const feeSchedulerMode = baseFee.feeSchedulerMode
+
+    if (feeSchedulerMode === FeeSchedulerMode.Linear) {
+        // Calculate with Decimal.js in one operation
+        const feeNumeratorDecimal = cliffFeeNumeratorDecimal
+            ? cliffFeeNumeratorDecimal.sub(
+                  periodDecimal.mul(reductionFactorDecimal ?? new Decimal(0))
+              )
+            : new Decimal(0)
+
+        // Convert back to BN
+        return decimalToBN(feeNumeratorDecimal, Rounding.Down)
+    } else if (feeSchedulerMode === FeeSchedulerMode.Exponential) {
+        // For exponential mode, use the optimized getFeeInPeriod function
+        return getFeeInPeriod(
+            baseFee.cliffFeeNumerator,
+            baseFee.reductionFactor,
+            periodDecimal.toNumber()
+        )
+    } else {
+        throw new Error('Invalid fee scheduler mode')
+    }
+}
+
+/**
+ * Get fee on amount
+ * @param amount Amount
+ * @param poolFees Pool fees
+ * @param isReferral Whether referral is used
+ * @param currentPoint Current point
+ * @param activationPoint Activation point
+ * @param volatilityTracker Volatility tracker
+ * @returns Fee on amount result
+ */
+export function getFeeOnAmount(
+    amount: BN,
+    poolFees: PoolFeesConfig,
+    isReferral: boolean,
+    currentPoint: BN,
+    activationPoint: BN,
+    volatilityTracker: VolatilityTracker
+): FeeOnAmountResult {
+    // Get total trading fee
     const baseFeeNumerator = getCurrentBaseFeeNumerator(
         poolFees.baseFee,
         currentPoint,
         activationPoint
     )
 
-    // Get dynamic fee (if enabled)
-    const dynamicFee = getDynamicFee(
-        poolFees.dynamicFee,
-        poolFees.volatilityTracker
-    )
-
-    // Add base and dynamic fees
-    const totalFeeNumerator = baseFeeNumerator.add(dynamicFee)
+    // Add dynamic fee if enabled
+    let totalFeeNumerator = baseFeeNumerator
+    if (poolFees.dynamicFee.initialized !== 0) {
+        const variableFee = getVariableFee(
+            poolFees.dynamicFee,
+            volatilityTracker
+        )
+        totalFeeNumerator = SafeMath.add(totalFeeNumerator, variableFee)
+    }
 
     // Cap at MAX_FEE_NUMERATOR
-    const MAX_FEE_NUMERATOR = new BN(10000)
-    return totalFeeNumerator.gt(MAX_FEE_NUMERATOR)
-        ? MAX_FEE_NUMERATOR
-        : totalFeeNumerator
+    if (totalFeeNumerator.gt(new BN(MAX_FEE_NUMERATOR))) {
+        totalFeeNumerator = new BN(MAX_FEE_NUMERATOR)
+    }
+
+    // Calculate trading fee
+    const tradingFee = safeMulDivCastU64(
+        amount,
+        totalFeeNumerator,
+        new BN(FEE_DENOMINATOR),
+        Rounding.Up
+    )
+
+    // Update amount
+    const amountAfterFee = SafeMath.sub(amount, tradingFee)
+
+    // Calculate protocol fee
+    const protocolFee = safeMulDivCastU64(
+        tradingFee,
+        new BN(poolFees.protocolFeePercent),
+        new BN(100),
+        Rounding.Down
+    )
+
+    // Update trading fee
+    const tradingFeeAfterProtocol = SafeMath.sub(tradingFee, protocolFee)
+
+    // Calculate referral fee
+    let referralFee = new BN(0)
+    if (isReferral) {
+        referralFee = safeMulDivCastU64(
+            protocolFee,
+            new BN(poolFees.referralFeePercent),
+            new BN(100),
+            Rounding.Down
+        )
+    }
+
+    // Update protocol fee
+    const protocolFeeAfterReferral = SafeMath.sub(protocolFee, referralFee)
+
+    return {
+        amount: amountAfterFee,
+        tradingFee: tradingFeeAfterProtocol,
+        protocolFee: protocolFeeAfterReferral,
+        referralFee,
+    }
 }
 
 /**
- * Get current base fee numerator based on fee schedule
+ * Get variable fee from dynamic fee
+ * @param dynamicFee Dynamic fee parameters
+ * @param volatilityTracker Volatility tracker
+ * @returns Variable fee
  */
-export function getCurrentBaseFeeNumerator(
-    baseFee: any, // Update with proper type
-    currentPoint: BN,
-    activationPoint: BN
-): BN {
-    if (baseFee.periodFrequency.isZero()) {
-        return baseFee.cliffFeeNumerator
-    }
-
-    const period = currentPoint.lt(activationPoint)
-        ? new BN(baseFee.numberOfPeriod)
-        : BN.min(
-              currentPoint.sub(activationPoint).div(baseFee.periodFrequency),
-              new BN(baseFee.numberOfPeriod)
-          )
-
-    // Handle fee scheduler modes
-    switch (baseFee.feeSchedulerMode) {
-        case 0: // Linear
-            return baseFee.cliffFeeNumerator.sub(
-                period.mul(baseFee.reductionFactor)
-            )
-        case 1: // Exponential
-            return getFeeInPeriod(
-                baseFee.cliffFeeNumerator,
-                baseFee.reductionFactor,
-                period
-            )
-        default:
-            throw new Error('Invalid fee scheduler mode')
-    }
-}
-
-/**
- * Calculate dynamic fee based on volatility
- */
-export function getDynamicFee(
+export function getVariableFee(
     dynamicFee: DynamicFeeConfig,
     volatilityTracker: VolatilityTracker
 ): BN {
-    if (dynamicFee.variableFeeControl === 0) {
+    // Early return if not initialized
+    if (dynamicFee.initialized === 0) {
         return new BN(0)
     }
 
-    // Calculate square of volatility accumulator * bin step
-    const squareVfaBin = volatilityTracker.volatilityAccumulator
-        .mul(new BN(dynamicFee.binStep))
-        .pow(new BN(2))
+    // Early return if volatility accumulator is zero
+    if (volatilityTracker.volatilityAccumulator.isZero()) {
+        return new BN(0)
+    }
 
-    // Calculate variable fee using the control parameter
-    const vFee = squareVfaBin.mul(new BN(dynamicFee.variableFeeControl))
+    // Convert to Decimal for higher precision
+    const volatilityAccumulatorDecimal = bnToDecimal(
+        volatilityTracker.volatilityAccumulator
+    )
+    const binStepDecimal = new Decimal(dynamicFee.binStep)
+    const variableFeeControlDecimal = new Decimal(dynamicFee.variableFeeControl)
 
-    // Scale down to match Rust implementation: (v_fee + 99_999_999_999) / 100_000_000_000
-    return vFee.add(new BN('99999999999')).div(new BN('100000000000'))
+    // Batch operations in Decimal
+    // Calculate (volatilityAccumulator * binStep)^2 * variableFeeControl
+    const volatilityTimesBinStep =
+        volatilityAccumulatorDecimal.mul(binStepDecimal)
+    const vFee = volatilityTimesBinStep.pow(2).mul(variableFeeControlDecimal)
+
+    // Scale down to 1e9 unit with ceiling
+    const scaleFactor = new Decimal(100_000_000_000)
+    const scaledVFee = vFee
+        .add(scaleFactor.sub(new Decimal(1)))
+        .div(scaleFactor)
+        .floor()
+
+    // Convert back to BN
+    return decimalToBN(scaledVFee, Rounding.Down)
 }

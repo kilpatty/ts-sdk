@@ -122,11 +122,6 @@ export enum SwapDirection {
     QuoteToBase,
 }
 
-export enum TradeDirection {
-    BaseToQuote,
-    QuoteToBase,
-}
-
 export enum ActivationType {
     Slot = 0,
     Timestamp = 1,
@@ -294,4 +289,28 @@ export enum CollectFeeMode {
 export enum FeeSchedulerMode {
     Linear = 0,
     Exponential = 1,
+}
+
+/**
+ * Trade direction
+ */
+export enum TradeDirection {
+    BaseToQuote = 0,
+    QuoteToBase = 1,
+}
+
+/**
+ * Swap amount result
+ */
+export interface SwapAmount {
+    outputAmount: BN
+    nextSqrtPrice: BN
+}
+
+/**
+ * Rounding direction
+ */
+export enum Rounding {
+    Up,
+    Down,
 }
