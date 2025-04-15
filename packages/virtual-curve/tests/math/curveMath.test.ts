@@ -4,9 +4,9 @@ import {
     getDeltaAmountQuoteUnsigned,
     getNextSqrtPriceFromInput,
     getNextSqrtPriceFromAmountQuote,
-} from '../src/math/curve'
+} from '../../src/math/curve'
 import { BN } from 'bn.js'
-import { Q } from './utils/test-helpers'
+import { Q } from '../utils/test-helpers'
 
 test('Base amount calculation', () => {
     const lower = Q(1.0)

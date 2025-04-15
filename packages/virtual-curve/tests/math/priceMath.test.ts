@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { getPriceFromId, ONE } from '../src/math/priceMath'
+import { getPriceFromId, ONE } from '../../src/math/priceMath'
 
 test('getPriceFromId calculation', () => {
     // Test case 1: Zero ID should return 1.0

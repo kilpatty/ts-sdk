@@ -1,10 +1,13 @@
 import { test, expect } from 'bun:test'
 import BN from 'bn.js'
-import { type VirtualPool, type PoolConfig } from '../src/types'
-import { DEFAULT_POOL_CONFIG, DEFAULT_VIRTUAL_POOL } from './utils/defaults'
-import { getInitialBaseSupply, MAX_CURVE_POINT } from '../src/math/poolConfig'
-import { getPriceFromId } from '../src/math/priceMath'
-import { swapQuote } from '../src/math/swapQuote'
+import { type VirtualPool, type PoolConfig } from '../../src/types'
+import { DEFAULT_POOL_CONFIG, DEFAULT_VIRTUAL_POOL } from '../utils/defaults'
+import {
+    getInitialBaseSupply,
+    MAX_CURVE_POINT,
+} from '../../src/math/poolConfig'
+import { getPriceFromId } from '../../src/math/priceMath'
+import { swapQuote } from '../../src/math/swapQuote'
 
 // Constants matching Rust test
 const MAX_SQRT_PRICE = new BN('79226673521066979257578248091') // MAX u128

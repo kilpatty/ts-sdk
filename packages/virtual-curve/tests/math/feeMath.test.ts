@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { getFeeInPeriod } from '../src/math/feeMath'
+import { getFeeInPeriod } from '../../src/math/feeMath'
 import BN from 'bn.js'
 
 test('getFeeInPeriod calculation', () => {

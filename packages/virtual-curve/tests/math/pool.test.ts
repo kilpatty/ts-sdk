@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { createMockPoolAndConfig, Q, TestPools } from './utils/test-helpers'
+import { createMockPoolAndConfig, Q, TestPools } from '../utils/test-helpers'
 import { BN } from 'bn.js'
 
 test('createMockPoolAndConfig with custom parameters', () => {
