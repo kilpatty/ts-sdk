@@ -1,6 +1,6 @@
 {
   "name": "@meteora-ag/virtual-curve-sdk",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "source": "src/index.ts",
