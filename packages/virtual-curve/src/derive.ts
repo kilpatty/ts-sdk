@@ -20,6 +20,7 @@ const SEED = Object.freeze({
     POSITION: 'position',
     POSITION_NFT_ACCOUNT: 'position_nft_account',
     LOCK_ESCROW: 'lock_escrow',
+    VIRTUAL_POOL_METADATA: 'virtual_pool_metadata',
 })
 
 /**
@@ -137,6 +138,18 @@ export function derivePartnerMetadata(
         programId
     )
     return partnerMetadata
+}
+
+/**
+ * Derive the virtual pool metadata
+ * @param pool - The pool
+ * @returns The virtual pool metadata
+ */
+export function deriveVirtualPoolMetadata(pool: PublicKey): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.VIRTUAL_POOL_METADATA), pool.toBuffer()],
+        VIRTUAL_CURVE_PROGRAM_ID
+    )[0]
 }
 
 /**

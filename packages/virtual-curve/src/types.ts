@@ -106,6 +106,8 @@ export type PoolMetrics = IdlTypes<VirtualCurve>['poolMetrics']
 export type SwapResult = IdlTypes<VirtualCurve>['swapResult']
 export type CreatePartnerMetadataParameters =
     IdlTypes<VirtualCurve>['createPartnerMetadataParameters']
+export type CreateVirtualPoolMetadataParameters =
+    IdlTypes<VirtualCurve>['createVirtualPoolMetadataParameters']
 
 //////////////////
 // IDL ACCOUNTS //
@@ -117,6 +119,9 @@ export type MeteoraDammMigrationMetadata =
 export type VolatilityTracker = IdlTypes<VirtualCurve>['volatilityTracker']
 export type VirtualPool = IdlAccounts<VirtualCurve>['virtualPool']
 export type PoolConfig = IdlAccounts<VirtualCurve>['poolConfig']
+export type PartnerMetadata = IdlAccounts<VirtualCurve>['partnerMetadata']
+export type VirtualPoolMetadata =
+    IdlAccounts<VirtualCurve>['virtualPoolMetadata']
 
 ///////////
 // ENUMS //
@@ -199,6 +204,15 @@ export type ClaimTradingFeeParam = {
     pool: PublicKey
     maxBaseAmount: BN
     maxQuoteAmount: BN
+}
+
+export type CreateVirtualPoolMetadataParam = {
+    virtualPool: PublicKey
+    name: string
+    website: string
+    logo: string
+    creator: PublicKey
+    payer: PublicKey
 }
 
 export type CreatePartnerMetadataParam = {

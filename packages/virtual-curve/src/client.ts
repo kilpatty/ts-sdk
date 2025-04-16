@@ -19,6 +19,10 @@ import {
     type VirtualPool,
     type Config,
     type ClaimFeeOperator,
+    type PartnerMetadata,
+    type CreateVirtualPoolMetadataParam,
+    type CreateVirtualPoolMetadataParameters,
+    type VirtualPoolMetadata,
 } from './types'
 import {
     Connection,
@@ -44,6 +48,7 @@ import {
     deriveProtocolFeeAddress,
     deriveTokenVaultAddress,
     deriveVaultLPAddress,
+    deriveVirtualPoolMetadata,
 } from './derive'
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -193,6 +198,21 @@ export class VirtualCurveProgramClient {
     }
 
     /**
+     * Get virtual pool metadata
+     * @param connection - The connection to the Solana network
+     * @param virtualPoolAddress - The address of the virtual pool
+     * @returns A virtual pool metadata
+     */
+    async getVirtualPoolMetadata(
+        virtualPoolAddress: PublicKey | string
+    ): Promise<VirtualPoolMetadata[]> {
+        const filters = createProgramAccountFilter(virtualPoolAddress, 8)
+        const accounts =
+            await this.program.account.virtualPoolMetadata.all(filters)
+        return accounts.map((account) => account.account)
+    }
+
+    /**
      * Get claim fee operator
      * @param connection - The connection to the Solana network
      * @param operatorAddress - The address of the claim fee operator
@@ -208,6 +228,20 @@ export class VirtualCurveProgramClient {
             'claimFeeOperator',
             this.program
         )
+    }
+
+    /**
+     * Get partner metadata
+     * @param connection - The connection to the Solana network
+     * @param partnerAddress - The address of the partner
+     * @returns A partner metadata
+     */
+    async getPartnerMetadata(
+        partnerAccountAddress: PublicKey | string
+    ): Promise<PartnerMetadata[]> {
+        const filters = createProgramAccountFilter(partnerAccountAddress, 8)
+        const accounts = await this.program.account.partnerMetadata.all(filters)
+        return accounts.map((account) => account.account)
     }
 
     /**
@@ -343,6 +377,43 @@ export class PoolService {
         }
 
         throw new Error('Invalid base token type')
+    }
+
+    /**
+     * Create virtual pool metadata
+     * @param connection - The connection to the Solana network
+     * @param createVirtualPoolMetadataParam - The parameters for the virtual pool metadata
+     * @returns A create virtual pool metadata transaction
+     */
+    async createVirtualPoolMetadata(
+        createVirtualPoolMetadataParam: CreateVirtualPoolMetadataParam
+    ): Promise<Transaction> {
+        const program = this.programClient.getProgram()
+        const eventAuthority = deriveEventAuthority()
+        const virtualPoolMetadata = deriveVirtualPoolMetadata(
+            createVirtualPoolMetadataParam.virtualPool
+        )
+        const virtualPoolMetadataParam: CreateVirtualPoolMetadataParameters = {
+            padding: new Array(96).fill(0),
+            name: createVirtualPoolMetadataParam.name,
+            website: createVirtualPoolMetadataParam.website,
+            logo: createVirtualPoolMetadataParam.logo,
+        }
+
+        const accounts = {
+            virtualPool: createVirtualPoolMetadataParam.virtualPool,
+            virtualPoolMetadata,
+            creator: createVirtualPoolMetadataParam.creator,
+            payer: createVirtualPoolMetadataParam.payer,
+            systemProgram: SystemProgram.programId,
+            eventAuthority,
+            program: program.programId,
+        }
+
+        return program.methods
+            .createVirtualPoolMetadata(virtualPoolMetadataParam)
+            .accounts(accounts)
+            .transaction()
     }
 
     /**
