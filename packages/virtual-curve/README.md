@@ -14,6 +14,16 @@ pnpm install @meteora-ag/virtual-curve-sdk
 yarn add @meteora-ag/virtual-curve-sdk
 ```
 
+## Initialization
+
+```bash
+import { Connection } from "@solana/web3.js";
+import { VirtualCurveClient } from "@meteora-ag/virtual-curve-sdk";
+
+const connection = new Connection('https://api.mainnet-beta.solana.com')
+const client = new VirtualCurveClient(connection)
+```
+
 ### Test
 
 ```bash

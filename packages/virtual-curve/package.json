@@ -1,25 +1,39 @@
 {
   "name": "@meteora-ag/virtual-curve-sdk",
-  "version": "0.0.0",
-  "module": "dist/src/index.mjs",
-  "types": "dist/src/index.d.mts",
-  "main": "dist/src/index.cjs",
+  "version": "1.0.0",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "source": "src/index.ts",
+  "types": "dist/index.d.ts",
+  "author": "Dann Wee <dann@raccoons.dev",
+  "keywords": [
+    "meteora-ag",
+    "virtual-curve"
+  ],
+  "description": "A Typescript SDK for interacting with the Virtual Bonding Curve on Meteora.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MeteoraAg/ts-sdk/tree/main/packages/virtual-curve"
+  },
   "type": "module",
   "scripts": {
     "dev": "tsc --watch",
-    "build": "bunx bunup src/index.ts --format esm,cjs --dts"
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "clean": "rm -rf node_modules dist"
   },
   "exports": {
     ".": {
-      "import": "./dist/src/index.mjs",
-      "require": "./dist/src/index.cjs",
-      "types": "./dist/src/index.d.mts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "devDependencies": {
     "@meteora-ag/ts-sdk-config": "*",
     "@types/bun": "latest",
     "eslint": "^9.24.0",
+    "tsup": "^8.4.0",
     "tsx": "^4.19.3"
   },
   "peerDependencies": {

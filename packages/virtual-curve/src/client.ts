@@ -166,10 +166,30 @@ export class VirtualCurveProgramClient {
      */
     async getPoolConfigs(
         owner?: PublicKey | string
-    ): Promise<ProgramAccount<PoolConfig>[]> {
+    ): Promise<(ProgramAccount<PoolConfig> & { createdAt?: Date })[]> {
         const filters = owner ? createProgramAccountFilter(owner, 72) : []
+        const poolConfigs = await this.program.account.poolConfig.all(filters)
 
-        return await this.program.account.poolConfig.all(filters)
+        // Get signatures for all pool configs in parallel
+        const signaturePromises = poolConfigs.map(async (config) => {
+            const signatures =
+                await this.program.provider.connection.getSignaturesForAddress(
+                    config.publicKey,
+                    { limit: 1 },
+                    'confirmed'
+                )
+            return signatures[0]?.blockTime
+                ? new Date(signatures[0].blockTime * 1000)
+                : undefined
+        })
+
+        const timestamps = await Promise.all(signaturePromises)
+
+        // Combine the pool configs with their creation timestamps
+        return poolConfigs.map((config, index) => ({
+            ...config,
+            createdAt: timestamps[index],
+        }))
     }
 
     /**
