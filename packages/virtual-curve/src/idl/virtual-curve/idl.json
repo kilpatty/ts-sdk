@@ -105,38 +105,38 @@
               {
                 "kind": "const",
                 "value": [
-                  153,
-                  10,
-                  107,
-                  154,
-                  255,
-                  249,
-                  210,
+                  48,
+                  9,
+                  89,
+                  123,
+                  106,
+                  114,
+                  131,
+                  251,
+                  50,
                   173,
-                  176,
-                  67,
-                  220,
-                  214,
-                  152,
-                  71,
-                  46,
-                  146,
-                  161,
-                  33,
+                  254,
+                  250,
+                  10,
+                  80,
+                  160,
+                  84,
+                  143,
+                  100,
                   81,
-                  148,
+                  249,
+                  134,
+                  112,
+                  30,
+                  213,
+                  50,
                   166,
-                  119,
-                  5,
-                  189,
-                  142,
-                  11,
-                  57,
-                  68,
-                  162,
-                  70,
-                  126,
-                  100
+                  239,
+                  78,
+                  53,
+                  175,
+                  188,
+                  85
                 ]
               },
               {
@@ -198,38 +198,38 @@
               {
                 "kind": "const",
                 "value": [
-                  153,
-                  10,
-                  107,
-                  154,
-                  255,
-                  249,
-                  210,
+                  48,
+                  9,
+                  89,
+                  123,
+                  106,
+                  114,
+                  131,
+                  251,
+                  50,
                   173,
-                  176,
-                  67,
-                  220,
-                  214,
-                  152,
-                  71,
-                  46,
-                  146,
-                  161,
-                  33,
+                  254,
+                  250,
+                  10,
+                  80,
+                  160,
+                  84,
+                  143,
+                  100,
                   81,
-                  148,
+                  249,
+                  134,
+                  112,
+                  30,
+                  213,
+                  50,
                   166,
-                  119,
-                  5,
-                  189,
-                  142,
-                  11,
-                  57,
-                  68,
-                  162,
-                  70,
-                  126,
-                  100
+                  239,
+                  78,
+                  53,
+                  175,
+                  188,
+                  85
                 ]
               },
               {
@@ -742,6 +742,147 @@
       ]
     },
     {
+      "name": "create_locker",
+      "docs": [
+        "PERMISSIONLESS FUNCTIONS ///",
+        "create locker"
+      ],
+      "discriminator": [
+        167,
+        90,
+        137,
+        154,
+        75,
+        47,
+        17,
+        84
+      ],
+      "accounts": [
+        {
+          "name": "virtual_pool",
+          "docs": [
+            "Virtual pool"
+          ],
+          "writable": true
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Config"
+          ],
+          "relations": [
+            "virtual_pool"
+          ]
+        },
+        {
+          "name": "pool_authority",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "base_vault",
+          "writable": true,
+          "relations": [
+            "virtual_pool"
+          ]
+        },
+        {
+          "name": "base_mint",
+          "writable": true,
+          "relations": [
+            "virtual_pool"
+          ]
+        },
+        {
+          "name": "base",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  115,
+                  101,
+                  95,
+                  108,
+                  111,
+                  99,
+                  107,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "virtual_pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "relations": [
+            "virtual_pool"
+          ]
+        },
+        {
+          "name": "escrow",
+          "writable": true
+        },
+        {
+          "name": "escrow_token",
+          "writable": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "locker_program",
+          "address": "LocpQgucEQHbqNABEYvBvwoxCPsSbG91A1QaQhQQqjn"
+        },
+        {
+          "name": "locker_event_authority"
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program."
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "create_partner_metadata",
       "docs": [
         "PARTNER FUNCTIONS ////"
@@ -860,37 +1001,99 @@
       ]
     },
     {
-      "name": "creator_claim_lp_from_meteora_dynamic_amm",
+      "name": "create_virtual_pool_metadata",
       "discriminator": [
-        239,
-        190,
-        35,
-        36,
-        59,
-        98,
-        29,
-        26
+        45,
+        97,
+        187,
+        103,
+        254,
+        109,
+        124,
+        134
       ],
       "accounts": [
         {
-          "name": "migration_metadata",
-          "docs": [
-            "presale"
-          ],
+          "name": "virtual_pool",
           "writable": true
         },
         {
-          "name": "pool_authority",
+          "name": "virtual_pool_metadata",
+          "docs": [
+            "Virtual pool metadata"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
+                  118,
+                  105,
+                  114,
+                  116,
+                  117,
+                  97,
+                  108,
+                  95,
                   112,
                   111,
                   111,
                   108,
+                  95,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "virtual_pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "signer": true,
+          "relations": [
+            "virtual_pool"
+          ]
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Payer of the virtual pool metadata."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program."
+          ],
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
                   95,
                   97,
                   117,
@@ -907,122 +1110,19 @@
           }
         },
         {
-          "name": "pool",
-          "writable": true
-        },
-        {
-          "name": "lp_mint",
-          "relations": [
-            "migration_metadata"
-          ]
-        },
-        {
-          "name": "source_token",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool_authority"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "migration_metadata"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "destination_token",
-          "writable": true
-        },
-        {
-          "name": "sender",
-          "signer": true
-        },
-        {
-          "name": "token_program",
-          "docs": [
-            "token_program"
-          ],
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "program"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "metadata",
+          "type": {
+            "defined": {
+              "name": "CreateVirtualPoolMetadataParameters"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "initialize_virtual_pool_with_spl_token",
@@ -1624,187 +1724,288 @@
       "args": []
     },
     {
-      "name": "migrate_meteora_damm_creator_claim_lp_token",
+      "name": "migrate_meteora_damm_claim_lp_token",
       "discriminator": [
+        139,
+        133,
+        2,
+        30,
+        91,
+        145,
+        127,
+        154
+      ],
+      "accounts": [
+        {
+          "name": "virtual_pool",
+          "relations": [
+            "migration_metadata"
+          ]
+        },
+        {
+          "name": "migration_metadata",
+          "docs": [
+            "migration metadata"
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_authority",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "lp_mint",
+          "relations": [
+            "migration_metadata"
+          ]
+        },
+        {
+          "name": "source_token",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "migration_metadata"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "destination_token",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "migration_metadata"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "owner"
+        },
+        {
+          "name": "sender",
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "token_program"
+          ],
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "migrate_meteora_damm_lock_lp_token",
+      "discriminator": [
+        177,
+        55,
+        238,
         157,
-        28,
-        113,
-        25,
-        217,
-        52,
-        255,
-        237
+        251,
+        88,
+        165,
+        42
       ],
       "accounts": [
         {
-          "name": "migration_metadata",
-          "docs": [
-            "presale"
-          ],
-          "writable": true
-        },
-        {
-          "name": "pool_authority",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "pool",
-          "writable": true
-        },
-        {
-          "name": "lp_mint",
+          "name": "virtual_pool",
           "relations": [
             "migration_metadata"
           ]
         },
         {
-          "name": "source_token",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool_authority"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "migration_metadata"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "destination_token",
-          "writable": true
-        },
-        {
-          "name": "sender",
-          "signer": true
-        },
-        {
-          "name": "token_program",
-          "docs": [
-            "token_program"
-          ],
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "migrate_meteora_damm_lock_lp_token_for_creator",
-      "discriminator": [
-        204,
-        196,
-        142,
-        73,
-        251,
-        226,
-        195,
-        206
-      ],
-      "accounts": [
-        {
           "name": "migration_metadata",
           "docs": [
-            "presale"
+            "migration_metadata"
           ],
           "writable": true
         },
@@ -1973,367 +2174,6 @@
         },
         {
           "name": "b_vault_lp_mint"
-        },
-        {
-          "name": "token_program",
-          "docs": [
-            "token_program"
-          ],
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "migrate_meteora_damm_lock_lp_token_for_partner",
-      "discriminator": [
-        14,
-        102,
-        240,
-        58,
-        161,
-        16,
-        166,
-        83
-      ],
-      "accounts": [
-        {
-          "name": "migration_metadata",
-          "docs": [
-            "presale"
-          ],
-          "writable": true
-        },
-        {
-          "name": "pool_authority",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "pool",
-          "writable": true,
-          "relations": [
-            "lock_escrow"
-          ]
-        },
-        {
-          "name": "lp_mint",
-          "relations": [
-            "migration_metadata"
-          ]
-        },
-        {
-          "name": "lock_escrow",
-          "writable": true
-        },
-        {
-          "name": "owner",
-          "relations": [
-            "lock_escrow"
-          ]
-        },
-        {
-          "name": "source_tokens",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool_authority"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "migration_metadata"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "escrow_vault",
-          "writable": true
-        },
-        {
-          "name": "amm_program",
-          "address": "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB"
-        },
-        {
-          "name": "a_vault"
-        },
-        {
-          "name": "b_vault"
-        },
-        {
-          "name": "a_vault_lp"
-        },
-        {
-          "name": "b_vault_lp"
-        },
-        {
-          "name": "a_vault_lp_mint"
-        },
-        {
-          "name": "b_vault_lp_mint"
-        },
-        {
-          "name": "token_program",
-          "docs": [
-            "token_program"
-          ],
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "migrate_meteora_damm_partner_claim_lp_token",
-      "discriminator": [
-        80,
-        221,
-        69,
-        196,
-        182,
-        163,
-        251,
-        90
-      ],
-      "accounts": [
-        {
-          "name": "migration_metadata",
-          "docs": [
-            "presale"
-          ],
-          "writable": true
-        },
-        {
-          "name": "pool_authority",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "pool",
-          "writable": true
-        },
-        {
-          "name": "lp_mint",
-          "relations": [
-            "migration_metadata"
-          ]
-        },
-        {
-          "name": "source_token",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool_authority"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "migration_metadata"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "destination_token",
-          "writable": true
-        },
-        {
-          "name": "sender",
-          "signer": true
         },
         {
           "name": "token_program",
@@ -2372,8 +2212,7 @@
           "name": "migration_metadata",
           "docs": [
             "migration metadata"
-          ],
-          "writable": true
+          ]
         },
         {
           "name": "config",
@@ -2599,7 +2438,7 @@
     {
       "name": "migration_meteora_damm_create_metadata",
       "docs": [
-        "PERMISSIONLESS FUNCTIONS ///"
+        "migrate damm v1"
       ],
       "discriminator": [
         47,
@@ -2685,171 +2524,6 @@
         },
         {
           "name": "program"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "partner_claim_lp_from_meteora_dynamic_amm",
-      "discriminator": [
-        245,
-        199,
-        14,
-        54,
-        241,
-        224,
-        19,
-        32
-      ],
-      "accounts": [
-        {
-          "name": "migration_metadata",
-          "docs": [
-            "presale"
-          ],
-          "writable": true
-        },
-        {
-          "name": "pool_authority",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "pool",
-          "writable": true
-        },
-        {
-          "name": "lp_mint",
-          "relations": [
-            "migration_metadata"
-          ]
-        },
-        {
-          "name": "source_token",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool_authority"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "migration_metadata"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "destination_token",
-          "writable": true
-        },
-        {
-          "name": "sender",
-          "signer": true
-        },
-        {
-          "name": "token_program",
-          "docs": [
-            "token_program"
-          ],
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -3037,38 +2711,38 @@
               {
                 "kind": "const",
                 "value": [
-                  153,
-                  10,
-                  107,
-                  154,
-                  255,
-                  249,
-                  210,
+                  48,
+                  9,
+                  89,
+                  123,
+                  106,
+                  114,
+                  131,
+                  251,
+                  50,
                   173,
-                  176,
-                  67,
-                  220,
-                  214,
-                  152,
-                  71,
-                  46,
-                  146,
-                  161,
-                  33,
+                  254,
+                  250,
+                  10,
+                  80,
+                  160,
+                  84,
+                  143,
+                  100,
                   81,
-                  148,
+                  249,
+                  134,
+                  112,
+                  30,
+                  213,
+                  50,
                   166,
-                  119,
-                  5,
-                  189,
-                  142,
-                  11,
-                  57,
-                  68,
-                  162,
-                  70,
-                  126,
-                  100
+                  239,
+                  78,
+                  53,
+                  175,
+                  188,
+                  85
                 ]
               },
               {
@@ -3459,6 +3133,19 @@
         119,
         92
       ]
+    },
+    {
+      "name": "VirtualPoolMetadata",
+      "discriminator": [
+        217,
+        37,
+        82,
+        250,
+        43,
+        47,
+        228,
+        254
+      ]
     }
   ],
   "events": [
@@ -3630,6 +3317,19 @@
         187,
         147
       ]
+    },
+    {
+      "name": "EvtVirtualPoolMetadata",
+      "discriminator": [
+        188,
+        18,
+        72,
+        76,
+        195,
+        91,
+        38,
+        74
+      ]
     }
   ],
   "errors": [
@@ -3792,6 +3492,11 @@
       "code": 6031,
       "name": "MissingPoolConfigInRemaningAccount",
       "msg": "Missing pool config in remaning account"
+    },
+    {
+      "code": 6032,
+      "name": "InvalidVestingParameters",
+      "msg": "Invalid vesting parameters"
     }
   ],
   "types": [
@@ -4001,16 +3706,19 @@
             "type": "u128"
           },
           {
+            "name": "locked_vesting",
+            "type": {
+              "defined": {
+                "name": "LockedVestingParams"
+              }
+            }
+          },
+          {
             "name": "padding",
             "docs": [
               "padding for future use"
             ],
-            "type": {
-              "array": [
-                "u64",
-                6
-              ]
-            }
+            "type": "u64"
           },
           {
             "name": "curve",
@@ -4027,6 +3735,35 @@
     },
     {
       "name": "CreatePartnerMetadataParameters",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                96
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "website",
+            "type": "string"
+          },
+          {
+            "name": "logo",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateVirtualPoolMetadataParameters",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4503,6 +4240,25 @@
       }
     },
     {
+      "name": "EvtVirtualPoolMetadata",
+      "docs": [
+        "Create virtual pool metadata"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "virtual_pool_metadata",
+            "type": "pubkey"
+          },
+          {
+            "name": "virtual_pool",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
       "name": "InitializePoolParameters",
       "type": {
         "kind": "struct",
@@ -4606,6 +4362,70 @@
       }
     },
     {
+      "name": "LockedVestingConfig",
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount_per_period",
+            "type": "u64"
+          },
+          {
+            "name": "cliff_duration_from_migration_time",
+            "type": "u64"
+          },
+          {
+            "name": "frequency",
+            "type": "u64"
+          },
+          {
+            "name": "number_of_period",
+            "type": "u64"
+          },
+          {
+            "name": "cliff_unlock_amount",
+            "type": "u64"
+          },
+          {
+            "name": "_padding",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LockedVestingParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount_per_period",
+            "type": "u64"
+          },
+          {
+            "name": "cliff_duration_from_migration_time",
+            "type": "u64"
+          },
+          {
+            "name": "frequency",
+            "type": "u64"
+          },
+          {
+            "name": "number_of_period",
+            "type": "u64"
+          },
+          {
+            "name": "cliff_unlock_amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "MeteoraDammMigrationMetadata",
       "serialization": "bytemuck",
       "repr": {
@@ -4671,9 +4491,9 @@
             "type": "u64"
           },
           {
-            "name": "progress",
+            "name": "_padding_0",
             "docs": [
-              "progress"
+              "padding"
             ],
             "type": "u8"
           },
@@ -4751,13 +4571,6 @@
             "type": "pubkey"
           },
           {
-            "name": "progress",
-            "docs": [
-              "progress"
-            ],
-            "type": "u8"
-          },
-          {
             "name": "_padding",
             "docs": [
               "Reserve"
@@ -4765,7 +4578,7 @@
             "type": {
               "array": [
                 "u8",
-                125
+                126
               ]
             }
           }
@@ -4994,6 +4807,17 @@
             "type": "u128"
           },
           {
+            "name": "locked_vesting_config",
+            "docs": [
+              "locked vesting config"
+            ],
+            "type": {
+              "defined": {
+                "name": "LockedVestingConfig"
+              }
+            }
+          },
+          {
             "name": "_padding_2",
             "docs": [
               "padding 2"
@@ -5001,7 +4825,7 @@
             "type": {
               "array": [
                 "u128",
-                6
+                3
               ]
             }
           },
@@ -5366,6 +5190,13 @@
             "type": "u8"
           },
           {
+            "name": "migration_progress",
+            "docs": [
+              "migration progress"
+            ],
+            "type": "u8"
+          },
+          {
             "name": "_padding_0",
             "docs": [
               "padding"
@@ -5373,7 +5204,7 @@
             "type": {
               "array": [
                 "u8",
-                4
+                3
               ]
             }
           },
@@ -5389,6 +5220,13 @@
             }
           },
           {
+            "name": "finish_curve_timestamp",
+            "docs": [
+              "The time curve is finished"
+            ],
+            "type": "u64"
+          },
+          {
             "name": "_padding_1",
             "docs": [
               "Padding for further use"
@@ -5396,9 +5234,60 @@
             "type": {
               "array": [
                 "u64",
-                10
+                9
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "VirtualPoolMetadata",
+      "docs": [
+        "Metadata for a virtual pool."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "virtual_pool",
+            "docs": [
+              "virtual pool"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "padding",
+            "docs": [
+              "padding for future use"
+            ],
+            "type": {
+              "array": [
+                "u128",
+                6
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "docs": [
+              "Name of project."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "website",
+            "docs": [
+              "Website of project."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "logo",
+            "docs": [
+              "Logo of project"
+            ],
+            "type": "string"
           }
         ]
       }

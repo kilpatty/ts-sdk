@@ -469,7 +469,6 @@ export class PoolService {
             .accounts(accounts)
             .transaction()
 
-        // Add pre and post instructions
         if (ixs.length > 0) {
             transaction.add(...ixs)
         }
@@ -494,7 +493,6 @@ export class PoolService {
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
 
-        // Fetch pool and config data on-demand
         const virtualPoolState = await this.programClient.getPool(
             connection,
             pool
@@ -648,7 +646,6 @@ export class PartnerService {
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
 
-        // Fetch pool and config data on-demand
         const virtualPoolState = await this.programClient.getPool(
             connection,
             virtualPool
@@ -1152,6 +1149,7 @@ export class MigrationService {
         )
 
         const accounts = {
+            virtualPool,
             migrationMetadata,
             poolAuthority,
             pool: dammPool,
@@ -1170,19 +1168,11 @@ export class MigrationService {
             tokenProgram: TOKEN_PROGRAM_ID,
         }
 
-        if (lockDammV1LpTokenParam.isPartner) {
-            return program.methods
-                .migrateMeteoraDammLockLpTokenForPartner()
-                .accountsStrict(accounts)
-                .preInstructions(preInstructions)
-                .transaction()
-        } else {
-            return program.methods
-                .migrateMeteoraDammLockLpTokenForCreator()
-                .accountsStrict(accounts)
-                .preInstructions(preInstructions)
-                .transaction()
-        }
+        return program.methods
+            .migrateMeteoraDammLockLpToken()
+            .accountsStrict(accounts)
+            .preInstructions(preInstructions)
+            .transaction()
     }
 
     /**
@@ -1256,29 +1246,23 @@ export class MigrationService {
         )
 
         const accounts = {
+            virtualPool,
             migrationMetadata,
             poolAuthority,
             pool: dammPool,
             lpMint,
             sourceToken,
             destinationToken,
+            owner: virtualPoolState.creator,
             sender: claimDammV1LpTokenParam.payer,
             tokenProgram: TOKEN_PROGRAM_ID,
         }
 
-        if (claimDammV1LpTokenParam.isPartner) {
-            return program.methods
-                .migrateMeteoraDammPartnerClaimLpToken()
-                .accounts(accounts)
-                .preInstructions(preInstructions)
-                .transaction()
-        } else {
-            return program.methods
-                .migrateMeteoraDammCreatorClaimLpToken()
-                .accounts(accounts)
-                .preInstructions(preInstructions)
-                .transaction()
-        }
+        return program.methods
+            .migrateMeteoraDammClaimLpToken()
+            .accounts(accounts)
+            .preInstructions(preInstructions)
+            .transaction()
     }
 }
 

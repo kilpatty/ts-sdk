@@ -18,73 +18,81 @@ export type VirtualCurveProgram = Program<VirtualCurve>
 export type ClaimProtocolFeeAccounts = Accounts<
     VirtualCurve['instructions']['0']
 >['claimProtocolFee']
+
 export type ClaimTradingFeeAccounts = Accounts<
     VirtualCurve['instructions']['1']
 >['claimTradingFee']
+
 export type CloseClaimFeeOperatorAccounts = Accounts<
     VirtualCurve['instructions']['2']
 >['closeClaimFeeOperator']
+
 export type CreateClaimFeeOperatorAccounts = Accounts<
     VirtualCurve['instructions']['3']
 >['createClaimFeeOperator']
+
 export type CreateConfigAccounts = Accounts<
     VirtualCurve['instructions']['4']
 >['createConfig']
-export type CreatePartnerMetadata = Accounts<
+
+export type CreateLockerAccounts = Accounts<
     VirtualCurve['instructions']['5']
->['createPartnerMetadata']
-export type CreatorClaimLpFromMeteoraDynamicAmmAccounts = Accounts<
+>['createLocker']
+
+export type CreatePartnerMetadata = Accounts<
     VirtualCurve['instructions']['6']
->['creatorClaimLpFromMeteoraDynamicAmm']
-export type InitializeVirtualPoolWithSplTokenAccounts = Accounts<
+>['createPartnerMetadata']
+
+export type CreateVirtualPoolMetadata = Accounts<
     VirtualCurve['instructions']['7']
->['initializeVirtualPoolWithSplToken']
-export type InitializeVirtualPoolWithToken2022Accounts = Accounts<
+>['createVirtualPoolMetadata']
+
+export type InitializeVirtualPoolWithSplTokenAccounts = Accounts<
     VirtualCurve['instructions']['8']
->['initializeVirtualPoolWithToken2022']
-export type MigrateMeteoraDammAccounts = Accounts<
+>['initializeVirtualPoolWithSplToken']
+
+export type InitializeVirtualPoolWithToken2022Accounts = Accounts<
     VirtualCurve['instructions']['9']
->['migrateMeteoraDamm']
-export type MigrateMeteoraDammCreatorClaimLpTokenAccounts = Accounts<
+>['initializeVirtualPoolWithToken2022']
+
+export type MigrateMeteoraDammAccounts = Accounts<
     VirtualCurve['instructions']['10']
->['migrateMeteoraDammCreatorClaimLpToken']
-export type MigrateMeteoraDammLockLpTokenForCreatorAccounts = Accounts<
+>['migrateMeteoraDamm']
+
+export type MigrateMeteoraDammClaimLpTokenAccounts = Accounts<
     VirtualCurve['instructions']['11']
->['migrateMeteoraDammLockLpTokenForCreator']
-export type MigrateMeteoraDammLockLpTokenForPartnerAccounts = Accounts<
+>['migrateMeteoraDammClaimLpToken']
+
+export type MigrateMeteoraDammLockLpTokenAccounts = Accounts<
     VirtualCurve['instructions']['12']
->['migrateMeteoraDammLockLpTokenForPartner']
-export type MigrateMeteoraDammPartnerClaimLpTokenAccounts = Accounts<
-    VirtualCurve['instructions']['13']
->['migrateMeteoraDammPartnerClaimLpToken']
+>['migrateMeteoraDammLockLpToken']
+
 export type MigrationDammV2Accounts = Accounts<
-    VirtualCurve['instructions']['14']
+    VirtualCurve['instructions']['13']
 >['migrationDammV2']
+
 export type MigrationDammV2CreateMetadataAccounts = Accounts<
-    VirtualCurve['instructions']['15']
+    VirtualCurve['instructions']['14']
 >['migrationDammV2CreateMetadata']
+
 export type MigrationMeteoraDammCreateMetadataAccounts = Accounts<
-    VirtualCurve['instructions']['16']
+    VirtualCurve['instructions']['15']
 >['migrationMeteoraDammCreateMetadata']
-export type PartnerClaimLpFromMeteoraDynamicAmmAccounts = Accounts<
-    VirtualCurve['instructions']['17']
->['partnerClaimLpFromMeteoraDynamicAmm']
+
 export type PartnerWithdrawSurplusAccounts = Accounts<
-    VirtualCurve['instructions']['18']
+    VirtualCurve['instructions']['16']
 >['partnerWithdrawSurplus']
-export type ProtocolWithdrawSurplusAccounts = Accounts<
-    VirtualCurve['instructions']['19']
->['protocolWithdrawSurplus']
-export type SwapAccounts = Accounts<VirtualCurve['instructions']['20']>['swap']
+
+export type SwapAccounts = Accounts<VirtualCurve['instructions']['18']>['swap']
 
 ///////////////
 // IDL Types //
 ///////////////
 
+export type ConfigParameters = IdlTypes<VirtualCurve>['configParameters']
 export type InitializePoolParameters =
     IdlTypes<VirtualCurve>['initializePoolParameters']
 export type SwapParameters = IdlTypes<VirtualCurve>['swapParameters']
-export type ConfigParameters = IdlTypes<VirtualCurve>['configParameters']
 export type PoolFeeParamters = IdlTypes<VirtualCurve>['poolFeeParamters']
 export type DynamicFeeParameters =
     IdlTypes<VirtualCurve>['dynamicFeeParameters']

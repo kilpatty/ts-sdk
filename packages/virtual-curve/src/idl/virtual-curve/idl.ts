@@ -82,38 +82,38 @@ export type VirtualCurve = {
                             {
                                 kind: 'const'
                                 value: [
-                                    153,
-                                    10,
-                                    107,
-                                    154,
-                                    255,
-                                    249,
-                                    210,
+                                    48,
+                                    9,
+                                    89,
+                                    123,
+                                    106,
+                                    114,
+                                    131,
+                                    251,
+                                    50,
                                     173,
-                                    176,
-                                    67,
-                                    220,
-                                    214,
-                                    152,
-                                    71,
-                                    46,
-                                    146,
-                                    161,
-                                    33,
-                                    81,
-                                    148,
-                                    166,
-                                    119,
-                                    5,
-                                    189,
-                                    142,
-                                    11,
-                                    57,
-                                    68,
-                                    162,
-                                    70,
-                                    126,
+                                    254,
+                                    250,
+                                    10,
+                                    80,
+                                    160,
+                                    84,
+                                    143,
                                     100,
+                                    81,
+                                    249,
+                                    134,
+                                    112,
+                                    30,
+                                    213,
+                                    50,
+                                    166,
+                                    239,
+                                    78,
+                                    53,
+                                    175,
+                                    188,
+                                    85,
                                 ]
                             },
                             {
@@ -173,38 +173,38 @@ export type VirtualCurve = {
                             {
                                 kind: 'const'
                                 value: [
-                                    153,
-                                    10,
-                                    107,
-                                    154,
-                                    255,
-                                    249,
-                                    210,
+                                    48,
+                                    9,
+                                    89,
+                                    123,
+                                    106,
+                                    114,
+                                    131,
+                                    251,
+                                    50,
                                     173,
-                                    176,
-                                    67,
-                                    220,
-                                    214,
-                                    152,
-                                    71,
-                                    46,
-                                    146,
-                                    161,
-                                    33,
-                                    81,
-                                    148,
-                                    166,
-                                    119,
-                                    5,
-                                    189,
-                                    142,
-                                    11,
-                                    57,
-                                    68,
-                                    162,
-                                    70,
-                                    126,
+                                    254,
+                                    250,
+                                    10,
+                                    80,
+                                    160,
+                                    84,
+                                    143,
                                     100,
+                                    81,
+                                    249,
+                                    134,
+                                    112,
+                                    30,
+                                    213,
+                                    50,
+                                    166,
+                                    239,
+                                    78,
+                                    53,
+                                    175,
+                                    188,
+                                    85,
                                 ]
                             },
                             {
@@ -639,6 +639,121 @@ export type VirtualCurve = {
             ]
         },
         {
+            name: 'createLocker'
+            docs: ['PERMISSIONLESS FUNCTIONS ///', 'create locker']
+            discriminator: [167, 90, 137, 154, 75, 47, 17, 84]
+            accounts: [
+                {
+                    name: 'virtualPool'
+                    docs: ['Virtual pool']
+                    writable: true
+                },
+                {
+                    name: 'config'
+                    docs: ['config']
+                    relations: ['virtualPool']
+                },
+                {
+                    name: 'poolAuthority'
+                    writable: true
+                    pda: {
+                        seeds: [
+                            {
+                                kind: 'const'
+                                value: [
+                                    112,
+                                    111,
+                                    111,
+                                    108,
+                                    95,
+                                    97,
+                                    117,
+                                    116,
+                                    104,
+                                    111,
+                                    114,
+                                    105,
+                                    116,
+                                    121,
+                                ]
+                            },
+                        ]
+                    }
+                },
+                {
+                    name: 'baseVault'
+                    writable: true
+                    relations: ['virtualPool']
+                },
+                {
+                    name: 'baseMint'
+                    writable: true
+                    relations: ['virtualPool']
+                },
+                {
+                    name: 'base'
+                    writable: true
+                    pda: {
+                        seeds: [
+                            {
+                                kind: 'const'
+                                value: [
+                                    98,
+                                    97,
+                                    115,
+                                    101,
+                                    95,
+                                    108,
+                                    111,
+                                    99,
+                                    107,
+                                    101,
+                                    114,
+                                ]
+                            },
+                            {
+                                kind: 'account'
+                                path: 'virtualPool'
+                            },
+                        ]
+                    }
+                },
+                {
+                    name: 'creator'
+                    relations: ['virtualPool']
+                },
+                {
+                    name: 'escrow'
+                    writable: true
+                },
+                {
+                    name: 'escrowToken'
+                    writable: true
+                },
+                {
+                    name: 'payer'
+                    writable: true
+                    signer: true
+                },
+                {
+                    name: 'tokenProgram'
+                },
+                {
+                    name: 'lockerProgram'
+                    address: 'LocpQgucEQHbqNABEYvBvwoxCPsSbG91A1QaQhQQqjn'
+                },
+                {
+                    name: 'lockerEventAuthority'
+                },
+                {
+                    name: 'systemProgram'
+                    docs: ['System program.']
+                    address: '11111111111111111111111111111111'
+                },
+            ]
+            args: []
+        },
+        {
             name: 'createPartnerMetadata'
             docs: ['PARTNER FUNCTIONS ////']
             discriminator: [192, 168, 234, 191, 188, 226, 227, 255]
@@ -738,26 +853,82 @@ export type VirtualCurve = {
             ]
         },
         {
-            name: 'creatorClaimLpFromMeteoraDynamicAmm'
-            discriminator: [239, 190, 35, 36, 59, 98, 29, 26]
+            name: 'createVirtualPoolMetadata'
+            discriminator: [45, 97, 187, 103, 254, 109, 124, 134]
             accounts: [
                 {
-                    name: 'migrationMetadata'
-                    docs: ['presale']
+                    name: 'virtualPool'
                     writable: true
                 },
                 {
-                    name: 'poolAuthority'
+                    name: 'virtualPoolMetadata'
+                    docs: ['Virtual pool metadata']
                     writable: true
                     pda: {
                         seeds: [
                             {
                                 kind: 'const'
                                 value: [
+                                    118,
+                                    105,
+                                    114,
+                                    116,
+                                    117,
+                                    97,
+                                    108,
+                                    95,
                                     112,
                                     111,
                                     111,
                                     108,
+                                    95,
+                                    109,
+                                    101,
+                                    116,
+                                    97,
+                                    100,
+                                    97,
+                                    116,
+                                    97,
+                                ]
+                            },
+                            {
+                                kind: 'account'
+                                path: 'virtualPool'
+                            },
+                        ]
+                    }
+                },
+                {
+                    name: 'creator'
+                    signer: true
+                    relations: ['virtualPool']
+                },
+                {
+                    name: 'payer'
+                    docs: ['Payer of the virtual pool metadata.']
+                    writable: true
+                    signer: true
+                },
+                {
+                    name: 'systemProgram'
+                    docs: ['System program.']
+                    address: '11111111111111111111111111111111'
+                },
+                {
+                    name: 'eventAuthority'
+                    pda: {
+                        seeds: [
+                            {
+                                kind: 'const'
+                                value: [
+                                    95,
+                                    95,
+                                    101,
+                                    118,
+                                    101,
+                                    110,
+                                    116,
                                     95,
                                     97,
                                     117,
@@ -774,118 +945,19 @@ export type VirtualCurve = {
                     }
                 },
                 {
-                    name: 'pool'
-                    writable: true
+                    name: 'program'
                 },
+            ]
+            args: [
                 {
-                    name: 'lpMint'
-                    relations: ['migrationMetadata']
-                },
-                {
-                    name: 'sourceToken'
-                    writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'account'
-                                path: 'poolAuthority'
-                            },
-                            {
-                                kind: 'const'
-                                value: [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169,
-                                ]
-                            },
-                            {
-                                kind: 'account'
-                                path: 'migrationMetadata'
-                            },
-                        ]
-                        program: {
-                            kind: 'const'
-                            value: [
-                                140,
-                                151,
-                                37,
-                                143,
-                                78,
-                                36,
-                                137,
-                                241,
-                                187,
-                                61,
-                                16,
-                                41,
-                                20,
-                                142,
-                                13,
-                                131,
-                                11,
-                                90,
-                                19,
-                                153,
-                                218,
-                                255,
-                                16,
-                                132,
-                                4,
-                                142,
-                                123,
-                                216,
-                                219,
-                                233,
-                                248,
-                                89,
-                            ]
+                    name: 'metadata'
+                    type: {
+                        defined: {
+                            name: 'createVirtualPoolMetadataParameters'
                         }
                     }
                 },
-                {
-                    name: 'destinationToken'
-                    writable: true
-                },
-                {
-                    name: 'sender'
-                    signer: true
-                },
-                {
-                    name: 'tokenProgram'
-                    docs: ['tokenProgram']
-                    address: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
-                },
             ]
-            args: []
         },
         {
             name: 'initializeVirtualPoolWithSplToken'
@@ -1412,12 +1484,16 @@ export type VirtualCurve = {
             args: []
         },
         {
-            name: 'migrateMeteoraDammCreatorClaimLpToken'
-            discriminator: [157, 28, 113, 25, 217, 52, 255, 237]
+            name: 'migrateMeteoraDammClaimLpToken'
+            discriminator: [139, 133, 2, 30, 91, 145, 127, 154]
             accounts: [
                 {
+                    name: 'virtualPool'
+                    relations: ['migrationMetadata']
+                },
+                {
                     name: 'migrationMetadata'
-                    docs: ['presale']
+                    docs: ['migration metadata']
                     writable: true
                 },
                 {
@@ -1548,6 +1624,95 @@ export type VirtualCurve = {
                 {
                     name: 'destinationToken'
                     writable: true
+                    pda: {
+                        seeds: [
+                            {
+                                kind: 'account'
+                                path: 'owner'
+                            },
+                            {
+                                kind: 'const'
+                                value: [
+                                    6,
+                                    221,
+                                    246,
+                                    225,
+                                    215,
+                                    101,
+                                    161,
+                                    147,
+                                    217,
+                                    203,
+                                    225,
+                                    70,
+                                    206,
+                                    235,
+                                    121,
+                                    172,
+                                    28,
+                                    180,
+                                    133,
+                                    237,
+                                    95,
+                                    91,
+                                    55,
+                                    145,
+                                    58,
+                                    140,
+                                    245,
+                                    133,
+                                    126,
+                                    255,
+                                    0,
+                                    169,
+                                ]
+                            },
+                            {
+                                kind: 'account'
+                                path: 'migrationMetadata'
+                            },
+                        ]
+                        program: {
+                            kind: 'const'
+                            value: [
+                                140,
+                                151,
+                                37,
+                                143,
+                                78,
+                                36,
+                                137,
+                                241,
+                                187,
+                                61,
+                                16,
+                                41,
+                                20,
+                                142,
+                                13,
+                                131,
+                                11,
+                                90,
+                                19,
+                                153,
+                                218,
+                                255,
+                                16,
+                                132,
+                                4,
+                                142,
+                                123,
+                                216,
+                                219,
+                                233,
+                                248,
+                                89,
+                            ]
+                        }
+                    }
+                },
+                {
+                    name: 'owner'
                 },
                 {
                     name: 'sender'
@@ -1562,12 +1727,16 @@ export type VirtualCurve = {
             args: []
         },
         {
-            name: 'migrateMeteoraDammLockLpTokenForCreator'
-            discriminator: [204, 196, 142, 73, 251, 226, 195, 206]
+            name: 'migrateMeteoraDammLockLpToken'
+            discriminator: [177, 55, 238, 157, 251, 88, 165, 42]
             accounts: [
                 {
+                    name: 'virtualPool'
+                    relations: ['migrationMetadata']
+                },
+                {
                     name: 'migrationMetadata'
-                    docs: ['presale']
+                    docs: ['migrationMetadata']
                     writable: true
                 },
                 {
@@ -1729,333 +1898,6 @@ export type VirtualCurve = {
                 },
                 {
                     name: 'bVaultLpMint'
-                },
-                {
-                    name: 'tokenProgram'
-                    docs: ['tokenProgram']
-                    address: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
-                },
-            ]
-            args: []
-        },
-        {
-            name: 'migrateMeteoraDammLockLpTokenForPartner'
-            discriminator: [14, 102, 240, 58, 161, 16, 166, 83]
-            accounts: [
-                {
-                    name: 'migrationMetadata'
-                    docs: ['presale']
-                    writable: true
-                },
-                {
-                    name: 'poolAuthority'
-                    writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
-                },
-                {
-                    name: 'pool'
-                    writable: true
-                    relations: ['lockEscrow']
-                },
-                {
-                    name: 'lpMint'
-                    relations: ['migrationMetadata']
-                },
-                {
-                    name: 'lockEscrow'
-                    writable: true
-                },
-                {
-                    name: 'owner'
-                    relations: ['lockEscrow']
-                },
-                {
-                    name: 'sourceTokens'
-                    writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'account'
-                                path: 'poolAuthority'
-                            },
-                            {
-                                kind: 'const'
-                                value: [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169,
-                                ]
-                            },
-                            {
-                                kind: 'account'
-                                path: 'migrationMetadata'
-                            },
-                        ]
-                        program: {
-                            kind: 'const'
-                            value: [
-                                140,
-                                151,
-                                37,
-                                143,
-                                78,
-                                36,
-                                137,
-                                241,
-                                187,
-                                61,
-                                16,
-                                41,
-                                20,
-                                142,
-                                13,
-                                131,
-                                11,
-                                90,
-                                19,
-                                153,
-                                218,
-                                255,
-                                16,
-                                132,
-                                4,
-                                142,
-                                123,
-                                216,
-                                219,
-                                233,
-                                248,
-                                89,
-                            ]
-                        }
-                    }
-                },
-                {
-                    name: 'escrowVault'
-                    writable: true
-                },
-                {
-                    name: 'ammProgram'
-                    address: 'Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB'
-                },
-                {
-                    name: 'aVault'
-                },
-                {
-                    name: 'bVault'
-                },
-                {
-                    name: 'aVaultLp'
-                },
-                {
-                    name: 'bVaultLp'
-                },
-                {
-                    name: 'aVaultLpMint'
-                },
-                {
-                    name: 'bVaultLpMint'
-                },
-                {
-                    name: 'tokenProgram'
-                    docs: ['tokenProgram']
-                    address: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
-                },
-            ]
-            args: []
-        },
-        {
-            name: 'migrateMeteoraDammPartnerClaimLpToken'
-            discriminator: [80, 221, 69, 196, 182, 163, 251, 90]
-            accounts: [
-                {
-                    name: 'migrationMetadata'
-                    docs: ['presale']
-                    writable: true
-                },
-                {
-                    name: 'poolAuthority'
-                    writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
-                },
-                {
-                    name: 'pool'
-                    writable: true
-                },
-                {
-                    name: 'lpMint'
-                    relations: ['migrationMetadata']
-                },
-                {
-                    name: 'sourceToken'
-                    writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'account'
-                                path: 'poolAuthority'
-                            },
-                            {
-                                kind: 'const'
-                                value: [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169,
-                                ]
-                            },
-                            {
-                                kind: 'account'
-                                path: 'migrationMetadata'
-                            },
-                        ]
-                        program: {
-                            kind: 'const'
-                            value: [
-                                140,
-                                151,
-                                37,
-                                143,
-                                78,
-                                36,
-                                137,
-                                241,
-                                187,
-                                61,
-                                16,
-                                41,
-                                20,
-                                142,
-                                13,
-                                131,
-                                11,
-                                90,
-                                19,
-                                153,
-                                218,
-                                255,
-                                16,
-                                132,
-                                4,
-                                142,
-                                123,
-                                216,
-                                219,
-                                233,
-                                248,
-                                89,
-                            ]
-                        }
-                    }
-                },
-                {
-                    name: 'destinationToken'
-                    writable: true
-                },
-                {
-                    name: 'sender'
-                    signer: true
                 },
                 {
                     name: 'tokenProgram'
@@ -2078,7 +1920,6 @@ export type VirtualCurve = {
                 {
                     name: 'migrationMetadata'
                     docs: ['migration metadata']
-                    writable: true
                 },
                 {
                     name: 'config'
@@ -2274,7 +2115,7 @@ export type VirtualCurve = {
         },
         {
             name: 'migrationMeteoraDammCreateMetadata'
-            docs: ['PERMISSIONLESS FUNCTIONS ///']
+            docs: ['migrate damm v1']
             discriminator: [47, 94, 126, 115, 221, 226, 194, 133]
             accounts: [
                 {
@@ -2340,156 +2181,6 @@ export type VirtualCurve = {
                 },
                 {
                     name: 'program'
-                },
-            ]
-            args: []
-        },
-        {
-            name: 'partnerClaimLpFromMeteoraDynamicAmm'
-            discriminator: [245, 199, 14, 54, 241, 224, 19, 32]
-            accounts: [
-                {
-                    name: 'migrationMetadata'
-                    docs: ['presale']
-                    writable: true
-                },
-                {
-                    name: 'poolAuthority'
-                    writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
-                },
-                {
-                    name: 'pool'
-                    writable: true
-                },
-                {
-                    name: 'lpMint'
-                    relations: ['migrationMetadata']
-                },
-                {
-                    name: 'sourceToken'
-                    writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'account'
-                                path: 'poolAuthority'
-                            },
-                            {
-                                kind: 'const'
-                                value: [
-                                    6,
-                                    221,
-                                    246,
-                                    225,
-                                    215,
-                                    101,
-                                    161,
-                                    147,
-                                    217,
-                                    203,
-                                    225,
-                                    70,
-                                    206,
-                                    235,
-                                    121,
-                                    172,
-                                    28,
-                                    180,
-                                    133,
-                                    237,
-                                    95,
-                                    91,
-                                    55,
-                                    145,
-                                    58,
-                                    140,
-                                    245,
-                                    133,
-                                    126,
-                                    255,
-                                    0,
-                                    169,
-                                ]
-                            },
-                            {
-                                kind: 'account'
-                                path: 'migrationMetadata'
-                            },
-                        ]
-                        program: {
-                            kind: 'const'
-                            value: [
-                                140,
-                                151,
-                                37,
-                                143,
-                                78,
-                                36,
-                                137,
-                                241,
-                                187,
-                                61,
-                                16,
-                                41,
-                                20,
-                                142,
-                                13,
-                                131,
-                                11,
-                                90,
-                                19,
-                                153,
-                                218,
-                                255,
-                                16,
-                                132,
-                                4,
-                                142,
-                                123,
-                                216,
-                                219,
-                                233,
-                                248,
-                                89,
-                            ]
-                        }
-                    }
-                },
-                {
-                    name: 'destinationToken'
-                    writable: true
-                },
-                {
-                    name: 'sender'
-                    signer: true
-                },
-                {
-                    name: 'tokenProgram'
-                    docs: ['tokenProgram']
-                    address: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
                 },
             ]
             args: []
@@ -2639,38 +2330,38 @@ export type VirtualCurve = {
                             {
                                 kind: 'const'
                                 value: [
-                                    153,
-                                    10,
-                                    107,
-                                    154,
-                                    255,
-                                    249,
-                                    210,
+                                    48,
+                                    9,
+                                    89,
+                                    123,
+                                    106,
+                                    114,
+                                    131,
+                                    251,
+                                    50,
                                     173,
-                                    176,
-                                    67,
-                                    220,
-                                    214,
-                                    152,
-                                    71,
-                                    46,
-                                    146,
-                                    161,
-                                    33,
-                                    81,
-                                    148,
-                                    166,
-                                    119,
-                                    5,
-                                    189,
-                                    142,
-                                    11,
-                                    57,
-                                    68,
-                                    162,
-                                    70,
-                                    126,
+                                    254,
+                                    250,
+                                    10,
+                                    80,
+                                    160,
+                                    84,
+                                    143,
                                     100,
+                                    81,
+                                    249,
+                                    134,
+                                    112,
+                                    30,
+                                    213,
+                                    50,
+                                    166,
+                                    239,
+                                    78,
+                                    53,
+                                    175,
+                                    188,
+                                    85,
                                 ]
                             },
                             {
@@ -2939,6 +2630,10 @@ export type VirtualCurve = {
             name: 'virtualPool'
             discriminator: [213, 224, 5, 209, 98, 69, 119, 92]
         },
+        {
+            name: 'virtualPoolMetadata'
+            discriminator: [217, 37, 82, 250, 43, 47, 228, 254]
+        },
     ]
     events: [
         {
@@ -2992,6 +2687,10 @@ export type VirtualCurve = {
         {
             name: 'evtSwap'
             discriminator: [27, 60, 21, 213, 138, 170, 187, 147]
+        },
+        {
+            name: 'evtVirtualPoolMetadata'
+            discriminator: [188, 18, 72, 76, 195, 91, 38, 74]
         },
     ]
     errors: [
@@ -3154,6 +2853,11 @@ export type VirtualCurve = {
             code: 6031
             name: 'missingPoolConfigInRemaningAccount'
             msg: 'Missing pool config in remaning account'
+        },
+        {
+            code: 6032
+            name: 'invalidVestingParameters'
+            msg: 'Invalid vesting parameters'
         },
     ]
     types: [
@@ -3348,11 +3052,17 @@ export type VirtualCurve = {
                         type: 'u128'
                     },
                     {
+                        name: 'lockedVesting'
+                        type: {
+                            defined: {
+                                name: 'lockedVestingParams'
+                            }
+                        }
+                    },
+                    {
                         name: 'padding'
                         docs: ['padding for future use']
-                        type: {
-                            array: ['u64', 6]
-                        }
+                        type: 'u64'
                     },
                     {
                         name: 'curve'
@@ -3369,6 +3079,32 @@ export type VirtualCurve = {
         },
         {
             name: 'createPartnerMetadataParameters'
+            type: {
+                kind: 'struct'
+                fields: [
+                    {
+                        name: 'padding'
+                        type: {
+                            array: ['u8', 96]
+                        }
+                    },
+                    {
+                        name: 'name'
+                        type: 'string'
+                    },
+                    {
+                        name: 'website'
+                        type: 'string'
+                    },
+                    {
+                        name: 'logo'
+                        type: 'string'
+                    },
+                ]
+            }
+        },
+        {
+            name: 'createVirtualPoolMetadataParameters'
             type: {
                 kind: 'struct'
                 fields: [
@@ -3828,6 +3564,23 @@ export type VirtualCurve = {
             }
         },
         {
+            name: 'evtVirtualPoolMetadata'
+            docs: ['Create virtual pool metadata']
+            type: {
+                kind: 'struct'
+                fields: [
+                    {
+                        name: 'virtualPoolMetadata'
+                        type: 'pubkey'
+                    },
+                    {
+                        name: 'virtualPool'
+                        type: 'pubkey'
+                    },
+                ]
+            }
+        },
+        {
             name: 'initializePoolParameters'
             type: {
                 kind: 'struct'
@@ -3929,6 +3682,70 @@ export type VirtualCurve = {
             }
         },
         {
+            name: 'lockedVestingConfig'
+            serialization: 'bytemuck'
+            repr: {
+                kind: 'c'
+            }
+            type: {
+                kind: 'struct'
+                fields: [
+                    {
+                        name: 'amountPerPeriod'
+                        type: 'u64'
+                    },
+                    {
+                        name: 'cliffDurationFromMigrationTime'
+                        type: 'u64'
+                    },
+                    {
+                        name: 'frequency'
+                        type: 'u64'
+                    },
+                    {
+                        name: 'numberOfPeriod'
+                        type: 'u64'
+                    },
+                    {
+                        name: 'cliffUnlockAmount'
+                        type: 'u64'
+                    },
+                    {
+                        name: 'padding'
+                        type: 'u64'
+                    },
+                ]
+            }
+        },
+        {
+            name: 'lockedVestingParams'
+            type: {
+                kind: 'struct'
+                fields: [
+                    {
+                        name: 'amountPerPeriod'
+                        type: 'u64'
+                    },
+                    {
+                        name: 'cliffDurationFromMigrationTime'
+                        type: 'u64'
+                    },
+                    {
+                        name: 'frequency'
+                        type: 'u64'
+                    },
+                    {
+                        name: 'numberOfPeriod'
+                        type: 'u64'
+                    },
+                    {
+                        name: 'cliffUnlockAmount'
+                        type: 'u64'
+                    },
+                ]
+            }
+        },
+        {
             name: 'meteoraDammMigrationMetadata'
             serialization: 'bytemuck'
             repr: {
@@ -3978,8 +3795,8 @@ export type VirtualCurve = {
                         type: 'u64'
                     },
                     {
-                        name: 'progress'
-                        docs: ['progress']
+                        name: 'padding0'
+                        docs: ['padding']
                         type: 'u8'
                     },
                     {
@@ -4041,15 +3858,10 @@ export type VirtualCurve = {
                         type: 'pubkey'
                     },
                     {
-                        name: 'progress'
-                        docs: ['progress']
-                        type: 'u8'
-                    },
-                    {
                         name: 'padding'
                         docs: ['Reserve']
                         type: {
-                            array: ['u8', 125]
+                            array: ['u8', 126]
                         }
                     },
                 ]
@@ -4214,10 +4026,19 @@ export type VirtualCurve = {
                         type: 'u128'
                     },
                     {
+                        name: 'lockedVestingConfig'
+                        docs: ['locked vesting config']
+                        type: {
+                            defined: {
+                                name: 'lockedVestingConfig'
+                            }
+                        }
+                    },
+                    {
                         name: 'padding2'
                         docs: ['padding 2']
                         type: {
-                            array: ['u128', 6]
+                            array: ['u128', 3]
                         }
                     },
                     {
@@ -4527,10 +4348,15 @@ export type VirtualCurve = {
                         type: 'u8'
                     },
                     {
+                        name: 'migrationProgress'
+                        docs: ['migration progress']
+                        type: 'u8'
+                    },
+                    {
                         name: 'padding0'
                         docs: ['padding']
                         type: {
-                            array: ['u8', 4]
+                            array: ['u8', 3]
                         }
                     },
                     {
@@ -4543,11 +4369,52 @@ export type VirtualCurve = {
                         }
                     },
                     {
+                        name: 'finishCurveTimestamp'
+                        docs: ['The time curve is finished']
+                        type: 'u64'
+                    },
+                    {
                         name: 'padding1'
                         docs: ['Padding for further use']
                         type: {
-                            array: ['u64', 10]
+                            array: ['u64', 9]
                         }
+                    },
+                ]
+            }
+        },
+        {
+            name: 'virtualPoolMetadata'
+            docs: ['Metadata for a virtual pool.']
+            type: {
+                kind: 'struct'
+                fields: [
+                    {
+                        name: 'virtualPool'
+                        docs: ['virtual pool']
+                        type: 'pubkey'
+                    },
+                    {
+                        name: 'padding'
+                        docs: ['padding for future use']
+                        type: {
+                            array: ['u128', 6]
+                        }
+                    },
+                    {
+                        name: 'name'
+                        docs: ['Name of project.']
+                        type: 'string'
+                    },
+                    {
+                        name: 'website'
+                        docs: ['Website of project.']
+                        type: 'string'
+                    },
+                    {
+                        name: 'logo'
+                        docs: ['Logo of project']
+                        type: 'string'
                     },
                 ]
             }
