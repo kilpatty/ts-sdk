@@ -357,10 +357,6 @@ export class PoolService {
                 config,
                 creator,
                 program: program.programId,
-                tokenQuoteProgram:
-                    quoteTokenType === TokenType.SPL
-                        ? TOKEN_PROGRAM_ID
-                        : TOKEN_2022_PROGRAM_ID,
                 baseMint,
                 payer: creator,
                 poolAuthority,
@@ -368,8 +364,9 @@ export class PoolService {
                 quoteVault,
                 quoteMint,
                 eventAuthority,
-                systemProgram: SystemProgram.programId,
+                tokenQuoteProgram: TOKEN_PROGRAM_ID,
                 tokenProgram: TOKEN_2022_PROGRAM_ID,
+                systemProgram: SystemProgram.programId,
             }
             return program.methods
                 .initializeVirtualPoolWithToken2022({
