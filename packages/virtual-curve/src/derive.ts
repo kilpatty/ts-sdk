@@ -1,5 +1,6 @@
 import { PublicKey } from '@solana/web3.js'
 import {
+    BASE_ADDRESS,
     DAMM_V1_PROGRAM_ID,
     DAMM_V2_PROGRAM_ID,
     LOCKER_PROGRAM_ID,
@@ -388,4 +389,34 @@ export function deriveLpMint(vaultKey: PublicKey): PublicKey {
         [Buffer.from(SEED.LP_MINT), vaultKey.toBuffer()],
         VAULT_PROGRAM_ID
     )[0]
+}
+
+export const getVaultPdas = (
+    tokenMint: PublicKey,
+    programId: PublicKey,
+    seedBaseKey?: PublicKey
+) => {
+    const [vault] = PublicKey.findProgramAddressSync(
+        [
+            Buffer.from(SEED.VAULT),
+            tokenMint.toBuffer(),
+            (seedBaseKey ?? BASE_ADDRESS).toBuffer(),
+        ],
+        programId
+    )
+
+    const [tokenVault] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.TOKEN_VAULT), vault.toBuffer()],
+        programId
+    )
+    const [lpMint] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.LP_MINT), vault.toBuffer()],
+        programId
+    )
+
+    return {
+        vaultPda: vault,
+        tokenVaultPda: tokenVault,
+        lpMintPda: lpMint,
+    }
 }

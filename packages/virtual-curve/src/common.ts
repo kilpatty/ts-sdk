@@ -88,21 +88,13 @@ export async function createVaultIfNotExists(
         vaultProgram
     )
 
-    const vaultAccount = await connection.getAccountInfo(vaultIx.vaultKey)
-
-    if (!vaultAccount) {
-        return {
-            vaultPda: vaultIx.vaultKey,
-            tokenVaultPda: vaultIx.tokenVaultKey,
-            lpMintPda: vaultIx.lpMintKey,
-            ix: vaultIx.instruction,
-        }
-    }
+    console.log('vaultIx:', vaultIx)
 
     return {
         vaultPda: vaultIx.vaultKey,
         tokenVaultPda: vaultIx.tokenVaultKey,
         lpMintPda: vaultIx.lpMintKey,
+        ix: vaultIx.instruction,
     }
 }
 
