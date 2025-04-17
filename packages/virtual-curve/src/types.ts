@@ -93,7 +93,7 @@ export type ConfigParameters = IdlTypes<VirtualCurve>['configParameters']
 export type InitializePoolParameters =
     IdlTypes<VirtualCurve>['initializePoolParameters']
 export type SwapParameters = IdlTypes<VirtualCurve>['swapParameters']
-export type PoolFeeParamters = IdlTypes<VirtualCurve>['poolFeeParamters']
+export type PoolFeeParameters = IdlTypes<VirtualCurve>['poolFeeParameters']
 export type DynamicFeeParameters =
     IdlTypes<VirtualCurve>['dynamicFeeParameters']
 export type LiquidityDistributionParameters =
@@ -155,6 +155,18 @@ export enum CollectFeeMode {
 export enum FeeSchedulerMode {
     Linear = 0,
     Exponential = 1,
+}
+
+export enum MigrationFeeOption {
+    FixedBps25 = 0,
+    FixedBps30 = 1,
+    FixedBps100 = 2,
+    FixedBps200 = 3,
+}
+
+export enum TokenDecimal {
+    SIX = 6,
+    NINE = 9,
 }
 
 /**
@@ -251,6 +263,11 @@ export type DammLpTokenParam = {
 
 export type PartnerWithdrawSurplusParam = {
     feeClaimer: PublicKey
+    virtualPool: PublicKey
+}
+
+export type CreateLockerParam = {
+    payer: PublicKey
     virtualPool: PublicKey
 }
 

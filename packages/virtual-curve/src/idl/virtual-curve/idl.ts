@@ -488,7 +488,7 @@ export type VirtualCurve = {
         },
         {
             name: 'createClaimFeeOperator'
-            docs: ['ADMIN FUNCTIONS ////']
+            docs: ['ADMIN FUNCTIONS ///']
             discriminator: [169, 62, 207, 107, 58, 187, 162, 109]
             accounts: [
                 {
@@ -1522,10 +1522,6 @@ export type VirtualCurve = {
                             },
                         ]
                     }
-                },
-                {
-                    name: 'pool'
-                    writable: true
                 },
                 {
                     name: 'lpMint'
@@ -2751,111 +2747,116 @@ export type VirtualCurve = {
         },
         {
             code: 6011
+            name: 'invalidMigrationFeeOption'
+            msg: 'Invalid migration fee option'
+        },
+        {
+            code: 6012
             name: 'invalidInput'
             msg: 'Invalid input'
         },
         {
-            code: 6012
+            code: 6013
             name: 'invalidExtension'
             msg: 'Invalid extension'
         },
         {
-            code: 6013
+            code: 6014
             name: 'feeInverseIsIncorrect'
             msg: 'Fee inverse is incorrect'
         },
         {
-            code: 6014
+            code: 6015
             name: 'notEnoughLiquidity'
             msg: 'Not enough liquidity'
         },
         {
-            code: 6015
+            code: 6016
             name: 'poolIsCompleted'
             msg: 'Pool is completed'
         },
         {
-            code: 6016
+            code: 6017
             name: 'poolIsIncompleted'
             msg: 'Pool is incompleted'
         },
         {
-            code: 6017
+            code: 6018
             name: 'invalidMigrationOption'
             msg: 'Invalid migration option'
         },
         {
-            code: 6018
+            code: 6019
             name: 'invalidTokenDecimals'
             msg: 'Invalid activation type'
         },
         {
-            code: 6019
+            code: 6020
             name: 'invalidTokenType'
             msg: 'Invalid token type'
         },
         {
-            code: 6020
+            code: 6021
             name: 'invalidFeePercentage'
             msg: 'Invalid fee percentage'
         },
         {
-            code: 6021
+            code: 6022
             name: 'invalidQuoteThreshold'
             msg: 'Invalid quote threshold'
         },
         {
-            code: 6022
+            code: 6023
             name: 'invalidCurve'
             msg: 'Invalid curve'
         },
         {
-            code: 6023
+            code: 6024
             name: 'notPermitToDoThisAction'
             msg: 'Not permit to do this action'
         },
         {
-            code: 6024
+            code: 6025
             name: 'invalidPartnerAccount'
             msg: 'Invalid partner account'
         },
         {
-            code: 6025
+            code: 6026
             name: 'invalidOwnerAccount'
             msg: 'Invalid owner account'
         },
         {
-            code: 6026
+            code: 6027
             name: 'invalidConfigAccount'
             msg: 'Invalid config account'
         },
         {
-            code: 6027
+            code: 6028
             name: 'surplusHasBeenWithdraw'
             msg: 'Surplus has been withdraw'
         },
         {
-            code: 6028
+            code: 6029
             name: 'totalBaseTokenExceedMaxSupply'
             msg: 'Total base token is exceeded max supply'
         },
         {
-            code: 6029
+            code: 6030
             name: 'unsupportNativeMintToken2022'
             msg: 'Unsupport native mint token 2022'
         },
         {
-            code: 6030
+            code: 6031
             name: 'insufficentLiquidityForMigration'
             msg: 'Insufficent liquidity for migration'
         },
         {
-            code: 6031
+            code: 6032
             name: 'missingPoolConfigInRemaningAccount'
             msg: 'Missing pool config in remaning account'
         },
         {
-            code: 6032
+            code: 6033
             name: 'invalidVestingParameters'
             msg: 'Invalid vesting parameters'
         },
@@ -3003,7 +3004,7 @@ export type VirtualCurve = {
                         name: 'poolFees'
                         type: {
                             defined: {
-                                name: 'poolFeeParamters'
+                                name: 'poolFeeParameters'
                             }
                         }
                     },
@@ -3060,9 +3061,15 @@ export type VirtualCurve = {
                         }
                     },
                     {
+                        name: 'migrationFeeOption'
+                        type: 'u8'
+                    },
+                    {
                         name: 'padding'
                         docs: ['padding for future use']
-                        type: 'u64'
+                        type: {
+                            array: ['u8', 7]
+                        }
                     },
                     {
                         name: 'curve'
@@ -3317,7 +3324,7 @@ export type VirtualCurve = {
                         name: 'poolFees'
                         type: {
                             defined: {
-                                name: 'poolFeeParamters'
+                                name: 'poolFeeParameters'
                             }
                         }
                     },
@@ -3992,10 +3999,15 @@ export type VirtualCurve = {
                         type: 'u8'
                     },
                     {
+                        name: 'migrationFeeOption'
+                        docs: ['migration fee option']
+                        type: 'u8'
+                    },
+                    {
                         name: 'padding0'
                         docs: ['padding 0']
                         type: {
-                            array: ['u8', 5]
+                            array: ['u8', 4]
                         }
                     },
                     {
@@ -4066,7 +4078,7 @@ export type VirtualCurve = {
             }
         },
         {
-            name: 'poolFeeParamters'
+            name: 'poolFeeParameters'
             docs: ['Information regarding fee charges']
             type: {
                 kind: 'struct'

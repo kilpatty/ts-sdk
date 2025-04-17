@@ -1,6 +1,7 @@
 import { PublicKey } from '@solana/web3.js'
 import {
     DAMM_V2_PROGRAM_ID,
+    LOCKER_PROGRAM_ID,
     METAPLEX_PROGRAM_ID,
     VIRTUAL_CURVE_PROGRAM_ID,
 } from './constants'
@@ -21,6 +22,8 @@ const SEED = Object.freeze({
     POSITION_NFT_ACCOUNT: 'position_nft_account',
     LOCK_ESCROW: 'lock_escrow',
     VIRTUAL_POOL_METADATA: 'virtual_pool_metadata',
+    ESCROW: 'escrow',
+    BASE_LOCKER: 'base_locker',
 })
 
 /**
@@ -285,6 +288,31 @@ export function deriveLockEscrowAddress(
 }
 
 /**
+ * Derive the escrow address
+ * @param base - The base mint
+ * @returns The escrow address
+ */
+export function deriveEscrow(base: PublicKey): PublicKey {
+    const [escrow] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.ESCROW), base.toBuffer()],
+        LOCKER_PROGRAM_ID
+    )
+    return escrow
+}
+
+/**
+ * Derive the base key for the locker
+ * @param virtualPool - The virtual pool
+ * @returns The base key for the locker
+ */
+export function deriveBaseKeyForLocker(virtualPool: PublicKey): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.BASE_LOCKER), virtualPool.toBuffer()],
+        VIRTUAL_CURVE_PROGRAM_ID
+    )[0]
+}
+
+/**
  * Derive the DAMM V2 event authority
  * @returns The event authority
  */
@@ -292,6 +320,18 @@ export function deriveDammV2EventAuthority(): PublicKey {
     const [eventAuthority] = PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.EVENT_AUTHORITY)],
         DAMM_V2_PROGRAM_ID
+    )
+    return eventAuthority
+}
+
+/**
+ * Derive the locker event authority
+ * @returns The event authority
+ */
+export function deriveLockerEventAuthority(): PublicKey {
+    const [eventAuthority] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.EVENT_AUTHORITY)],
+        LOCKER_PROGRAM_ID
     )
     return eventAuthority
 }
