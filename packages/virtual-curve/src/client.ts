@@ -37,6 +37,7 @@ import {
 import {
     deriveBaseKeyForLocker,
     deriveDammMigrationMetadataAddress,
+    deriveDammPoolAddress,
     deriveDammV2EventAuthority,
     deriveEscrow,
     deriveEventAuthority,
@@ -945,19 +946,18 @@ export class MigrationService {
             virtualPoolState.config
         )
 
+        const poolAuthority = derivePoolAuthority(program.programId)
+
         const migrationMetadata = deriveDammMigrationMetadataAddress(
             migrateToDammV1Param.virtualPool,
             program.programId,
             false
         )
 
-        const poolAuthority = derivePoolAuthority(program.programId)
-
-        const dammPool = derivePool(
+        const dammPool = deriveDammPoolAddress(
             poolConfigState.quoteMint,
             virtualPoolState.baseMint,
-            migrateToDammV1Param.dammConfig,
-            DAMM_V1_PROGRAM_ID
+            migrateToDammV1Param.dammConfig
         )
 
         const lpMint = deriveLpMintAddress(dammPool, DAMM_V1_PROGRAM_ID)

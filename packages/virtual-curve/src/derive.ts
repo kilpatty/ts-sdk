@@ -1,10 +1,13 @@
 import { PublicKey } from '@solana/web3.js'
 import {
+    DAMM_V1_PROGRAM_ID,
     DAMM_V2_PROGRAM_ID,
     LOCKER_PROGRAM_ID,
     METAPLEX_PROGRAM_ID,
+    VAULT_PROGRAM_ID,
     VIRTUAL_CURVE_PROGRAM_ID,
 } from './constants'
+import { getFirstKey, getSecondKey } from './utils'
 
 const SEED = Object.freeze({
     POOL_AUTHORITY: 'pool_authority',
@@ -24,6 +27,7 @@ const SEED = Object.freeze({
     VIRTUAL_POOL_METADATA: 'virtual_pool_metadata',
     ESCROW: 'escrow',
     BASE_LOCKER: 'base_locker',
+    VAULT: 'vault',
 })
 
 /**
@@ -334,4 +338,54 @@ export function deriveLockerEventAuthority(): PublicKey {
         LOCKER_PROGRAM_ID
     )
     return eventAuthority
+}
+
+export function deriveDammPoolAddress(
+    config: PublicKey,
+    tokenAMint: PublicKey,
+    tokenBMint: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [
+            getFirstKey(tokenAMint, tokenBMint),
+            getSecondKey(tokenAMint, tokenBMint),
+            config.toBuffer(),
+        ],
+        DAMM_V1_PROGRAM_ID
+    )[0]
+}
+
+/**
+ * Derive the vault address
+ * @param mint - The mint
+ * @param payer - The payer
+ * @returns The vault address
+ */
+export function deriveVaultAddress(
+    mint: PublicKey,
+    payer: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.VAULT), mint.toBuffer(), payer.toBuffer()],
+        VAULT_PROGRAM_ID
+    )[0]
+}
+
+/**
+ * Derive the token vault key
+ * @param vaultKey - The vault key
+ * @returns The token vault key
+ */
+export function deriveTokenVaultKey(vaultKey: PublicKey): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.TOKEN_VAULT), vaultKey.toBuffer()],
+        VAULT_PROGRAM_ID
+    )[0]
+}
+
+export function deriveLpMint(vaultKey: PublicKey): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.LP_MINT), vaultKey.toBuffer()],
+        VAULT_PROGRAM_ID
+    )[0]
 }

@@ -6,12 +6,17 @@ import {
     TransactionInstruction,
 } from '@solana/web3.js'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
-import { deriveLpMintAddress } from './derive'
+import {
+    deriveLpMintAddress,
+    deriveTokenVaultKey,
+    deriveVaultAddress,
+} from './derive'
 import type { DynamicVault } from './idl/dynamic-vault/idl'
 import type { Program } from '@coral-xyz/anchor'
 import type { DammV1 } from './idl/damm-v1/idl'
 import type { PrepareSwapParams, TokenType } from './types'
 import { getTokenProgram } from './utils'
+import { BASE_ADDRESS } from './constants'
 
 /**
  * Create a permissionless dynamic vault
@@ -30,26 +35,20 @@ export async function createInitializePermissionlessDynamicVaultIx(
     lpMintKey: PublicKey
     instruction: TransactionInstruction
 }> {
-    const vaultKey = PublicKey.findProgramAddressSync(
-        [Buffer.from('vault'), mint.toBuffer(), payer.toBuffer()],
-        vaultProgram.programId
-    )[0]
+    const vaultKey = deriveVaultAddress(mint, BASE_ADDRESS)
 
-    const tokenVaultKey = PublicKey.findProgramAddressSync(
-        [Buffer.from('token_vault'), vaultKey.toBuffer()],
-        vaultProgram.programId
-    )[0]
+    const tokenVaultKey = deriveTokenVaultKey(vaultKey)
 
     const lpMintKey = deriveLpMintAddress(vaultKey, vaultProgram.programId)
 
     const ix = await vaultProgram.methods
         .initialize()
-        .accountsStrict({
+        .accountsPartial({
             vault: vaultKey,
             tokenVault: tokenVaultKey,
-            payer,
             tokenMint: mint,
             lpMint: lpMintKey,
+            payer,
             rent: SYSVAR_RENT_PUBKEY,
             tokenProgram: TOKEN_PROGRAM_ID,
             systemProgram: SystemProgram.programId,
@@ -83,39 +82,27 @@ export async function createVaultIfNotExists(
     lpMintPda: PublicKey
     ix?: TransactionInstruction
 }> {
-    const vaultKey = PublicKey.findProgramAddressSync(
-        [Buffer.from('vault'), mint.toBuffer(), payer.toBuffer()],
-        vaultProgram.programId
-    )[0]
-
-    const vaultAccount = await connection.getAccountInfo(vaultKey)
-
-    if (vaultAccount) {
-        const tokenVaultKey = PublicKey.findProgramAddressSync(
-            [Buffer.from('token_vault'), vaultKey.toBuffer()],
-            vaultProgram.programId
-        )[0]
-        const lpMintKey = deriveLpMintAddress(vaultKey, vaultProgram.programId)
-
-        return {
-            vaultPda: vaultKey,
-            tokenVaultPda: tokenVaultKey,
-            lpMintPda: lpMintKey,
-            ix: undefined,
-        }
-    }
-
     const vaultIx = await createInitializePermissionlessDynamicVaultIx(
         mint,
         payer,
         vaultProgram
     )
 
+    const vaultAccount = await connection.getAccountInfo(vaultIx.vaultKey)
+
+    if (!vaultAccount) {
+        return {
+            vaultPda: vaultIx.vaultKey,
+            tokenVaultPda: vaultIx.tokenVaultKey,
+            lpMintPda: vaultIx.lpMintKey,
+            ix: vaultIx.instruction,
+        }
+    }
+
     return {
         vaultPda: vaultIx.vaultKey,
         tokenVaultPda: vaultIx.tokenVaultKey,
         lpMintPda: vaultIx.lpMintKey,
-        ix: vaultIx.instruction,
     }
 }
 

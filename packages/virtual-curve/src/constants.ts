@@ -37,3 +37,6 @@ export const VAULT_PROGRAM_ID = new PublicKey(
 export const LOCKER_PROGRAM_ID = new PublicKey(
     'LocpQgucEQHbqNABEYvBvwoxCPsSbG91A1QaQhQQqjn'
 )
+export const BASE_ADDRESS = new PublicKey(
+    'HWzXGcGHy4tcpYfaRDCyLNzXqBTv3E6BttpCH2vJxArv'
+)
