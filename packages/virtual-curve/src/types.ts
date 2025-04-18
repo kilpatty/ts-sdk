@@ -7,7 +7,6 @@ import type {
 } from '@coral-xyz/anchor'
 import type { VirtualCurve } from './idl/virtual-curve/idl'
 import type { PublicKey } from '@solana/web3.js'
-
 // Program Type
 export type VirtualCurveProgram = Program<VirtualCurve>
 
@@ -192,11 +191,31 @@ export type CreateConfigParam = Omit<
 > &
     ConfigParameters
 
+export type CreatePumpFunConfigParam = {
+    config: PublicKey
+    feeClaimer: PublicKey
+    owner: PublicKey
+    payer: PublicKey
+    quoteMint: PublicKey
+}
+
 export type CreateDammMigrationMetadataParam = {
     payer: PublicKey
     virtualPool: PublicKey
     config: PublicKey
     migrateToDammV2: boolean
+}
+
+export type CreateCurveParam = {
+    tokenDecimal: TokenDecimal
+    migrationQuoteThreshold: BN
+    tokenBaseSupply: BN
+    migrationBasePercent: number
+}
+
+export type CreateCurveResponse = {
+    sqrtStartPrice: BN
+    curve: LiquidityDistributionParameters[]
 }
 
 export type MigrateToDammV1Param = {

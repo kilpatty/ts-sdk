@@ -24,8 +24,10 @@ import {
     type CreateVirtualPoolMetadataParameters,
     type VirtualPoolMetadata,
     type CreateLockerParam,
+    type CreatePumpFunConfigParam,
 } from './types'
 import {
+    ComputeBudgetProgram,
     Connection,
     Keypair,
     PublicKey,
@@ -54,6 +56,7 @@ import {
     deriveTokenVaultAddress,
     deriveVaultLPAddress,
     deriveVirtualPoolMetadata,
+    getVaultPdas,
 } from './derive'
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -67,6 +70,7 @@ import {
     DAMM_V2_PROGRAM_ID,
     LOCKER_PROGRAM_ID,
     METAPLEX_PROGRAM_ID,
+    PUMP_FUN_CONFIG,
     VAULT_PROGRAM_ID,
 } from './constants'
 import {
@@ -85,6 +89,7 @@ import type { VirtualCurve as VirtualCurveIDL } from './idl/virtual-curve/idl'
 import BN from 'bn.js'
 import { swapQuote } from './math/swapQuote'
 import {
+    createInitializePermissionlessDynamicVaultIx,
     createLockEscrowIx,
     createVaultIfNotExists,
     prepareSwapParams,
@@ -126,7 +131,6 @@ export class VirtualCurveProgramClient {
 
     /**
      * Retrieves all virtual pools
-     * @param connection - The connection to the Solana network
      * @returns Array of pool accounts with their addresses
      */
     async getPools(): Promise<ProgramAccount<VirtualPool>[]> {
@@ -171,7 +175,6 @@ export class VirtualCurveProgramClient {
 
     /**
      * Retrieve all pool configs (list of all configs launched by partner)
-     * @param connection - The connection to the Solana network
      * @param owner - The owner of the pool configs
      * @returns An array of pool configs
      */
@@ -181,7 +184,6 @@ export class VirtualCurveProgramClient {
         const filters = owner ? createProgramAccountFilter(owner, 72) : []
         const poolConfigs = await this.program.account.poolConfig.all(filters)
 
-        // Get signatures for all pool configs in parallel
         const signaturePromises = poolConfigs.map(async (config) => {
             const signatures =
                 await this.program.provider.connection.getSignaturesForAddress(
@@ -196,7 +198,6 @@ export class VirtualCurveProgramClient {
 
         const timestamps = await Promise.all(signaturePromises)
 
-        // Combine the pool configs with their creation timestamps
         return poolConfigs.map((config, index) => ({
             ...config,
             createdAt: timestamps[index],
@@ -205,7 +206,6 @@ export class VirtualCurveProgramClient {
 
     /**
      * Get virtual pool metadata
-     * @param connection - The connection to the Solana network
      * @param virtualPoolAddress - The address of the virtual pool
      * @returns A virtual pool metadata
      */
@@ -238,7 +238,6 @@ export class VirtualCurveProgramClient {
 
     /**
      * Get partner metadata
-     * @param connection - The connection to the Solana network
      * @param partnerAddress - The address of the partner
      * @returns A partner metadata
      */
@@ -277,6 +276,30 @@ export class VirtualCurveProgramClient {
             currentPoint
         )
     }
+
+    // Helper function to calculate square root of a BN
+    private sqrtBN(value: BN): BN {
+        if (value.lt(new BN(0))) {
+            throw new Error('Square root of negative number is not supported')
+        }
+
+        // Handle special cases
+        if (value.eq(new BN(0)) || value.eq(new BN(1))) {
+            return value
+        }
+
+        // Start with an initial guess
+        let x = value.div(new BN(2))
+        let lastX = new BN(0)
+
+        // Newton's method for square root
+        while (!x.eq(lastX)) {
+            lastX = x
+            x = x.add(value.div(x)).div(new BN(2))
+        }
+
+        return x
+    }
 }
 
 /**
@@ -287,7 +310,6 @@ export class PoolService {
 
     /**
      * Create a new pool
-     * @param connection - The connection to the Solana network
      * @param createPoolParam - The parameters for the pool
      * @returns A new pool
      */
@@ -396,6 +418,7 @@ export class PoolService {
         const virtualPoolMetadata = deriveVirtualPoolMetadata(
             createVirtualPoolMetadataParam.virtualPool
         )
+
         const virtualPoolMetadataParam: CreateVirtualPoolMetadataParameters = {
             padding: new Array(96).fill(0),
             name: createVirtualPoolMetadataParam.name,
@@ -563,7 +586,6 @@ export class PartnerService {
 
     /**
      * Create a new config
-     * @param connection - The connection to the Solana network
      * @param createConfigParam - The parameters for the config
      * @returns A new config
      */
@@ -574,6 +596,44 @@ export class PartnerService {
         const { config, feeClaimer, owner, quoteMint, payer, ...configParam } =
             createConfigParam
         const eventAuthority = deriveEventAuthority()
+        const accounts = {
+            config,
+            feeClaimer,
+            owner,
+            quoteMint,
+            payer,
+            eventAuthority,
+            program: program.programId,
+        }
+
+        return program.methods
+            .createConfig(configParam)
+            .accounts(accounts)
+            .transaction()
+    }
+
+    /**
+     * Create a new pump.fun config
+     * @param createPumpFunConfigParam - The parameters for the pump.fun config
+     * @returns A new config
+     */
+    async createPumpFunConfig(
+        createPumpFunConfigParam: CreatePumpFunConfigParam
+    ): Promise<Transaction> {
+        const program = this.programClient.getProgram()
+        const { config, feeClaimer, owner, payer, quoteMint } =
+            createPumpFunConfigParam
+        const eventAuthority = deriveEventAuthority()
+
+        const configParam: CreateConfigParam = {
+            config,
+            feeClaimer,
+            owner,
+            quoteMint,
+            payer,
+            ...PUMP_FUN_CONFIG,
+        }
+
         const accounts = {
             config,
             feeClaimer,
@@ -955,9 +1015,9 @@ export class MigrationService {
         )
 
         const dammPool = deriveDammPoolAddress(
-            poolConfigState.quoteMint,
+            migrateToDammV1Param.dammConfig,
             virtualPoolState.baseMint,
-            migrateToDammV1Param.dammConfig
+            poolConfigState.quoteMint
         )
 
         const lpMint = deriveLpMintAddress(dammPool, DAMM_V1_PROGRAM_ID)
@@ -977,40 +1037,58 @@ export class MigrationService {
             ),
         ]
 
-        const preInstructions: TransactionInstruction[] = []
-
         const vaultProgram = createVaultProgram(connection)
 
-        const {
-            vaultPda: aVault,
-            tokenVaultPda: aTokenVault,
-            lpMintPda: aVaultLpMint,
-            ix: createAVaultIx,
-        } = await createVaultIfNotExists(
-            virtualPoolState.baseMint,
-            vaultProgram,
-            migrateToDammV1Param.payer,
-            connection
-        )
+        const [
+            {
+                vaultPda: aVault,
+                tokenVaultPda: aTokenVault,
+                lpMintPda: aLpMintPda,
+            },
+            {
+                vaultPda: bVault,
+                tokenVaultPda: bTokenVault,
+                lpMintPda: bLpMintPda,
+            },
+        ] = [
+            getVaultPdas(virtualPoolState.baseMint, vaultProgram.programId),
+            getVaultPdas(poolConfigState.quoteMint, vaultProgram.programId),
+        ]
 
-        if (createAVaultIx) {
-            preInstructions.push(createAVaultIx)
+        const [aVaultAccount, bVaultAccount] = await Promise.all([
+            vaultProgram.account.vault.fetchNullable(aVault),
+            vaultProgram.account.vault.fetchNullable(bVault),
+        ])
+
+        let aVaultLpMint = aLpMintPda
+        let bVaultLpMint = bLpMintPda
+        const preInstructions: TransactionInstruction[] = []
+
+        if (!aVaultAccount) {
+            const createVaultAIx =
+                await createInitializePermissionlessDynamicVaultIx(
+                    virtualPoolState.baseMint,
+                    migrateToDammV1Param.payer,
+                    vaultProgram
+                )
+            if (createVaultAIx) {
+                preInstructions.push(createVaultAIx.instruction)
+            }
+        } else {
+            aVaultLpMint = aVaultAccount.lpMint
         }
-
-        const {
-            vaultPda: bVault,
-            tokenVaultPda: bTokenVault,
-            lpMintPda: bVaultLpMint,
-            ix: createBVaultIx,
-        } = await createVaultIfNotExists(
-            poolConfigState.quoteMint,
-            vaultProgram,
-            migrateToDammV1Param.payer,
-            connection
-        )
-
-        if (createBVaultIx) {
-            preInstructions.push(createBVaultIx)
+        if (!bVaultAccount) {
+            const createVaultBIx =
+                await createInitializePermissionlessDynamicVaultIx(
+                    poolConfigState.quoteMint,
+                    migrateToDammV1Param.payer,
+                    vaultProgram
+                )
+            if (createVaultBIx) {
+                preInstructions.push(createVaultBIx.instruction)
+            }
+        } else {
+            bVaultLpMint = bVaultAccount.lpMint
         }
 
         const [aVaultLp, bVaultLp] = [
@@ -1026,7 +1104,7 @@ export class MigrationService {
             ASSOCIATED_TOKEN_PROGRAM_ID
         )
 
-        return program.methods
+        const transaction = await program.methods
             .migrateMeteoraDamm()
             .accountsStrict({
                 virtualPool: migrateToDammV1Param.virtualPool,
@@ -1063,6 +1141,13 @@ export class MigrationService {
             })
             .preInstructions(preInstructions)
             .transaction()
+
+        const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+            units: 1000000,
+        })
+
+        transaction.add(modifyComputeUnits)
+        return transaction
     }
 
     /**
@@ -1083,6 +1168,7 @@ export class MigrationService {
             connection,
             virtualPool
         )
+
         if (!virtualPoolState) {
             throw new Error(`Pool not found: ${virtualPool.toString()}`)
         }
@@ -1116,14 +1202,12 @@ export class MigrationService {
             createVaultIfNotExists(
                 virtualPoolState.baseMint,
                 vaultProgram,
-                lockDammV1LpTokenParam.payer,
-                connection
+                lockDammV1LpTokenParam.payer
             ),
             createVaultIfNotExists(
                 poolConfigState.quoteMint,
                 vaultProgram,
-                lockDammV1LpTokenParam.payer,
-                connection
+                lockDammV1LpTokenParam.payer
             ),
         ])
 
@@ -1134,30 +1218,59 @@ export class MigrationService {
 
         const lpMint = deriveLpMintAddress(dammPool, DAMM_V1_PROGRAM_ID)
 
-        const lockEscrowKey = deriveLockEscrowAddress(
-            dammPool,
-            virtualPoolState.creator,
-            DAMM_V1_PROGRAM_ID
-        )
-
-        const lockEscrowData = await connection.getAccountInfo(lockEscrowKey)
+        const dammV1Program = createDammV1Program(connection)
 
         const preInstructions: TransactionInstruction[] = []
 
-        const dammV1Program = createDammV1Program(connection)
+        const dammV1MigrationMetadata =
+            await this.getDammV1MigrationMetadata(migrationMetadata)
 
-        if (!lockEscrowData) {
-            const ix = await createLockEscrowIx(
-                connection,
-                lockDammV1LpTokenParam.payer,
+        let lockEscrowKey: PublicKey
+
+        if (lockDammV1LpTokenParam.isPartner) {
+            lockEscrowKey = deriveLockEscrowAddress(
                 dammPool,
-                lpMint,
-                virtualPoolState.creator,
-                lockEscrowKey,
-                dammV1Program
+                dammV1MigrationMetadata.partner,
+                DAMM_V1_PROGRAM_ID
             )
 
-            preInstructions.push(ix)
+            const lockEscrowData =
+                await connection.getAccountInfo(lockEscrowKey)
+
+            if (!lockEscrowData) {
+                const ix = await createLockEscrowIx(
+                    connection,
+                    lockDammV1LpTokenParam.payer,
+                    dammPool,
+                    lpMint,
+                    virtualPoolState.creator,
+                    lockEscrowKey,
+                    dammV1Program
+                )
+                preInstructions.push(ix)
+            }
+        } else {
+            lockEscrowKey = deriveLockEscrowAddress(
+                dammPool,
+                virtualPoolState.creator,
+                DAMM_V1_PROGRAM_ID
+            )
+
+            const lockEscrowData =
+                await connection.getAccountInfo(lockEscrowKey)
+
+            if (!lockEscrowData) {
+                const ix = await createLockEscrowIx(
+                    connection,
+                    lockDammV1LpTokenParam.payer,
+                    dammPool,
+                    lpMint,
+                    virtualPoolState.creator,
+                    lockEscrowKey,
+                    dammV1Program
+                )
+                preInstructions.push(ix)
+            }
         }
 
         const escrowVault = getAssociatedTokenAddressSync(
@@ -1168,6 +1281,8 @@ export class MigrationService {
             ASSOCIATED_TOKEN_PROGRAM_ID
         )
 
+        console.log('escrowVault', escrowVault)
+
         const createEscrowVaultIx =
             createAssociatedTokenAccountIdempotentInstruction(
                 lockDammV1LpTokenParam.payer,
@@ -1177,6 +1292,9 @@ export class MigrationService {
                 TOKEN_PROGRAM_ID,
                 ASSOCIATED_TOKEN_PROGRAM_ID
             )
+
+        console.log('createEscrowVaultIx', createEscrowVaultIx)
+
         preInstructions.push(createEscrowVaultIx)
 
         const sourceTokens = getAssociatedTokenAddressSync(
@@ -1185,6 +1303,8 @@ export class MigrationService {
             true
         )
 
+        console.log('sourceTokens', sourceTokens)
+
         const accounts = {
             virtualPool,
             migrationMetadata,
@@ -1192,16 +1312,22 @@ export class MigrationService {
             pool: dammPool,
             lpMint,
             lockEscrow: lockEscrowKey,
-            owner: virtualPoolState.creator,
+            owner: lockDammV1LpTokenParam.isPartner
+                ? dammV1MigrationMetadata.partner
+                : virtualPoolState.creator,
+            sender: lockDammV1LpTokenParam.payer,
             sourceTokens,
             escrowVault,
-            ammProgram: DAMM_V1_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
             aVault,
             bVault,
             aVaultLp,
             bVaultLp,
             aVaultLpMint,
             bVaultLpMint,
+            ammProgram: DAMM_V1_PROGRAM_ID,
+            vaultProgram: VAULT_PROGRAM_ID,
             tokenProgram: TOKEN_PROGRAM_ID,
         }
 

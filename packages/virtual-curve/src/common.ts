@@ -74,8 +74,7 @@ export async function createInitializePermissionlessDynamicVaultIx(
 export async function createVaultIfNotExists(
     mint: PublicKey,
     vaultProgram: Program<DynamicVault>,
-    payer: PublicKey,
-    connection: Connection
+    payer: PublicKey
 ): Promise<{
     vaultPda: PublicKey
     tokenVaultPda: PublicKey
@@ -87,8 +86,6 @@ export async function createVaultIfNotExists(
         payer,
         vaultProgram
     )
-
-    console.log('vaultIx:', vaultIx)
 
     return {
         vaultPda: vaultIx.vaultKey,
@@ -129,6 +126,8 @@ export async function createLockEscrowIx(
             payer: payer,
         })
         .instruction()
+
+    console.log('ix', ix)
 
     return ix
 }
