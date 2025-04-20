@@ -6,7 +6,7 @@ import type {
     Program,
 } from '@coral-xyz/anchor'
 import type { VirtualCurve } from './idl/virtual-curve/idl'
-import type { PublicKey } from '@solana/web3.js'
+import type { Keypair, PublicKey, Transaction } from '@solana/web3.js'
 import Decimal from 'decimal.js'
 
 // Program Type
@@ -113,6 +113,7 @@ export type CreateVirtualPoolMetadataParameters =
 //////////////////
 // IDL ACCOUNTS //
 //////////////////
+
 export type ClaimFeeOperator = IdlAccounts<VirtualCurve>['claimFeeOperator']
 export type Config = IdlAccounts<VirtualCurve>['config']
 export type MeteoraDammMigrationMetadata =
@@ -171,9 +172,6 @@ export enum TokenDecimal {
     NINE = 9,
 }
 
-/**
- * Trade direction
- */
 export enum TradeDirection {
     BaseToQuote = 0,
     QuoteToBase = 1,
@@ -253,6 +251,12 @@ export type MigrateToDammV2Param = {
     payer: PublicKey
     virtualPool: PublicKey
     dammConfig: PublicKey
+}
+
+export type MigrateToDammV2Response = {
+    transaction: Transaction
+    firstPositionNftKeypair: Keypair
+    secondPositionNftKeypair: Keypair
 }
 
 export type ClaimTradingFeeParam = {

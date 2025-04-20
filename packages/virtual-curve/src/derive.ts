@@ -31,8 +31,12 @@ const SEED = Object.freeze({
     VAULT: 'vault',
 })
 
+/////////////////////
+// EVENT AUTHORITY //
+/////////////////////
+
 /**
- * Derive the event authority
+ * Derive the virtual curve event authority
  * @returns The event authority
  */
 export function deriveEventAuthority(): PublicKey {
@@ -42,6 +46,34 @@ export function deriveEventAuthority(): PublicKey {
     )
     return eventAuthority
 }
+
+/**
+ * Derive the DAMM V2 event authority
+ * @returns The event authority
+ */
+export function deriveDammV2EventAuthority(): PublicKey {
+    const [eventAuthority] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.EVENT_AUTHORITY)],
+        DAMM_V2_PROGRAM_ID
+    )
+    return eventAuthority
+}
+
+/**
+ * Derive the locker event authority
+ * @returns The event authority
+ */
+export function deriveLockerEventAuthority(): PublicKey {
+    const [eventAuthority] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.EVENT_AUTHORITY)],
+        LOCKER_PROGRAM_ID
+    )
+    return eventAuthority
+}
+
+////////////////////
+// POOL AUTHORITY //
+////////////////////
 
 /**
  * Derive the pool authority
@@ -57,8 +89,12 @@ export function derivePoolAuthority(programId: PublicKey): PublicKey {
     return poolAuthority
 }
 
+////////////////////
+// POOL ADDRESSES //
+////////////////////
+
 /**
- * Derive the pool
+ * Derive the pool address
  * @param quoteMint - The quote mint
  * @param baseMint - The base mint
  * @param config - The config
@@ -94,29 +130,58 @@ export function derivePool(
 }
 
 /**
- * Derive the token vault
- * @param pool - The pool
- * @param mint - The mint
- * @param programId - The program ID
- * @returns The token vault
+ * Derive the DAMM pool address
+ * @param config - The config
+ * @param tokenAMint - The token A mint
+ * @param tokenBMint - The token B mint
+ * @returns The DAMM pool address
  */
-export function deriveTokenVaultAddress(
-    pool: PublicKey,
-    mint: PublicKey,
-    programId: PublicKey
+export function deriveDammPoolAddress(
+    config: PublicKey,
+    tokenAMint: PublicKey,
+    tokenBMint: PublicKey
 ): PublicKey {
-    const [tokenVault] = PublicKey.findProgramAddressSync(
-        [Buffer.from(SEED.TOKEN_VAULT), mint.toBuffer(), pool.toBuffer()],
-        programId
-    )
-
-    return tokenVault
+    return PublicKey.findProgramAddressSync(
+        [
+            getFirstKey(tokenAMint, tokenBMint),
+            getSecondKey(tokenAMint, tokenBMint),
+            config.toBuffer(),
+        ],
+        DAMM_V1_PROGRAM_ID
+    )[0]
 }
 
 /**
- * Derive the metadata
+ * Derive the DAMM V2 pool address
+ * @param config - The config
+ * @param tokenAMint - The token A mint
+ * @param tokenBMint - The token B mint
+ * @returns The DAMM V2 pool address
+ */
+export function deriveDammV2PoolAddress(
+    config: PublicKey,
+    tokenAMint: PublicKey,
+    tokenBMint: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [
+            Buffer.from(SEED.POOL),
+            config.toBuffer(),
+            getFirstKey(tokenAMint, tokenBMint),
+            getSecondKey(tokenAMint, tokenBMint),
+        ],
+        DAMM_V2_PROGRAM_ID
+    )[0]
+}
+
+////////////////////////
+// METADATA ADDRESSES //
+////////////////////////
+
+/**
+ * Derive the metadata address
  * @param mint - The mint
- * @returns The metadata
+ * @returns The metadata address
  */
 export function deriveMetadata(mint: PublicKey): PublicKey {
     const [metadata] = PublicKey.findProgramAddressSync(
@@ -191,6 +256,117 @@ export function deriveDammMigrationMetadataAddress(
     }
 }
 
+/////////////////////
+// VAULT ADDRESSES //
+/////////////////////
+
+/**
+ * Derive the token vault address
+ * @param pool - The pool
+ * @param mint - The mint
+ * @param programId - The program ID
+ * @returns The token vault
+ */
+export function deriveTokenVaultAddress(
+    pool: PublicKey,
+    mint: PublicKey,
+    programId: PublicKey
+): PublicKey {
+    const [tokenVault] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.TOKEN_VAULT), mint.toBuffer(), pool.toBuffer()],
+        programId
+    )
+
+    return tokenVault
+}
+
+/**
+ * Derive the vault LP address
+ * @param vault - The vault
+ * @param pool - The pool
+ * @param programId - The program ID
+ * @returns The vault LP address
+ */
+export function deriveVaultLPAddress(
+    vault: PublicKey,
+    pool: PublicKey,
+    programId: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [vault.toBuffer(), pool.toBuffer()],
+        programId
+    )[0]
+}
+
+/**
+ * Derive the vault address
+ * @param mint - The mint
+ * @param payer - The payer
+ * @returns The vault address
+ */
+export function deriveVaultAddress(
+    mint: PublicKey,
+    payer: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.VAULT), mint.toBuffer(), payer.toBuffer()],
+        VAULT_PROGRAM_ID
+    )[0]
+}
+
+/**
+ * Derive the vault PDAs
+ * @param tokenMint - The token mint
+ * @param programId - The program ID
+ * @param seedBaseKey - The seed base key
+ * @returns The vault PDAs
+ */
+export const deriveVaultPdas = (
+    tokenMint: PublicKey,
+    programId: PublicKey,
+    seedBaseKey?: PublicKey
+) => {
+    const [vault] = PublicKey.findProgramAddressSync(
+        [
+            Buffer.from(SEED.VAULT),
+            tokenMint.toBuffer(),
+            (seedBaseKey ?? BASE_ADDRESS).toBuffer(),
+        ],
+        programId
+    )
+
+    const [tokenVault] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.TOKEN_VAULT), vault.toBuffer()],
+        programId
+    )
+    const [lpMint] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.LP_MINT), vault.toBuffer()],
+        programId
+    )
+
+    return {
+        vaultPda: vault,
+        tokenVaultPda: tokenVault,
+        lpMintPda: lpMint,
+    }
+}
+
+/**
+ * Derive the token vault key
+ * @param vaultKey - The vault key
+ * @returns The token vault key
+ */
+export function deriveTokenVaultKey(vaultKey: PublicKey): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.TOKEN_VAULT), vaultKey.toBuffer()],
+        VAULT_PROGRAM_ID
+    )[0]
+}
+
+//////////////////
+// LP ADDRESSES //
+//////////////////
+
 /**
  * Derive the LP mint address
  * @param pool - The pool
@@ -204,23 +380,9 @@ export function deriveLpMintAddress(pool: PublicKey, programId: PublicKey) {
     )[0]
 }
 
-/**
- * Derive the protocol fee address
- * @param mint - The mint
- * @param pool - The pool
- * @param programId - The program ID
- * @returns The protocol fee address
- */
-export function deriveProtocolFeeAddress(
-    mint: PublicKey,
-    pool: PublicKey,
-    programId: PublicKey
-) {
-    return PublicKey.findProgramAddressSync(
-        [Buffer.from(SEED.FEE), mint.toBuffer(), pool.toBuffer()],
-        programId
-    )[0]
-}
+////////////////////////
+// POSITION ADDRESSES //
+////////////////////////
 
 /**
  * Derive the position address
@@ -248,23 +410,9 @@ export function derivePositionNftAccount(
     )[0]
 }
 
-/**
- * Derive the vault LP address
- * @param vault - The vault
- * @param pool - The pool
- * @param programId - The program ID
- * @returns The vault LP address
- */
-export function deriveVaultLPAddress(
-    vault: PublicKey,
-    pool: PublicKey,
-    programId: PublicKey
-): PublicKey {
-    return PublicKey.findProgramAddressSync(
-        [vault.toBuffer(), pool.toBuffer()],
-        programId
-    )[0]
-}
+//////////////////////
+// ESCROW ADDRESSES //
+//////////////////////
 
 /**
  * Derive the lock escrow address
@@ -301,6 +449,32 @@ export function deriveEscrow(base: PublicKey): PublicKey {
     return escrow
 }
 
+///////////////////
+// FEE ADDRESSES //
+///////////////////
+
+/**
+ * Derive the protocol fee address
+ * @param mint - The mint
+ * @param pool - The pool
+ * @param programId - The program ID
+ * @returns The protocol fee address
+ */
+export function deriveProtocolFeeAddress(
+    mint: PublicKey,
+    pool: PublicKey,
+    programId: PublicKey
+) {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.FEE), mint.toBuffer(), pool.toBuffer()],
+        programId
+    )[0]
+}
+
+////////////////////
+// LOCKER ADDRESS //
+////////////////////
+
 /**
  * Derive the base key for the locker
  * @param virtualPool - The virtual pool
@@ -311,124 +485,4 @@ export function deriveBaseKeyForLocker(virtualPool: PublicKey): PublicKey {
         [Buffer.from(SEED.BASE_LOCKER), virtualPool.toBuffer()],
         VIRTUAL_CURVE_PROGRAM_ID
     )[0]
-}
-
-/**
- * Derive the DAMM V2 event authority
- * @returns The event authority
- */
-export function deriveDammV2EventAuthority(): PublicKey {
-    const [eventAuthority] = PublicKey.findProgramAddressSync(
-        [Buffer.from(SEED.EVENT_AUTHORITY)],
-        DAMM_V2_PROGRAM_ID
-    )
-    return eventAuthority
-}
-
-/**
- * Derive the locker event authority
- * @returns The event authority
- */
-export function deriveLockerEventAuthority(): PublicKey {
-    const [eventAuthority] = PublicKey.findProgramAddressSync(
-        [Buffer.from(SEED.EVENT_AUTHORITY)],
-        LOCKER_PROGRAM_ID
-    )
-    return eventAuthority
-}
-
-export function deriveDammPoolAddress(
-    config: PublicKey,
-    tokenAMint: PublicKey,
-    tokenBMint: PublicKey
-): PublicKey {
-    return PublicKey.findProgramAddressSync(
-        [
-            getFirstKey(tokenAMint, tokenBMint),
-            getSecondKey(tokenAMint, tokenBMint),
-            config.toBuffer(),
-        ],
-        DAMM_V1_PROGRAM_ID
-    )[0]
-}
-
-export function deriveDammV2PoolAddress(
-    config: PublicKey,
-    tokenAMint: PublicKey,
-    tokenBMint: PublicKey
-): PublicKey {
-    return PublicKey.findProgramAddressSync(
-        [
-            Buffer.from(SEED.POOL),
-            config.toBuffer(),
-            getFirstKey(tokenAMint, tokenBMint),
-            getSecondKey(tokenAMint, tokenBMint),
-        ],
-        DAMM_V2_PROGRAM_ID
-    )[0]
-}
-
-/**
- * Derive the vault address
- * @param mint - The mint
- * @param payer - The payer
- * @returns The vault address
- */
-export function deriveVaultAddress(
-    mint: PublicKey,
-    payer: PublicKey
-): PublicKey {
-    return PublicKey.findProgramAddressSync(
-        [Buffer.from(SEED.VAULT), mint.toBuffer(), payer.toBuffer()],
-        VAULT_PROGRAM_ID
-    )[0]
-}
-
-/**
- * Derive the token vault key
- * @param vaultKey - The vault key
- * @returns The token vault key
- */
-export function deriveTokenVaultKey(vaultKey: PublicKey): PublicKey {
-    return PublicKey.findProgramAddressSync(
-        [Buffer.from(SEED.TOKEN_VAULT), vaultKey.toBuffer()],
-        VAULT_PROGRAM_ID
-    )[0]
-}
-
-export function deriveLpMint(vaultKey: PublicKey): PublicKey {
-    return PublicKey.findProgramAddressSync(
-        [Buffer.from(SEED.LP_MINT), vaultKey.toBuffer()],
-        VAULT_PROGRAM_ID
-    )[0]
-}
-
-export const getVaultPdas = (
-    tokenMint: PublicKey,
-    programId: PublicKey,
-    seedBaseKey?: PublicKey
-) => {
-    const [vault] = PublicKey.findProgramAddressSync(
-        [
-            Buffer.from(SEED.VAULT),
-            tokenMint.toBuffer(),
-            (seedBaseKey ?? BASE_ADDRESS).toBuffer(),
-        ],
-        programId
-    )
-
-    const [tokenVault] = PublicKey.findProgramAddressSync(
-        [Buffer.from(SEED.TOKEN_VAULT), vault.toBuffer()],
-        programId
-    )
-    const [lpMint] = PublicKey.findProgramAddressSync(
-        [Buffer.from(SEED.LP_MINT), vault.toBuffer()],
-        programId
-    )
-
-    return {
-        vaultPda: vault,
-        tokenVaultPda: tokenVault,
-        lpMintPda: lpMint,
-    }
 }

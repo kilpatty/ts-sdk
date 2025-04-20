@@ -27,6 +27,7 @@ import {
     type ConfigParameters,
     type WithdrawLeftoverParam,
     type LockEscrow,
+    type MigrateToDammV2Response,
 } from './types'
 import {
     ComputeBudgetProgram,
@@ -59,7 +60,7 @@ import {
     deriveTokenVaultAddress,
     deriveVaultLPAddress,
     deriveVirtualPoolMetadata,
-    getVaultPdas,
+    deriveVaultPdas,
 } from './derive'
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -233,31 +234,38 @@ export class VirtualCurveProgramClient {
     }
 
     /**
-     * Calculate the amount out for a swap (quote)
-     * @param virtualPool - The virtual pool
-     * @param config - The config
-     * @param swapBaseForQuote - Whether to swap base for quote
-     * @param amountIn - The amount in
-     * @param hasReferral - Whether the referral is enabled
-     * @param currentPoint - The current point
-     * @returns The swap quote result
+     * Get DAMM V1 migration metadata
+     * @param poolAddress - The address of the meteora DAMM migration metadata
+     * @returns A meteora DAMM migration metadata
      */
-    swapQuote(
-        virtualPool: VirtualPool,
-        config: PoolConfig,
-        swapBaseForQuote: boolean,
-        amountIn: BN,
-        hasReferral: boolean,
-        currentPoint: BN
-    ) {
-        return swapQuote(
-            virtualPool,
-            config,
-            swapBaseForQuote,
-            amountIn,
-            hasReferral,
-            currentPoint
+    async getDammV1MigrationMetadata(
+        poolAddress: PublicKey | string
+    ): Promise<MeteoraDammMigrationMetadata> {
+        const metadata =
+            await this.program.account.meteoraDammMigrationMetadata.fetch(
+                poolAddress instanceof PublicKey
+                    ? poolAddress
+                    : new PublicKey(poolAddress)
+            )
+
+        return metadata
+    }
+
+    /**
+     * Get DAMM V1 migration metadata
+     * @param walletAddress - The address of the meteora DAMM migration metadata
+     * @returns A meteora DAMM migration metadata
+     */
+    async getLockedLpTokenAmount(
+        walletAddress: PublicKey | string
+    ): Promise<LockEscrow> {
+        const metadata = await this.program.account.lockEscrow.fetch(
+            walletAddress instanceof PublicKey
+                ? walletAddress
+                : new PublicKey(walletAddress)
         )
+
+        return metadata
     }
 }
 
@@ -526,6 +534,34 @@ export class PoolService {
 
         return transaction
     }
+
+    /**
+     * Calculate the amount out for a swap (quote)
+     * @param virtualPool - The virtual pool
+     * @param config - The config
+     * @param swapBaseForQuote - Whether to swap base for quote
+     * @param amountIn - The amount in
+     * @param hasReferral - Whether the referral is enabled
+     * @param currentPoint - The current point
+     * @returns The swap quote result
+     */
+    swapQuote(
+        virtualPool: VirtualPool,
+        config: PoolConfig,
+        swapBaseForQuote: boolean,
+        amountIn: BN,
+        hasReferral: boolean,
+        currentPoint: BN
+    ) {
+        return swapQuote(
+            virtualPool,
+            config,
+            swapBaseForQuote,
+            amountIn,
+            hasReferral,
+            currentPoint
+        )
+    }
 }
 
 /**
@@ -680,7 +716,6 @@ export class PartnerService {
 
     /**
      * Create partner metadata
-     * @param connection - The connection to the Solana network
      * @param createPartnerMetadataParam - The parameters for the partner metadata
      * @returns A create partner metadata transaction
      */
@@ -719,7 +754,6 @@ export class PartnerService {
     /**
      * Claim trading fee
      * @param claimTradingFeeParam - The parameters for the claim trading fee
-     * @param connection - The connection to the Solana network
      * @returns A claim trading fee transaction
      */
     async claimTradingFee(
@@ -1197,8 +1231,8 @@ export class MigrationService {
                 lpMintPda: bLpMintPda,
             },
         ] = [
-            getVaultPdas(virtualPoolState.baseMint, vaultProgram.programId),
-            getVaultPdas(poolConfigState.quoteMint, vaultProgram.programId),
+            deriveVaultPdas(virtualPoolState.baseMint, vaultProgram.programId),
+            deriveVaultPdas(poolConfigState.quoteMint, vaultProgram.programId),
         ]
 
         const [aVaultAccount, bVaultAccount] = await Promise.all([
@@ -1340,8 +1374,8 @@ export class MigrationService {
             { vaultPda: aVault, lpMintPda: aLpMintPda },
             { vaultPda: bVault, lpMintPda: bLpMintPda },
         ] = [
-            getVaultPdas(virtualPoolState.baseMint, vaultProgram.programId),
-            getVaultPdas(poolConfigState.quoteMint, vaultProgram.programId),
+            deriveVaultPdas(virtualPoolState.baseMint, vaultProgram.programId),
+            deriveVaultPdas(poolConfigState.quoteMint, vaultProgram.programId),
         ]
 
         const [aVaultAccount, bVaultAccount] = await Promise.all([
@@ -1390,7 +1424,9 @@ export class MigrationService {
         const dammV1Program = this.getDammV1Program()
 
         const dammV1MigrationMetadata =
-            await this.getDammV1MigrationMetadata(migrationMetadata)
+            await this.programClient.getDammV1MigrationMetadata(
+                migrationMetadata
+            )
 
         let lockEscrowKey: PublicKey
 
@@ -1588,43 +1624,6 @@ export class MigrationService {
             .transaction()
     }
 
-    /**
-     * Get DAMM V1 migration metadata
-     * @param metadataAddress - The address of the meteora DAMM migration metadata
-     * @returns A meteora DAMM migration metadata
-     */
-    async getDammV1MigrationMetadata(
-        poolAddress: PublicKey | string
-    ): Promise<MeteoraDammMigrationMetadata> {
-        const program = this.programClient.getProgram()
-        const metadata =
-            await program.account.meteoraDammMigrationMetadata.fetch(
-                poolAddress instanceof PublicKey
-                    ? poolAddress
-                    : new PublicKey(poolAddress)
-            )
-
-        return metadata
-    }
-
-    /**
-     * Get DAMM V1 migration metadata
-     * @param walletAddress - The address of the meteora DAMM migration metadata
-     * @returns A meteora DAMM migration metadata
-     */
-    async getLockedLpTokenAmount(
-        walletAddress: PublicKey | string
-    ): Promise<LockEscrow> {
-        const program = this.programClient.getProgram()
-        const metadata = await program.account.lockEscrow.fetch(
-            walletAddress instanceof PublicKey
-                ? walletAddress
-                : new PublicKey(walletAddress)
-        )
-
-        return metadata
-    }
-
     ///////////////////////
     // DAMM V2 FUNCTIONS //
     ///////////////////////
@@ -1634,11 +1633,9 @@ export class MigrationService {
      * @param migrateToDammV2Param - The parameters for the migration
      * @returns A migrate transaction
      */
-    async migrateToDammV2(migrateToDammV2Param: MigrateToDammV2Param): Promise<{
-        transaction: Transaction
-        firstPositionNftKeypair: Keypair
-        secondPositionNftKeypair: Keypair
-    }> {
+    async migrateToDammV2(
+        migrateToDammV2Param: MigrateToDammV2Param
+    ): Promise<MigrateToDammV2Response> {
         const program = this.programClient.getProgram()
         const poolAuthority = derivePoolAuthority(program.programId)
         const dammPoolAuthority = derivePoolAuthority(DAMM_V2_PROGRAM_ID)

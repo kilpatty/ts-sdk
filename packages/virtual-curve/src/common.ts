@@ -70,38 +70,6 @@ export async function createInitializePermissionlessDynamicVaultIx(
 }
 
 /**
- * Create a vault if it doesn't exist
- * @param mint - The mint of the vault
- * @param vaultProgram - The vault program
- * @param payer - The payer of the vault
- * @param connection - The connection to the Solana network
- * @returns The vault key, token vault key, and lp mint key
- */
-export async function createVaultIfNotExists(
-    mint: PublicKey,
-    vaultProgram: Program<DynamicVault>,
-    payer: PublicKey
-): Promise<{
-    vaultPda: PublicKey
-    tokenVaultPda: PublicKey
-    lpMintPda: PublicKey
-    ix?: TransactionInstruction
-}> {
-    const vaultIx = await createInitializePermissionlessDynamicVaultIx(
-        mint,
-        payer,
-        vaultProgram
-    )
-
-    return {
-        vaultPda: vaultIx.vaultKey,
-        tokenVaultPda: vaultIx.tokenVaultKey,
-        lpMintPda: vaultIx.lpMintKey,
-        ix: vaultIx.instruction,
-    }
-}
-
-/**
  * Create a lock escrow instruction
  * @param connection - The connection to the Solana network
  * @param payer - The payer of the lock escrow

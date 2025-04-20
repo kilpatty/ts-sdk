@@ -206,7 +206,6 @@ export function createProgramAccountFilter(
  * Generic account fetch helper
  * @param accountAddress - The address of the account to fetch
  * @param accountType - The type of account to fetch from program.account
- * @param program - The program instance
  * @returns The fetched account data
  */
 export async function getAccountData<T>(
