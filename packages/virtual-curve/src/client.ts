@@ -1687,14 +1687,14 @@ export class MigrationService {
         )
 
         const tokenAVault = deriveTokenVaultAddress(
-            virtualPoolState.baseMint,
             dammPool,
+            virtualPoolState.baseMint,
             DAMM_V2_PROGRAM_ID
         )
 
         const tokenBVault = deriveTokenVaultAddress(
-            poolConfigState.quoteMint,
             dammPool,
+            poolConfigState.quoteMint,
             DAMM_V2_PROGRAM_ID
         )
 
@@ -1745,6 +1745,12 @@ export class MigrationService {
                 },
             ])
             .transaction()
+
+        const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+            units: 500000,
+        })
+
+        tx.add(modifyComputeUnits)
 
         return {
             transaction: tx,
