@@ -12,7 +12,7 @@
     - [partnerWithdrawSurplus](#partnerWithdrawSurplus)
     - [withdrawLeftover](#withdrawLeftover)
 
--
+--
 
 - [Pool Functions](#pool-functions)
 
@@ -21,7 +21,7 @@
     - [swap](#swap)
     - [swapQuote](#swapQuote)
 
--
+--
 
 - [Migration Functions](#migration-functions)
 
@@ -32,7 +32,7 @@
     - [claimDammV1LpToken](#claimDammV1LpToken)
     - [migrateToDammV2](#migrateToDammV2)
 
--
+--
 
 - [Helper Functions](#helper-functions)
     - [getPool](#getPool)
