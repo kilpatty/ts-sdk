@@ -12,16 +12,12 @@
     - [partnerWithdrawSurplus](#partnerWithdrawSurplus)
     - [withdrawLeftover](#withdrawLeftover)
 
---
-
 - [Pool Functions](#pool-functions)
 
     - [createPool](#createPool)
     - [createPoolMetadata](#createPoolMetadata)
     - [swap](#swap)
     - [swapQuote](#swapQuote)
-
---
 
 - [Migration Functions](#migration-functions)
 
@@ -32,9 +28,8 @@
     - [claimDammV1LpToken](#claimDammV1LpToken)
     - [migrateToDammV2](#migrateToDammV2)
 
---
-
 - [Helper Functions](#helper-functions)
+
     - [getPool](#getPool)
     - [getPools](#getPools)
     - [getPoolConfig](#getPoolConfig)
@@ -43,6 +38,8 @@
     - [getPartnerMetadata](#getPartnerMetadata)
     - [getDammV1MigrationMetadata](#getDammV1MigrationMetadata)
     - [getLockedLpTokenAmount](#getLockedLpTokenAmount)
+
+---
 
 ## Partner Functions
 
@@ -187,5 +184,91 @@ const transaction = await client.partners.createConfig({
             liquidity: new BN('1'),
         },
     ],
+})
+```
+
+---
+
+## Pool Functions
+
+### createPool
+
+Creates a new pool with the configuration key.
+
+#### Function
+
+```typescript
+async createPool(createPoolParam: CreatePoolParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface CreatePoolParam {
+    quoteMint: PublicKey
+    baseMint: PublicKey
+    config: PublicKey
+    baseTokenType: number
+    quoteTokenType: number
+    name: string
+    symbol: string
+    uri: string
+    creator: PublicKey
+}
+```
+
+#### Returns
+
+A transaction that requires signatures from both the creator's wallet and the baseMint keypair before being submitted to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.pools.createPool({
+    quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
+    baseMint: new PublicKey('JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN'),
+    config: config.publicKey,
+    baseTokenType: 0,
+    quoteTokenType: 0,
+    name: 'Jupiter',
+    symbol: 'JUP',
+    uri: 'https://jup.ag',
+    creator: wallet.publicKey,
+})
+```
+
+### swap
+
+Swaps between base and quote or quote and base.
+
+#### Function
+
+```typescript
+async swap(pool: PublicKey, swapParam: SwapParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface SwapParam {
+    owner: PublicKey
+    amountIn: BN
+    minimumAmountOut: BN
+    swapBaseForQuote: boolean
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.pools.swap(poolAddress, {
+    owner: wallet.publicKey,
+    amountIn: new BN(1000000000),
+    minimumAmountOut: new BN(0),
+    swapBaseForQuote: false,
 })
 ```
