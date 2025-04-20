@@ -28,6 +28,7 @@ import {
     type WithdrawLeftoverParam,
     type LockEscrow,
     type MigrateToDammV2Response,
+    type SwapQuoteParam,
 } from './types'
 import {
     ComputeBudgetProgram,
@@ -545,14 +546,16 @@ export class PoolService {
      * @param currentPoint - The current point
      * @returns The swap quote result
      */
-    swapQuote(
-        virtualPool: VirtualPool,
-        config: PoolConfig,
-        swapBaseForQuote: boolean,
-        amountIn: BN,
-        hasReferral: boolean,
-        currentPoint: BN
-    ) {
+    swapQuote(swapQuoteParam: SwapQuoteParam) {
+        const {
+            virtualPool,
+            config,
+            swapBaseForQuote,
+            amountIn,
+            hasReferral,
+            currentPoint,
+        } = swapQuoteParam
+
         return swapQuote(
             virtualPool,
             config,

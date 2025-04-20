@@ -302,6 +302,15 @@ export type SwapParam = {
     swapBaseForQuote: boolean
 }
 
+export type SwapQuoteParam = {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    swapBaseForQuote: boolean
+    amountIn: BN
+    hasReferral: boolean
+    currentPoint: BN
+}
+
 export type DammLpTokenParam = {
     payer: PublicKey
     virtualPool: PublicKey

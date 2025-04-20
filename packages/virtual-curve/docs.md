@@ -274,3 +274,44 @@ const transaction = await client.pools.swap(poolAddress, {
     swapBaseForQuote: false,
 })
 ```
+
+---
+
+### swapQuote
+
+Swaps between base and quote or quote and base.
+
+#### Function
+
+```typescript
+swapQuote(swapQuoteParam: SwapQuoteParam): Promise<QuoteResult>
+```
+
+#### Parameters
+
+```typescript
+interface SwapQuoteParam {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    swapBaseForQuote: boolean
+    amountIn: BN
+    hasReferral: boolean
+    currentPoint: BN
+}
+```
+
+#### Returns
+
+The quote result of the swap.
+
+#### Example
+
+```typescript
+const quote = client.pools.swapQuote({
+    virtualPool,
+    swapBaseForQuote,
+    amountIn,
+    hasReferral,
+    currentPoint,
+})
+```
