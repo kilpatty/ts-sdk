@@ -204,13 +204,12 @@ export function createProgramAccountFilter(
 
 /**
  * Generic account fetch helper
- * @param connection - The connection to the Solana network
  * @param accountAddress - The address of the account to fetch
  * @param accountType - The type of account to fetch from program.account
+ * @param program - The program instance
  * @returns The fetched account data
  */
 export async function getAccountData<T>(
-    connection: Connection,
     accountAddress: PublicKey | string,
     accountType: keyof Program<VirtualCurve>['account'],
     program: Program<VirtualCurve>
