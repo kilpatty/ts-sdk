@@ -29,7 +29,7 @@ export const PARTNER_SURPLUS_SHARE = 90
 
 // Pubkey
 export const VIRTUAL_CURVE_PROGRAM_ID = new PublicKey(
-    'virEFLZsQm1iFAs8py1XnziJ67gTzW2bfCWhxNPfccD'
+    'dbceTyRHnt38cShTHTiDJDKeHgyvJSaXeGrn1xMLjA9'
 )
 export const METAPLEX_PROGRAM_ID = new PublicKey(
     'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'

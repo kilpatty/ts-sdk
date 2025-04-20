@@ -227,13 +227,10 @@ export function deriveProtocolFeeAddress(
  * @param positionNft - The position NFT
  * @returns The position address
  */
-export function derivePositionAddress(
-    positionNft: PublicKey,
-    programId: PublicKey
-): PublicKey {
+export function derivePositionAddress(positionNft: PublicKey): PublicKey {
     return PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.POSITION), positionNft.toBuffer()],
-        programId
+        DAMM_V2_PROGRAM_ID
     )[0]
 }
 
@@ -243,12 +240,11 @@ export function derivePositionAddress(
  * @returns The position NFT account
  */
 export function derivePositionNftAccount(
-    positionNftMint: PublicKey,
-    programId: PublicKey
+    positionNftMint: PublicKey
 ): PublicKey {
     return PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.POSITION_NFT_ACCOUNT), positionNftMint.toBuffer()],
-        programId
+        DAMM_V2_PROGRAM_ID
     )[0]
 }
 
@@ -353,6 +349,22 @@ export function deriveDammPoolAddress(
             config.toBuffer(),
         ],
         DAMM_V1_PROGRAM_ID
+    )[0]
+}
+
+export function deriveDammV2PoolAddress(
+    config: PublicKey,
+    tokenAMint: PublicKey,
+    tokenBMint: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [
+            Buffer.from(SEED.POOL),
+            config.toBuffer(),
+            getFirstKey(tokenAMint, tokenBMint),
+            getSecondKey(tokenAMint, tokenBMint),
+        ],
+        DAMM_V2_PROGRAM_ID
     )[0]
 }
 

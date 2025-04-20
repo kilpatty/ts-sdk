@@ -7,6 +7,8 @@ import type {
 } from '@coral-xyz/anchor'
 import type { VirtualCurve } from './idl/virtual-curve/idl'
 import type { PublicKey } from '@solana/web3.js'
+import Decimal from 'decimal.js'
+
 // Program Type
 export type VirtualCurveProgram = Program<VirtualCurve>
 
@@ -115,6 +117,7 @@ export type ClaimFeeOperator = IdlAccounts<VirtualCurve>['claimFeeOperator']
 export type Config = IdlAccounts<VirtualCurve>['config']
 export type MeteoraDammMigrationMetadata =
     IdlAccounts<VirtualCurve>['meteoraDammMigrationMetadata']
+export type LockEscrow = IdlAccounts<VirtualCurve>['lockEscrow']
 export type VolatilityTracker = IdlTypes<VirtualCurve>['volatilityTracker']
 export type VirtualPool = IdlAccounts<VirtualCurve>['virtualPool']
 export type PoolConfig = IdlAccounts<VirtualCurve>['poolConfig']
@@ -191,14 +194,6 @@ export type CreateConfigParam = Omit<
 > &
     ConfigParameters
 
-export type CreatePumpFunConfigParam = {
-    config: PublicKey
-    feeClaimer: PublicKey
-    owner: PublicKey
-    payer: PublicKey
-    quoteMint: PublicKey
-}
-
 export type CreateDammMigrationMetadataParam = {
     payer: PublicKey
     virtualPool: PublicKey
@@ -206,14 +201,44 @@ export type CreateDammMigrationMetadataParam = {
     migrateToDammV2: boolean
 }
 
-export type CreateCurveParam = {
+export type DesignPumpFunCurveParam = {
+    totalTokenSupply: number
+    percentageSupplyOnMigration: number
+    percentageSupplyVesting: number
+    frequency: number
+    numberOfPeriod: number
+    startPrice: Decimal
+    migrationPrice: Decimal
+    tokenBaseDecimal: TokenDecimal
+    tokenQuoteDecimal: TokenDecimal
+    feeClaimer: PublicKey
+    leftoverReceiver: PublicKey
+    payer: PublicKey
+    quoteMint: PublicKey
+    config: PublicKey
+}
+
+export type DesignPumpFunCurveWithoutLockVestingParam = {
+    totalTokenSupply: number
+    percentageSupplyOnMigration: number
+    startPrice: Decimal
+    tokenBaseDecimal: TokenDecimal
+    tokenQuoteDecimal: TokenDecimal
+    feeClaimer: PublicKey
+    leftoverReceiver: PublicKey
+    payer: PublicKey
+    quoteMint: PublicKey
+    config: PublicKey
+}
+
+export type DesignCurveParam = {
     tokenDecimal: TokenDecimal
     migrationQuoteThreshold: BN
     tokenBaseSupply: BN
     migrationBasePercent: number
 }
 
-export type CreateCurveResponse = {
+export type DesignCurveResponse = {
     sqrtStartPrice: BN
     curve: LiquidityDistributionParameters[]
 }
@@ -282,6 +307,11 @@ export type DammLpTokenParam = {
 
 export type PartnerWithdrawSurplusParam = {
     feeClaimer: PublicKey
+    virtualPool: PublicKey
+}
+
+export type WithdrawLeftoverParam = {
+    payer: PublicKey
     virtualPool: PublicKey
 }
 

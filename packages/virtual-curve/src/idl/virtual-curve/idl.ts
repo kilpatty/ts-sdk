@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/virtual_curve.json`.
  */
 export type VirtualCurve = {
-    address: 'virEFLZsQm1iFAs8py1XnziJ67gTzW2bfCWhxNPfccD'
+    address: 'dbceTyRHnt38cShTHTiDJDKeHgyvJSaXeGrn1xMLjA9'
     metadata: {
         name: 'virtualCurve'
         version: '0.1.0'
@@ -19,29 +19,7 @@ export type VirtualCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'config'
@@ -314,29 +292,7 @@ export type VirtualCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'config'
@@ -579,7 +535,7 @@ export type VirtualCurve = {
                     name: 'feeClaimer'
                 },
                 {
-                    name: 'owner'
+                    name: 'leftoverReceiver'
                 },
                 {
                     name: 'quoteMint'
@@ -656,29 +612,7 @@ export type VirtualCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'baseVault'
@@ -970,29 +904,7 @@ export type VirtualCurve = {
                 },
                 {
                     name: 'poolAuthority'
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'creator'
@@ -1157,29 +1069,7 @@ export type VirtualCurve = {
                 },
                 {
                     name: 'poolAuthority'
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'creator'
@@ -1348,29 +1238,7 @@ export type VirtualCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'pool'
@@ -1499,29 +1367,7 @@ export type VirtualCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'lpMint'
@@ -1738,29 +1584,7 @@ export type VirtualCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'pool'
@@ -1925,29 +1749,7 @@ export type VirtualCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'pool'
@@ -2187,29 +1989,7 @@ export type VirtualCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'config'
@@ -2285,29 +2065,7 @@ export type VirtualCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'config'
@@ -2465,29 +2223,7 @@ export type VirtualCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
                 },
                 {
                     name: 'config'
@@ -2592,6 +2328,156 @@ export type VirtualCurve = {
                 },
             ]
         },
+        {
+            name: 'withdrawLeftover'
+            discriminator: [20, 198, 202, 237, 235, 243, 183, 66]
+            accounts: [
+                {
+                    name: 'poolAuthority'
+                    pda: {
+                        seeds: [
+                            {
+                                kind: 'const'
+                                value: [
+                                    112,
+                                    111,
+                                    111,
+                                    108,
+                                    95,
+                                    97,
+                                    117,
+                                    116,
+                                    104,
+                                    111,
+                                    114,
+                                    105,
+                                    116,
+                                    121,
+                                ]
+                            },
+                        ]
+                    }
+                },
+                {
+                    name: 'config'
+                    relations: ['virtualPool']
+                },
+                {
+                    name: 'virtualPool'
+                    writable: true
+                },
+                {
+                    name: 'tokenBaseAccount'
+                    docs: ['The receiver token account, withdraw to ATA']
+                    writable: true
+                    pda: {
+                        seeds: [
+                            {
+                                kind: 'account'
+                                path: 'leftoverReceiver'
+                            },
+                            {
+                                kind: 'account'
+                                path: 'tokenBaseProgram'
+                            },
+                            {
+                                kind: 'account'
+                                path: 'baseMint'
+                            },
+                        ]
+                        program: {
+                            kind: 'const'
+                            value: [
+                                140,
+                                151,
+                                37,
+                                143,
+                                78,
+                                36,
+                                137,
+                                241,
+                                187,
+                                61,
+                                16,
+                                41,
+                                20,
+                                142,
+                                13,
+                                131,
+                                11,
+                                90,
+                                19,
+                                153,
+                                218,
+                                255,
+                                16,
+                                132,
+                                4,
+                                142,
+                                123,
+                                216,
+                                219,
+                                233,
+                                248,
+                                89,
+                            ]
+                        }
+                    }
+                },
+                {
+                    name: 'baseVault'
+                    docs: ['The vault token account for output token']
+                    writable: true
+                    relations: ['virtualPool']
+                },
+                {
+                    name: 'baseMint'
+                    docs: ['The mint of quote token']
+                    relations: ['virtualPool']
+                },
+                {
+                    name: 'leftoverReceiver'
+                    relations: ['config']
+                },
+                {
+                    name: 'tokenBaseProgram'
+                    docs: ['Token base program']
+                },
+                {
+                    name: 'eventAuthority'
+                    pda: {
+                        seeds: [
+                            {
+                                kind: 'const'
+                                value: [
+                                    95,
+                                    95,
+                                    101,
+                                    118,
+                                    101,
+                                    110,
+                                    116,
+                                    95,
+                                    97,
+                                    117,
+                                    116,
+                                    104,
+                                    111,
+                                    114,
+                                    105,
+                                    116,
+                                    121,
+                                ]
+                            },
+                        ]
+                    }
+                },
+                {
+                    name: 'program'
+                },
+            ]
+            args: []
+        },
     ]
     accounts: [
         {
@@ -2688,6 +2574,10 @@ export type VirtualCurve = {
             name: 'evtVirtualPoolMetadata'
             discriminator: [188, 18, 72, 76, 195, 91, 38, 74]
         },
+        {
+            name: 'evtWithdrawLeftover'
+            discriminator: [191, 189, 104, 143, 111, 156, 94, 229]
+        },
     ]
     errors: [
         {
@@ -2737,126 +2627,116 @@ export type VirtualCurve = {
         },
         {
             code: 6009
-            name: 'invalidParameters'
-            msg: 'Invalid parameters'
-        },
-        {
-            code: 6010
             name: 'invalidCollectFeeMode'
             msg: 'Invalid collect fee mode'
         },
         {
-            code: 6011
+            code: 6010
             name: 'invalidMigrationFeeOption'
             msg: 'Invalid migration fee option'
         },
         {
-            code: 6012
+            code: 6011
             name: 'invalidInput'
             msg: 'Invalid input'
         },
         {
-            code: 6013
-            name: 'invalidExtension'
-            msg: 'Invalid extension'
-        },
-        {
-            code: 6014
-            name: 'feeInverseIsIncorrect'
-            msg: 'Fee inverse is incorrect'
-        },
-        {
-            code: 6015
+            code: 6012
             name: 'notEnoughLiquidity'
             msg: 'Not enough liquidity'
         },
         {
-            code: 6016
+            code: 6013
             name: 'poolIsCompleted'
             msg: 'Pool is completed'
         },
         {
-            code: 6017
+            code: 6014
             name: 'poolIsIncompleted'
             msg: 'Pool is incompleted'
         },
         {
-            code: 6018
+            code: 6015
             name: 'invalidMigrationOption'
             msg: 'Invalid migration option'
         },
         {
-            code: 6019
+            code: 6016
             name: 'invalidTokenDecimals'
             msg: 'Invalid activation type'
         },
         {
-            code: 6020
+            code: 6017
             name: 'invalidTokenType'
             msg: 'Invalid token type'
         },
         {
-            code: 6021
+            code: 6018
             name: 'invalidFeePercentage'
             msg: 'Invalid fee percentage'
         },
         {
-            code: 6022
+            code: 6019
             name: 'invalidQuoteThreshold'
             msg: 'Invalid quote threshold'
         },
         {
-            code: 6023
+            code: 6020
+            name: 'invalidTokenSupply'
+            msg: 'Invalid token supply'
+        },
+        {
+            code: 6021
             name: 'invalidCurve'
             msg: 'Invalid curve'
         },
         {
-            code: 6024
+            code: 6022
             name: 'notPermitToDoThisAction'
             msg: 'Not permit to do this action'
         },
         {
-            code: 6025
-            name: 'invalidPartnerAccount'
-            msg: 'Invalid partner account'
-        },
-        {
-            code: 6026
+            code: 6023
             name: 'invalidOwnerAccount'
             msg: 'Invalid owner account'
         },
         {
-            code: 6027
+            code: 6024
             name: 'invalidConfigAccount'
             msg: 'Invalid config account'
         },
         {
-            code: 6028
+            code: 6025
             name: 'surplusHasBeenWithdraw'
             msg: 'Surplus has been withdraw'
         },
         {
-            code: 6029
+            code: 6026
+            name: 'leftoverHasBeenWithdraw'
+            msg: 'Leftover has been withdraw'
+        },
+        {
+            code: 6027
             name: 'totalBaseTokenExceedMaxSupply'
             msg: 'Total base token is exceeded max supply'
         },
         {
-            code: 6030
+            code: 6028
             name: 'unsupportNativeMintToken2022'
             msg: 'Unsupport native mint token 2022'
         },
         {
+            code: 6029
+            name: 'insufficientLiquidityForMigration'
+            msg: 'Insufficient liquidity for migration'
+        },
+        {
+            code: 6030
+            name: 'missingPoolConfigInRemainingAccount'
+            msg: 'Missing pool config in remaining account'
+        },
+        {
             code: 6031
-            name: 'insufficentLiquidityForMigration'
-            msg: 'Insufficent liquidity for migration'
-        },
-        {
-            code: 6032
-            name: 'missingPoolConfigInRemaningAccount'
-            msg: 'Missing pool config in remaning account'
-        },
-        {
-            code: 6033
             name: 'invalidVestingParameters'
             msg: 'Invalid vesting parameters'
         },
@@ -3065,10 +2945,20 @@ export type VirtualCurve = {
                         type: 'u8'
                     },
                     {
+                        name: 'tokenSupply'
+                        type: {
+                            option: {
+                                defined: {
+                                    name: 'tokenSupplyParams'
+                                }
+                            }
+                        }
+                    },
+                    {
                         name: 'padding'
                         docs: ['padding for future use']
                         type: {
-                            array: ['u8', 7]
+                            array: ['u64', 8]
                         }
                     },
                     {
@@ -3381,6 +3271,30 @@ export type VirtualCurve = {
                         type: 'u128'
                     },
                     {
+                        name: 'lockedVesting'
+                        type: {
+                            defined: {
+                                name: 'lockedVestingParams'
+                            }
+                        }
+                    },
+                    {
+                        name: 'migrationFeeOption'
+                        type: 'u8'
+                    },
+                    {
+                        name: 'fixedTokenSuppplyFlag'
+                        type: 'u8'
+                    },
+                    {
+                        name: 'preMigrationTokenSupply'
+                        type: 'u64'
+                    },
+                    {
+                        name: 'postMigrationTokenSupply'
+                        type: 'u64'
+                    },
+                    {
                         name: 'curve'
                         type: {
                             vec: {
@@ -3583,6 +3497,26 @@ export type VirtualCurve = {
                     {
                         name: 'virtualPool'
                         type: 'pubkey'
+                    },
+                ]
+            }
+        },
+        {
+            name: 'evtWithdrawLeftover'
+            type: {
+                kind: 'struct'
+                fields: [
+                    {
+                        name: 'pool'
+                        type: 'pubkey'
+                    },
+                    {
+                        name: 'leftoverReceiver'
+                        type: 'pubkey'
+                    },
+                    {
+                        name: 'leftoverAmount'
+                        type: 'u64'
                     },
                 ]
             }
@@ -3930,8 +3864,10 @@ export type VirtualCurve = {
                         type: 'pubkey'
                     },
                     {
-                        name: 'owner'
-                        docs: ['Owner of that config key']
+                        name: 'leftoverReceiver'
+                        docs: [
+                            'Address to receive extra base token after migration, in case token is fixed supply',
+                        ]
                         type: 'pubkey'
                     },
                     {
@@ -4004,10 +3940,17 @@ export type VirtualCurve = {
                         type: 'u8'
                     },
                     {
+                        name: 'fixedTokenSuppplyFlag'
+                        docs: [
+                            'flag to indicate whether token is dynamic supply (0) or fixed supply (1)',
+                        ]
+                        type: 'u8'
+                    },
+                    {
                         name: 'padding0'
                         docs: ['padding 0']
                         type: {
-                            array: ['u8', 4]
+                            array: ['u8', 3]
                         }
                     },
                     {
@@ -4047,10 +3990,20 @@ export type VirtualCurve = {
                         }
                     },
                     {
+                        name: 'preMigrationTokenSupply'
+                        docs: ['pre migration token supply']
+                        type: 'u64'
+                    },
+                    {
+                        name: 'postMigrationTokenSupply'
+                        docs: ['post migration token supply']
+                        type: 'u64'
+                    },
+                    {
                         name: 'padding2'
                         docs: ['padding 2']
                         type: {
-                            array: ['u128', 3]
+                            array: ['u128', 2]
                         }
                     },
                     {
@@ -4257,6 +4210,24 @@ export type VirtualCurve = {
             }
         },
         {
+            name: 'tokenSupplyParams'
+            type: {
+                kind: 'struct'
+                fields: [
+                    {
+                        name: 'preMigrationTokenSupply'
+                        docs: ['pre migration token supply']
+                        type: 'u64'
+                    },
+                    {
+                        name: 'postMigrationTokenSupply'
+                        docs: ['post migration token supply']
+                        type: 'u64'
+                    },
+                ]
+            }
+        },
+        {
             name: 'virtualPool'
             serialization: 'bytemuck'
             repr: {
@@ -4365,10 +4336,15 @@ export type VirtualCurve = {
                         type: 'u8'
                     },
                     {
+                        name: 'isWithdrawLeftover'
+                        docs: ['is withdraw leftover']
+                        type: 'u8'
+                    },
+                    {
                         name: 'padding0'
                         docs: ['padding']
                         type: {
-                            array: ['u8', 3]
+                            array: ['u8', 2]
                         }
                     },
                     {

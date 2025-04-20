@@ -17,14 +17,16 @@ import {
     type MigrateToDammV2Param,
     type PoolConfig,
     type VirtualPool,
-    type Config,
-    type ClaimFeeOperator,
     type PartnerMetadata,
     type CreateVirtualPoolMetadataParam,
     type CreateVirtualPoolMetadataParameters,
     type VirtualPoolMetadata,
     type CreateLockerParam,
-    type CreatePumpFunConfigParam,
+    type DesignPumpFunCurveParam,
+    type DesignPumpFunCurveWithoutLockVestingParam,
+    type ConfigParameters,
+    type WithdrawLeftoverParam,
+    type LockEscrow,
 } from './types'
 import {
     ComputeBudgetProgram,
@@ -41,6 +43,7 @@ import {
     deriveDammMigrationMetadataAddress,
     deriveDammPoolAddress,
     deriveDammV2EventAuthority,
+    deriveDammV2PoolAddress,
     deriveEscrow,
     deriveEventAuthority,
     deriveLockerEventAuthority,
@@ -70,8 +73,8 @@ import {
     DAMM_V2_PROGRAM_ID,
     LOCKER_PROGRAM_ID,
     METAPLEX_PROGRAM_ID,
-    PUMP_FUN_CONFIG,
     VAULT_PROGRAM_ID,
+    VIRTUAL_CURVE_PROGRAM_ID,
 } from './constants'
 import {
     createDammV1Program,
@@ -91,9 +94,12 @@ import { swapQuote } from './math/swapQuote'
 import {
     createInitializePermissionlessDynamicVaultIx,
     createLockEscrowIx,
-    createVaultIfNotExists,
     prepareSwapParams,
 } from './common'
+import {
+    designPumpFunCurve,
+    designPumpFunCurveWithoutLockVesting,
+} from './design'
 
 export class VirtualCurveProgramClient {
     private program: Program<VirtualCurveIDL>
@@ -138,43 +144,44 @@ export class VirtualCurveProgramClient {
     }
 
     /**
-     * Get config
-     * @param connection - The connection to the Solana network
-     * @param configAddress - The address of the config
-     * @returns A config
-     */
-    async getConfig(
-        connection: Connection,
-        configAddress: PublicKey | string
-    ): Promise<Config> {
-        return getAccountData<Config>(
-            connection,
-            configAddress,
-            'config',
-            this.program
-        )
-    }
-
-    /**
      * Get pool config (partner config)
      * @param connection - The connection to the Solana network
-     * @param poolConfigAddress - The address of the pool config
+     * @param configAddress - The address of the pool config key
      * @returns A pool config
      */
     async getPoolConfig(
         connection: Connection,
-        poolConfigAddress: PublicKey | string
+        configAddress: PublicKey | string
     ): Promise<PoolConfig> {
         return getAccountData<PoolConfig>(
             connection,
-            poolConfigAddress,
+            configAddress,
             'poolConfig',
             this.program
         )
     }
 
     /**
-     * Retrieve all pool configs (list of all configs launched by partner)
+     * Get pool migration quote threshold
+     * @param connection - The connection to the Solana network
+     * @param poolAddress - The address of the pool
+     * @returns The migration quote threshold
+     */
+    async getPoolMigrationQuoteThreshold(
+        connection: Connection,
+        poolAddress: PublicKey | string
+    ): Promise<BN> {
+        const pool = await this.getPool(connection, poolAddress)
+        if (!pool) {
+            throw new Error(`Pool not found: ${poolAddress.toString()}`)
+        }
+        const configAddress = pool.config
+        const config = await this.getPoolConfig(connection, configAddress)
+        return config.migrationQuoteThreshold
+    }
+
+    /**
+     * Retrieve all pool config keys (list of all configs owned by partner)
      * @param owner - The owner of the pool configs
      * @returns An array of pool configs
      */
@@ -219,24 +226,6 @@ export class VirtualCurveProgramClient {
     }
 
     /**
-     * Get claim fee operator
-     * @param connection - The connection to the Solana network
-     * @param operatorAddress - The address of the claim fee operator
-     * @returns A claim fee operator
-     */
-    async getClaimFeeOperator(
-        connection: Connection,
-        operatorAddress: PublicKey | string
-    ): Promise<ClaimFeeOperator> {
-        return getAccountData<ClaimFeeOperator>(
-            connection,
-            operatorAddress,
-            'claimFeeOperator',
-            this.program
-        )
-    }
-
-    /**
      * Get partner metadata
      * @param partnerAddress - The address of the partner
      * @returns A partner metadata
@@ -275,30 +264,6 @@ export class VirtualCurveProgramClient {
             hasReferral,
             currentPoint
         )
-    }
-
-    // Helper function to calculate square root of a BN
-    private sqrtBN(value: BN): BN {
-        if (value.lt(new BN(0))) {
-            throw new Error('Square root of negative number is not supported')
-        }
-
-        // Handle special cases
-        if (value.eq(new BN(0)) || value.eq(new BN(1))) {
-            return value
-        }
-
-        // Start with an initial guess
-        let x = value.div(new BN(2))
-        let lastX = new BN(0)
-
-        // Newton's method for square root
-        while (!x.eq(lastX)) {
-            lastX = x
-            x = x.add(value.div(x)).div(new BN(2))
-        }
-
-        return x
     }
 }
 
@@ -406,7 +371,6 @@ export class PoolService {
 
     /**
      * Create virtual pool metadata
-     * @param connection - The connection to the Solana network
      * @param createVirtualPoolMetadataParam - The parameters for the virtual pool metadata
      * @returns A create virtual pool metadata transaction
      */
@@ -446,6 +410,7 @@ export class PoolService {
      * Swap between base and quote
      * @param pool - The pool address
      * @param swapParam - The parameters for the swap
+     * @param connection - The connection to the Solana network
      * @returns A swap transaction
      */
     async swap(
@@ -593,13 +558,22 @@ export class PartnerService {
         createConfigParam: CreateConfigParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
-        const { config, feeClaimer, owner, quoteMint, payer, ...configParam } =
-            createConfigParam
+
+        const {
+            config,
+            feeClaimer,
+            leftoverReceiver,
+            quoteMint,
+            payer,
+            ...configParam
+        } = createConfigParam
+
         const eventAuthority = deriveEventAuthority()
+
         const accounts = {
             config,
             feeClaimer,
-            owner,
+            leftoverReceiver,
             quoteMint,
             payer,
             eventAuthority,
@@ -613,31 +587,50 @@ export class PartnerService {
     }
 
     /**
-     * Create a new pump.fun config
-     * @param createPumpFunConfigParam - The parameters for the pump.fun config
-     * @returns A new config
+     * Create a new pump fun config
+     * @param designPumpFunCurveParams - The parameters for the pump fun config
+     * @returns A new pump fun config
      */
-    async createPumpFunConfig(
-        createPumpFunConfigParam: CreatePumpFunConfigParam
+    async createPumpFunConfigWithLockVesting(
+        designPumpFunCurveParams: DesignPumpFunCurveParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
-        const { config, feeClaimer, owner, payer, quoteMint } =
-            createPumpFunConfigParam
+
+        const {
+            totalTokenSupply,
+            percentageSupplyOnMigration,
+            percentageSupplyVesting,
+            frequency,
+            numberOfPeriod,
+            startPrice,
+            migrationPrice,
+            tokenBaseDecimal,
+            tokenQuoteDecimal,
+            feeClaimer,
+            leftoverReceiver,
+            payer,
+            quoteMint,
+            config,
+        } = designPumpFunCurveParams
+
         const eventAuthority = deriveEventAuthority()
 
-        const configParam: CreateConfigParam = {
-            config,
-            feeClaimer,
-            owner,
-            quoteMint,
-            payer,
-            ...PUMP_FUN_CONFIG,
-        }
+        const pumpFunCurveConfig: ConfigParameters = designPumpFunCurve(
+            totalTokenSupply,
+            percentageSupplyOnMigration,
+            percentageSupplyVesting,
+            frequency,
+            numberOfPeriod,
+            startPrice,
+            migrationPrice,
+            tokenBaseDecimal,
+            tokenQuoteDecimal
+        )
 
         const accounts = {
             config,
             feeClaimer,
-            owner,
+            leftoverReceiver,
             quoteMint,
             payer,
             eventAuthority,
@@ -645,7 +638,57 @@ export class PartnerService {
         }
 
         return program.methods
-            .createConfig(configParam)
+            .createConfig(pumpFunCurveConfig)
+            .accounts(accounts)
+            .transaction()
+    }
+
+    /**
+     * Create a new pump fun config without lock vesting
+     * @param designPumpFunCurveWithoutLockVestingParams - The parameters for the pump fun config without lock vesting
+     * @returns A new pump fun config without lock vesting
+     */
+    async createPumpFunConfigWithoutLockVesting(
+        designPumpFunCurveWithoutLockVestingParams: DesignPumpFunCurveWithoutLockVestingParam
+    ): Promise<Transaction> {
+        const program = this.programClient.getProgram()
+
+        const {
+            totalTokenSupply,
+            percentageSupplyOnMigration,
+            startPrice,
+            tokenBaseDecimal,
+            tokenQuoteDecimal,
+            feeClaimer,
+            leftoverReceiver,
+            payer,
+            quoteMint,
+            config,
+        } = designPumpFunCurveWithoutLockVestingParams
+
+        const eventAuthority = deriveEventAuthority()
+
+        const pumpFunCurveWithoutLockVestingConfig: ConfigParameters =
+            designPumpFunCurveWithoutLockVesting(
+                totalTokenSupply,
+                percentageSupplyOnMigration,
+                startPrice,
+                tokenBaseDecimal,
+                tokenQuoteDecimal
+            )
+
+        const accounts = {
+            config,
+            feeClaimer,
+            leftoverReceiver,
+            quoteMint,
+            payer,
+            eventAuthority,
+            program: program.programId,
+        }
+
+        return program.methods
+            .createConfig(pumpFunCurveWithoutLockVestingConfig)
             .accounts(accounts)
             .transaction()
     }
@@ -692,6 +735,7 @@ export class PartnerService {
      * Claim trading fee
      * @param pool - The pool address
      * @param claimTradingFeeParam - The parameters for the claim trading fee
+     * @param connection - The connection to the Solana network
      * @returns A claim trading fee transaction
      */
     async claimTradingFee(
@@ -700,11 +744,14 @@ export class PartnerService {
         connection: Connection
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
+        const poolAuthority = derivePoolAuthority(program.programId)
+        const eventAuthority = deriveEventAuthority()
 
         const virtualPoolState = await this.programClient.getPool(
             connection,
             pool
         )
+
         if (!virtualPoolState) {
             throw new Error(`Pool not found: ${pool.toString()}`)
         }
@@ -714,26 +761,64 @@ export class PartnerService {
             virtualPoolState.config
         )
 
-        const poolAuthority = derivePoolAuthority(program.programId)
-        const eventAuthority = deriveEventAuthority()
-
-        const tokenBaseAccount = getAssociatedTokenAddressSync(
-            virtualPoolState.baseMint,
-            claimTradingFeeParam.feeClaimer,
-            true,
-            virtualPoolState.poolType === TokenType.SPL
+        const tokenBaseProgram =
+            poolConfigState.tokenType === TokenType.SPL
                 ? TOKEN_PROGRAM_ID
                 : TOKEN_2022_PROGRAM_ID
-        )
 
-        const tokenQuoteAccount = getAssociatedTokenAddressSync(
-            poolConfigState.quoteMint,
-            claimTradingFeeParam.feeClaimer,
-            true,
+        const tokenQuoteProgram =
             poolConfigState.quoteTokenFlag === TokenType.SPL
                 ? TOKEN_PROGRAM_ID
                 : TOKEN_2022_PROGRAM_ID
+
+        const tokenBaseAccount = findAssociatedTokenAddress(
+            claimTradingFeeParam.feeClaimer,
+            virtualPoolState.baseMint,
+            tokenBaseProgram
         )
+
+        const tokenQuoteAccount = findAssociatedTokenAddress(
+            claimTradingFeeParam.feeClaimer,
+            poolConfigState.quoteMint,
+            tokenQuoteProgram
+        )
+
+        const preInstructions: TransactionInstruction[] = []
+        const postInstructions: TransactionInstruction[] = []
+
+        const createBaseTokenAccountIx =
+            createAssociatedTokenAccountIdempotentInstruction(
+                claimTradingFeeParam.feeClaimer,
+                tokenBaseAccount,
+                claimTradingFeeParam.feeClaimer,
+                virtualPoolState.baseMint,
+                tokenBaseProgram
+            )
+
+        if (createBaseTokenAccountIx) {
+            preInstructions.push(createBaseTokenAccountIx)
+        }
+
+        const createQuoteTokenAccountIx =
+            createAssociatedTokenAccountIdempotentInstruction(
+                claimTradingFeeParam.feeClaimer,
+                tokenQuoteAccount,
+                claimTradingFeeParam.feeClaimer,
+                poolConfigState.quoteMint,
+                tokenQuoteProgram
+            )
+
+        if (createQuoteTokenAccountIx) {
+            preInstructions.push(createQuoteTokenAccountIx)
+        }
+
+        const unwrapSolIx = unwrapSOLInstruction(
+            claimTradingFeeParam.feeClaimer
+        )
+
+        if (unwrapSolIx) {
+            postInstructions.push(unwrapSolIx)
+        }
 
         const accounts = {
             poolAuthority,
@@ -746,14 +831,8 @@ export class PartnerService {
             baseMint: virtualPoolState.baseMint,
             quoteMint: poolConfigState.quoteMint,
             feeClaimer: claimTradingFeeParam.feeClaimer,
-            tokenBaseProgram:
-                virtualPoolState.poolType === TokenType.SPL
-                    ? TOKEN_PROGRAM_ID
-                    : TOKEN_2022_PROGRAM_ID,
-            tokenQuoteProgram:
-                poolConfigState.quoteTokenFlag === TokenType.SPL
-                    ? TOKEN_PROGRAM_ID
-                    : TOKEN_2022_PROGRAM_ID,
+            tokenBaseProgram,
+            tokenQuoteProgram,
             eventAuthority,
             program: program.programId,
         }
@@ -764,28 +843,33 @@ export class PartnerService {
                 claimTradingFeeParam.maxQuoteAmount
             )
             .accounts(accounts)
+            .preInstructions(preInstructions)
+            .postInstructions(postInstructions)
             .transaction()
     }
 
     /**
      * Partner withdraw surplus
-     * @param virtualPool - The virtual pool address
      * @param partnerWithdrawSurplusParam - The parameters for the partner withdraw surplus
+     * @param connection - The connection to the Solana network
      * @returns A partner withdraw surplus transaction
      */
     async partnerWithdrawSurplus(
-        virtualPool: PublicKey,
         partnerWithdrawSurplusParam: PartnerWithdrawSurplusParam,
         connection: Connection
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
+        const poolAuthority = derivePoolAuthority(program.programId)
+        const eventAuthority = deriveEventAuthority()
 
         const virtualPoolState = await this.programClient.getPool(
             connection,
-            virtualPool
+            partnerWithdrawSurplusParam.virtualPool
         )
         if (!virtualPoolState) {
-            throw new Error(`Pool not found: ${virtualPool.toString()}`)
+            throw new Error(
+                `Pool not found: ${partnerWithdrawSurplusParam.virtualPool.toString()}`
+            )
         }
 
         const poolConfigState = await this.programClient.getPoolConfig(
@@ -793,16 +877,40 @@ export class PartnerService {
             virtualPoolState.config
         )
 
-        const poolAuthority = derivePoolAuthority(program.programId)
-        const eventAuthority = deriveEventAuthority()
+        const tokenQuoteProgram =
+            poolConfigState.quoteTokenFlag === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
 
         const tokenQuoteAccount = findAssociatedTokenAddress(
             partnerWithdrawSurplusParam.feeClaimer,
             poolConfigState.quoteMint,
-            poolConfigState.quoteTokenFlag === TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
+            tokenQuoteProgram
         )
+
+        const preInstructions: TransactionInstruction[] = []
+        const postInstructions: TransactionInstruction[] = []
+
+        const createQuoteTokenAccountIx =
+            createAssociatedTokenAccountIdempotentInstruction(
+                partnerWithdrawSurplusParam.feeClaimer,
+                tokenQuoteAccount,
+                partnerWithdrawSurplusParam.feeClaimer,
+                poolConfigState.quoteMint,
+                tokenQuoteProgram
+            )
+
+        if (createQuoteTokenAccountIx) {
+            preInstructions.push(createQuoteTokenAccountIx)
+        }
+
+        const unwrapSolIx = unwrapSOLInstruction(
+            partnerWithdrawSurplusParam.feeClaimer
+        )
+
+        if (unwrapSolIx) {
+            postInstructions.push(unwrapSolIx)
+        }
 
         const accounts = {
             poolAuthority,
@@ -812,10 +920,7 @@ export class PartnerService {
             quoteVault: virtualPoolState.quoteVault,
             quoteMint: poolConfigState.quoteMint,
             feeClaimer: partnerWithdrawSurplusParam.feeClaimer,
-            tokenQuoteProgram:
-                poolConfigState.quoteTokenFlag === TokenType.SPL
-                    ? TOKEN_PROGRAM_ID
-                    : TOKEN_2022_PROGRAM_ID,
+            tokenQuoteProgram,
             eventAuthority,
             program: program.programId,
         }
@@ -823,6 +928,84 @@ export class PartnerService {
         return program.methods
             .partnerWithdrawSurplus()
             .accounts(accounts)
+            .preInstructions(preInstructions)
+            .postInstructions(postInstructions)
+            .transaction()
+    }
+
+    /**
+     * Withdraw leftover
+     * @param connection - The connection to the Solana network
+     * @param withdrawLeftoverParam - The parameters for the withdraw leftover
+     * @returns A withdraw leftover transaction
+     */
+    async withdrawLeftover(
+        connection: Connection,
+        withdrawLeftoverParam: WithdrawLeftoverParam
+    ): Promise<Transaction> {
+        const program = this.programClient.getProgram()
+        const poolAuthority = derivePoolAuthority(program.programId)
+        const eventAuthority = deriveEventAuthority()
+
+        const virtualPoolState = await this.programClient.getPool(
+            connection,
+            withdrawLeftoverParam.virtualPool
+        )
+
+        if (!virtualPoolState) {
+            throw new Error(
+                `Pool not found: ${withdrawLeftoverParam.virtualPool.toString()}`
+            )
+        }
+
+        const poolConfigState = await this.programClient.getPoolConfig(
+            connection,
+            virtualPoolState.config
+        )
+
+        const tokenBaseProgram =
+            poolConfigState.tokenType === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
+
+        const tokenBaseAccount = findAssociatedTokenAddress(
+            poolConfigState.leftoverReceiver,
+            virtualPoolState.baseMint,
+            tokenBaseProgram
+        )
+
+        const preInstructions: TransactionInstruction[] = []
+
+        const createBaseTokenAccountIx =
+            createAssociatedTokenAccountIdempotentInstruction(
+                poolConfigState.leftoverReceiver,
+                tokenBaseAccount,
+                poolConfigState.leftoverReceiver,
+                virtualPoolState.baseMint,
+                tokenBaseProgram
+            )
+
+        if (createBaseTokenAccountIx) {
+            preInstructions.push(createBaseTokenAccountIx)
+        }
+
+        const accounts = {
+            poolAuthority,
+            config: virtualPoolState.config,
+            virtualPool: withdrawLeftoverParam.virtualPool,
+            tokenBaseAccount,
+            baseVault: virtualPoolState.baseVault,
+            baseMint: virtualPoolState.baseMint,
+            leftoverReceiver: poolConfigState.leftoverReceiver,
+            tokenBaseProgram,
+            eventAuthority,
+            program: program.programId,
+        }
+
+        return program.methods
+            .withdrawLeftover()
+            .accounts(accounts)
+            .preInstructions(preInstructions)
             .transaction()
     }
 }
@@ -835,7 +1018,6 @@ export class MigrationService {
 
     /**
      * Create metadata for the migration of Meteora DAMM V1 or DAMM V2
-     * @param connection - The connection to the Solana network
      * @param createDammMigrationMetadataParam - The parameters for the migration
      * @returns A migration transaction
      */
@@ -882,7 +1064,6 @@ export class MigrationService {
         createLockerParam: CreateLockerParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
-
         const poolAuthority = derivePoolAuthority(program.programId)
         const lockerEventAuthority = deriveLockerEventAuthority()
 
@@ -911,14 +1092,13 @@ export class MigrationService {
                 ? TOKEN_PROGRAM_ID
                 : TOKEN_2022_PROGRAM_ID
 
-        const preInstructions: TransactionInstruction[] = []
-
-        const escrowToken = getAssociatedTokenAddressSync(
-            virtualPoolState.baseMint,
+        const escrowToken = findAssociatedTokenAddress(
             escrow,
-            true,
+            virtualPoolState.baseMint,
             tokenProgram
         )
+
+        const preInstructions: TransactionInstruction[] = []
 
         const createOwnerEscrowVaultTokenXIx =
             createAssociatedTokenAccountIdempotentInstruction(
@@ -960,45 +1140,25 @@ export class MigrationService {
     ///////////////////////
 
     /**
-     * Get DAMM V1 migration metadata
-     * @param connection - The connection to the Solana network
-     * @param metadataAddress - The address of the meteora DAMM migration metadata
-     * @returns A meteora DAMM migration metadata
-     */
-    async getDammV1MigrationMetadata(
-        metadataAddress: PublicKey | string
-    ): Promise<MeteoraDammMigrationMetadata> {
-        const program = this.programClient.getProgram()
-        const metadata =
-            await program.account.meteoraDammMigrationMetadata.fetch(
-                metadataAddress instanceof PublicKey
-                    ? metadataAddress
-                    : new PublicKey(metadataAddress)
-            )
-
-        return metadata
-    }
-
-    /**
      * Migrate to DAMM V1
      * @param connection - The connection to the Solana network
-     * @param virtualPool - The virtual pool address
      * @param migrateToDammV1Param - The parameters for the migration
      * @returns A migrate transaction
      */
     async migrateToDammV1(
         connection: Connection,
-        virtualPool: PublicKey,
         migrateToDammV1Param: MigrateToDammV1Param
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
 
         const virtualPoolState = await this.programClient.getPool(
             connection,
-            virtualPool
+            migrateToDammV1Param.virtualPool
         )
         if (!virtualPoolState) {
-            throw new Error(`Pool not found: ${virtualPool.toString()}`)
+            throw new Error(
+                `Pool not found: ${migrateToDammV1Param.virtualPool.toString()}`
+            )
         }
 
         const poolConfigState = await this.programClient.getPoolConfig(
@@ -1143,10 +1303,11 @@ export class MigrationService {
             .transaction()
 
         const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
-            units: 1000000,
+            units: 500000,
         })
 
         transaction.add(modifyComputeUnits)
+
         return transaction
     }
 
@@ -1154,23 +1315,25 @@ export class MigrationService {
      * Lock DAMM V1 LP token for creator or partner
      * @param connection - The connection to the Solana network
      * @param virtualPool - The virtual pool address
-     * @param lockDammLpTokenParam - The parameters for the lock
+     * @param lockDammV1LpTokenParam - The parameters for the lock
      * @returns A lock transaction
      */
     async lockDammV1LpToken(
         connection: Connection,
-        virtualPool: PublicKey,
         lockDammV1LpTokenParam: DammLpTokenParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
+        const poolAuthority = derivePoolAuthority(program.programId)
 
         const virtualPoolState = await this.programClient.getPool(
             connection,
-            virtualPool
+            lockDammV1LpTokenParam.virtualPool
         )
 
         if (!virtualPoolState) {
-            throw new Error(`Pool not found: ${virtualPool.toString()}`)
+            throw new Error(
+                `Pool not found: ${lockDammV1LpTokenParam.virtualPool.toString()}`
+            )
         }
 
         const poolConfigState = await this.programClient.getPoolConfig(
@@ -1178,38 +1341,63 @@ export class MigrationService {
             virtualPoolState.config
         )
 
-        const poolAuthority = derivePoolAuthority(program.programId)
-
-        const dammPool = derivePool(
-            poolConfigState.quoteMint,
-            virtualPoolState.baseMint,
+        const dammPool = deriveDammPoolAddress(
             lockDammV1LpTokenParam.dammConfig,
-            DAMM_V1_PROGRAM_ID
+            virtualPoolState.baseMint,
+            poolConfigState.quoteMint
         )
 
         const migrationMetadata = deriveDammMigrationMetadataAddress(
             lockDammV1LpTokenParam.virtualPool,
-            DAMM_V1_PROGRAM_ID,
+            VIRTUAL_CURVE_PROGRAM_ID,
             false
         )
 
         const vaultProgram = createVaultProgram(connection)
 
         const [
-            { vaultPda: aVault, lpMintPda: aVaultLpMint },
-            { vaultPda: bVault, lpMintPda: bVaultLpMint },
-        ] = await Promise.all([
-            createVaultIfNotExists(
-                virtualPoolState.baseMint,
-                vaultProgram,
-                lockDammV1LpTokenParam.payer
-            ),
-            createVaultIfNotExists(
-                poolConfigState.quoteMint,
-                vaultProgram,
-                lockDammV1LpTokenParam.payer
-            ),
+            { vaultPda: aVault, lpMintPda: aLpMintPda },
+            { vaultPda: bVault, lpMintPda: bLpMintPda },
+        ] = [
+            getVaultPdas(virtualPoolState.baseMint, vaultProgram.programId),
+            getVaultPdas(poolConfigState.quoteMint, vaultProgram.programId),
+        ]
+
+        const [aVaultAccount, bVaultAccount] = await Promise.all([
+            vaultProgram.account.vault.fetchNullable(aVault),
+            vaultProgram.account.vault.fetchNullable(bVault),
         ])
+
+        let aVaultLpMint = aLpMintPda
+        let bVaultLpMint = bLpMintPda
+        const preInstructions: TransactionInstruction[] = []
+
+        if (!aVaultAccount) {
+            const createVaultAIx =
+                await createInitializePermissionlessDynamicVaultIx(
+                    virtualPoolState.baseMint,
+                    lockDammV1LpTokenParam.payer,
+                    vaultProgram
+                )
+            if (createVaultAIx) {
+                preInstructions.push(createVaultAIx.instruction)
+            }
+        } else {
+            aVaultLpMint = aVaultAccount.lpMint
+        }
+        if (!bVaultAccount) {
+            const createVaultBIx =
+                await createInitializePermissionlessDynamicVaultIx(
+                    poolConfigState.quoteMint,
+                    lockDammV1LpTokenParam.payer,
+                    vaultProgram
+                )
+            if (createVaultBIx) {
+                preInstructions.push(createVaultBIx.instruction)
+            }
+        } else {
+            bVaultLpMint = bVaultAccount.lpMint
+        }
 
         const [aVaultLp, bVaultLp] = [
             deriveVaultLPAddress(aVault, dammPool, DAMM_V1_PROGRAM_ID),
@@ -1219,8 +1407,6 @@ export class MigrationService {
         const lpMint = deriveLpMintAddress(dammPool, DAMM_V1_PROGRAM_ID)
 
         const dammV1Program = createDammV1Program(connection)
-
-        const preInstructions: TransactionInstruction[] = []
 
         const dammV1MigrationMetadata =
             await this.getDammV1MigrationMetadata(migrationMetadata)
@@ -1243,7 +1429,7 @@ export class MigrationService {
                     lockDammV1LpTokenParam.payer,
                     dammPool,
                     lpMint,
-                    virtualPoolState.creator,
+                    dammV1MigrationMetadata.partner,
                     lockEscrowKey,
                     dammV1Program
                 )
@@ -1255,6 +1441,8 @@ export class MigrationService {
                 virtualPoolState.creator,
                 DAMM_V1_PROGRAM_ID
             )
+
+            console.log('lockEscrowKey', lockEscrowKey)
 
             const lockEscrowData =
                 await connection.getAccountInfo(lockEscrowKey)
@@ -1281,8 +1469,6 @@ export class MigrationService {
             ASSOCIATED_TOKEN_PROGRAM_ID
         )
 
-        console.log('escrowVault', escrowVault)
-
         const createEscrowVaultIx =
             createAssociatedTokenAccountIdempotentInstruction(
                 lockDammV1LpTokenParam.payer,
@@ -1293,8 +1479,6 @@ export class MigrationService {
                 ASSOCIATED_TOKEN_PROGRAM_ID
             )
 
-        console.log('createEscrowVaultIx', createEscrowVaultIx)
-
         preInstructions.push(createEscrowVaultIx)
 
         const sourceTokens = getAssociatedTokenAddressSync(
@@ -1303,10 +1487,8 @@ export class MigrationService {
             true
         )
 
-        console.log('sourceTokens', sourceTokens)
-
         const accounts = {
-            virtualPool,
+            virtualPool: lockDammV1LpTokenParam.virtualPool,
             migrationMetadata,
             poolAuthority,
             pool: dammPool,
@@ -1341,23 +1523,25 @@ export class MigrationService {
     /**
      * Claim DAMM V1 LP token for creator or partner
      * @param connection - The connection to the Solana network
-     * @param virtualPool - The virtual pool address
-     * @param claimDammLpTokenParam - The parameters for the claim
+     * @param claimDammV1LpTokenParam - The parameters for the claim
      * @returns A claim transaction
      */
     async claimDammV1LpToken(
         connection: Connection,
-        virtualPool: PublicKey,
         claimDammV1LpTokenParam: DammLpTokenParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
+        const poolAuthority = derivePoolAuthority(program.programId)
 
         const virtualPoolState = await this.programClient.getPool(
             connection,
-            virtualPool
+            claimDammV1LpTokenParam.virtualPool
         )
+
         if (!virtualPoolState) {
-            throw new Error(`Pool not found: ${virtualPool.toString()}`)
+            throw new Error(
+                `Pool not found: ${claimDammV1LpTokenParam.virtualPool.toString()}`
+            )
         }
 
         const poolConfigState = await this.programClient.getPoolConfig(
@@ -1365,31 +1549,29 @@ export class MigrationService {
             virtualPoolState.config
         )
 
-        const poolAuthority = derivePoolAuthority(program.programId)
-
-        const dammPool = derivePool(
-            poolConfigState.quoteMint,
-            virtualPoolState.baseMint,
+        const dammPool = deriveDammPoolAddress(
             claimDammV1LpTokenParam.dammConfig,
-            DAMM_V1_PROGRAM_ID
+            virtualPoolState.baseMint,
+            poolConfigState.quoteMint
         )
 
         const migrationMetadata = deriveDammMigrationMetadataAddress(
             claimDammV1LpTokenParam.virtualPool,
-            DAMM_V1_PROGRAM_ID,
+            VIRTUAL_CURVE_PROGRAM_ID,
             false
         )
 
         const lpMint = deriveLpMintAddress(dammPool, DAMM_V1_PROGRAM_ID)
 
-        const preInstructions: TransactionInstruction[] = []
-        const destinationToken = getAssociatedTokenAddressSync(
-            lpMint,
+        console.log('lpMint', lpMint.toString())
+
+        const destinationToken = findAssociatedTokenAddress(
             claimDammV1LpTokenParam.payer,
-            true,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            lpMint,
+            TOKEN_PROGRAM_ID
         )
+
+        const preInstructions: TransactionInstruction[] = []
 
         const createDestinationTokenIx =
             createAssociatedTokenAccountIdempotentInstruction(
@@ -1397,9 +1579,9 @@ export class MigrationService {
                 destinationToken,
                 claimDammV1LpTokenParam.payer,
                 lpMint,
-                TOKEN_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
+                TOKEN_PROGRAM_ID
             )
+
         preInstructions.push(createDestinationTokenIx)
 
         const sourceToken = getAssociatedTokenAddressSync(
@@ -1409,23 +1591,61 @@ export class MigrationService {
         )
 
         const accounts = {
-            virtualPool,
+            virtualPool: claimDammV1LpTokenParam.virtualPool,
             migrationMetadata,
             poolAuthority,
-            pool: dammPool,
             lpMint,
             sourceToken,
             destinationToken,
-            owner: virtualPoolState.creator,
+            owner: claimDammV1LpTokenParam.isPartner
+                ? poolConfigState.feeClaimer
+                : virtualPoolState.creator,
             sender: claimDammV1LpTokenParam.payer,
             tokenProgram: TOKEN_PROGRAM_ID,
         }
 
         return program.methods
             .migrateMeteoraDammClaimLpToken()
-            .accounts(accounts)
+            .accountsPartial(accounts)
             .preInstructions(preInstructions)
             .transaction()
+    }
+
+    /**
+     * Get DAMM V1 migration metadata
+     * @param metadataAddress - The address of the meteora DAMM migration metadata
+     * @returns A meteora DAMM migration metadata
+     */
+    async getDammV1MigrationMetadata(
+        poolAddress: PublicKey | string
+    ): Promise<MeteoraDammMigrationMetadata> {
+        const program = this.programClient.getProgram()
+        const metadata =
+            await program.account.meteoraDammMigrationMetadata.fetch(
+                poolAddress instanceof PublicKey
+                    ? poolAddress
+                    : new PublicKey(poolAddress)
+            )
+
+        return metadata
+    }
+
+    /**
+     * Get DAMM V1 migration metadata
+     * @param metadataAddress - The address of the meteora DAMM migration metadata
+     * @returns A meteora DAMM migration metadata
+     */
+    async getLockedLpTokenAmount(
+        walletAddress: PublicKey | string
+    ): Promise<LockEscrow> {
+        const program = this.programClient.getProgram()
+        const metadata = await program.account.lockEscrow.fetch(
+            walletAddress instanceof PublicKey
+                ? walletAddress
+                : new PublicKey(walletAddress)
+        )
+
+        return metadata
     }
 
     ///////////////////////
@@ -1435,23 +1655,27 @@ export class MigrationService {
     /**
      * Migrate to DAMM V2
      * @param connection - The connection to the Solana network
-     * @param virtualPool - The virtual pool address
      * @param migrateToDammV2Param - The parameters for the migration
      * @returns A migrate transaction
      */
     async migrateToDammV2(
         connection: Connection,
-        virtualPool: PublicKey,
         migrateToDammV2Param: MigrateToDammV2Param
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
+        const poolAuthority = derivePoolAuthority(program.programId)
+        const dammPoolAuthority = derivePoolAuthority(DAMM_V2_PROGRAM_ID)
+        const dammEventAuthority = deriveDammV2EventAuthority()
 
         const virtualPoolState = await this.programClient.getPool(
             connection,
-            virtualPool
+            migrateToDammV2Param.virtualPool
         )
+
         if (!virtualPoolState) {
-            throw new Error(`Pool not found: ${virtualPool.toString()}`)
+            throw new Error(
+                `Pool not found: ${migrateToDammV2Param.virtualPool.toString()}`
+            )
         }
 
         const poolConfigState = await this.programClient.getPoolConfig(
@@ -1465,35 +1689,26 @@ export class MigrationService {
             true
         )
 
-        const poolAuthority = derivePoolAuthority(DAMM_V2_PROGRAM_ID)
-        const dammPoolAuthority = derivePoolAuthority(DAMM_V2_PROGRAM_ID)
-        const dammEventAuthority = deriveDammV2EventAuthority()
-
-        const dammPool = derivePool(
-            poolConfigState.quoteMint,
-            virtualPoolState.baseMint,
+        const dammPool = deriveDammV2PoolAddress(
             migrateToDammV2Param.dammConfig,
-            DAMM_V2_PROGRAM_ID
+            virtualPoolState.baseMint,
+            poolConfigState.quoteMint
         )
 
         const firstPositionNftKP = Keypair.generate()
         const firstPosition = derivePositionAddress(
-            firstPositionNftKP.publicKey,
-            DAMM_V2_PROGRAM_ID
+            firstPositionNftKP.publicKey
         )
         const firstPositionNftAccount = derivePositionNftAccount(
-            firstPositionNftKP.publicKey,
-            DAMM_V2_PROGRAM_ID
+            firstPositionNftKP.publicKey
         )
 
         const secondPositionNftKP = Keypair.generate()
         const secondPosition = derivePositionAddress(
-            secondPositionNftKP.publicKey,
-            DAMM_V2_PROGRAM_ID
+            secondPositionNftKP.publicKey
         )
         const secondPositionNftAccount = derivePositionNftAccount(
-            secondPositionNftKP.publicKey,
-            DAMM_V2_PROGRAM_ID
+            secondPositionNftKP.publicKey
         )
 
         const tokenAVault = deriveTokenVaultAddress(
@@ -1501,6 +1716,7 @@ export class MigrationService {
             dammPool,
             DAMM_V2_PROGRAM_ID
         )
+
         const tokenBVault = deriveTokenVaultAddress(
             poolConfigState.quoteMint,
             dammPool,
@@ -1513,7 +1729,7 @@ export class MigrationService {
                 : TOKEN_2022_PROGRAM_ID
 
         const tokenQuoteProgram =
-            poolConfigState.tokenType == 0
+            poolConfigState.quoteTokenFlag == 0
                 ? TOKEN_PROGRAM_ID
                 : TOKEN_2022_PROGRAM_ID
 
@@ -1583,9 +1799,7 @@ export class VirtualCurveClient {
 
     /**
      * Static method to create a client instance for a specific pool
-     * This is provided for backward compatibility with the old API
      * @param connection - The connection to the Solana network
-     * @param pool - The public key of the pool
      * @returns A VirtualCurveClient instance
      */
     static async create(connection: Connection): Promise<VirtualCurveClient> {

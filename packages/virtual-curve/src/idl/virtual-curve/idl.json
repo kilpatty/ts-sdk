@@ -1,5 +1,5 @@
 {
-  "address": "virEFLZsQm1iFAs8py1XnziJ67gTzW2bfCWhxNPfccD",
+  "address": "dbceTyRHnt38cShTHTiDJDKeHgyvJSaXeGrn1xMLjA9",
   "metadata": {
     "name": "virtual_curve",
     "version": "0.1.0",
@@ -22,29 +22,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "config",
@@ -358,29 +336,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "config",
@@ -680,7 +636,7 @@
           "name": "fee_claimer"
         },
         {
-          "name": "owner"
+          "name": "leftover_receiver"
         },
         {
           "name": "quote_mint",
@@ -777,29 +733,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "base_vault",
@@ -1148,29 +1082,7 @@
         },
         {
           "name": "pool_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "creator"
@@ -1358,29 +1270,7 @@
         },
         {
           "name": "pool_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "creator"
@@ -1578,29 +1468,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "pool",
@@ -1752,29 +1620,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "lp_mint",
@@ -2008,29 +1854,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "pool",
@@ -2222,29 +2046,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "pool",
@@ -2539,29 +2341,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "config",
@@ -2662,29 +2442,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "config",
@@ -2867,29 +2625,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
         },
         {
           "name": "config",
@@ -3023,6 +2759,181 @@
           }
         }
       ]
+    },
+    {
+      "name": "withdraw_leftover",
+      "discriminator": [
+        20,
+        198,
+        202,
+        237,
+        235,
+        243,
+        183,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "pool_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "relations": [
+            "virtual_pool"
+          ]
+        },
+        {
+          "name": "virtual_pool",
+          "writable": true
+        },
+        {
+          "name": "token_base_account",
+          "docs": [
+            "The receiver token account, withdraw to ATA"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "leftover_receiver"
+              },
+              {
+                "kind": "account",
+                "path": "token_base_program"
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "base_vault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true,
+          "relations": [
+            "virtual_pool"
+          ]
+        },
+        {
+          "name": "base_mint",
+          "docs": [
+            "The mint of quote token"
+          ],
+          "relations": [
+            "virtual_pool"
+          ]
+        },
+        {
+          "name": "leftover_receiver",
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "token_base_program",
+          "docs": [
+            "Token base program"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -3326,6 +3237,19 @@
         38,
         74
       ]
+    },
+    {
+      "name": "EvtWithdrawLeftover",
+      "discriminator": [
+        191,
+        189,
+        104,
+        143,
+        111,
+        156,
+        94,
+        229
+      ]
     }
   ],
   "errors": [
@@ -3376,126 +3300,116 @@
     },
     {
       "code": 6009,
-      "name": "InvalidParameters",
-      "msg": "Invalid parameters"
-    },
-    {
-      "code": 6010,
       "name": "InvalidCollectFeeMode",
       "msg": "Invalid collect fee mode"
     },
     {
-      "code": 6011,
+      "code": 6010,
       "name": "InvalidMigrationFeeOption",
       "msg": "Invalid migration fee option"
     },
     {
-      "code": 6012,
+      "code": 6011,
       "name": "InvalidInput",
       "msg": "Invalid input"
     },
     {
-      "code": 6013,
-      "name": "InvalidExtension",
-      "msg": "Invalid extension"
-    },
-    {
-      "code": 6014,
-      "name": "FeeInverseIsIncorrect",
-      "msg": "Fee inverse is incorrect"
-    },
-    {
-      "code": 6015,
+      "code": 6012,
       "name": "NotEnoughLiquidity",
       "msg": "Not enough liquidity"
     },
     {
-      "code": 6016,
+      "code": 6013,
       "name": "PoolIsCompleted",
       "msg": "Pool is completed"
     },
     {
-      "code": 6017,
+      "code": 6014,
       "name": "PoolIsIncompleted",
       "msg": "Pool is incompleted"
     },
     {
-      "code": 6018,
+      "code": 6015,
       "name": "InvalidMigrationOption",
       "msg": "Invalid migration option"
     },
     {
-      "code": 6019,
+      "code": 6016,
       "name": "InvalidTokenDecimals",
       "msg": "Invalid activation type"
     },
     {
-      "code": 6020,
+      "code": 6017,
       "name": "InvalidTokenType",
       "msg": "Invalid token type"
     },
     {
-      "code": 6021,
+      "code": 6018,
       "name": "InvalidFeePercentage",
       "msg": "Invalid fee percentage"
     },
     {
-      "code": 6022,
+      "code": 6019,
       "name": "InvalidQuoteThreshold",
       "msg": "Invalid quote threshold"
     },
     {
-      "code": 6023,
+      "code": 6020,
+      "name": "InvalidTokenSupply",
+      "msg": "Invalid token supply"
+    },
+    {
+      "code": 6021,
       "name": "InvalidCurve",
       "msg": "Invalid curve"
     },
     {
-      "code": 6024,
+      "code": 6022,
       "name": "NotPermitToDoThisAction",
       "msg": "Not permit to do this action"
     },
     {
-      "code": 6025,
-      "name": "InvalidPartnerAccount",
-      "msg": "Invalid partner account"
-    },
-    {
-      "code": 6026,
+      "code": 6023,
       "name": "InvalidOwnerAccount",
       "msg": "Invalid owner account"
     },
     {
-      "code": 6027,
+      "code": 6024,
       "name": "InvalidConfigAccount",
       "msg": "Invalid config account"
     },
     {
-      "code": 6028,
+      "code": 6025,
       "name": "SurplusHasBeenWithdraw",
       "msg": "Surplus has been withdraw"
     },
     {
-      "code": 6029,
+      "code": 6026,
+      "name": "LeftoverHasBeenWithdraw",
+      "msg": "Leftover has been withdraw"
+    },
+    {
+      "code": 6027,
       "name": "TotalBaseTokenExceedMaxSupply",
       "msg": "Total base token is exceeded max supply"
     },
     {
-      "code": 6030,
+      "code": 6028,
       "name": "UnsupportNativeMintToken2022",
       "msg": "Unsupport native mint token 2022"
     },
     {
+      "code": 6029,
+      "name": "InsufficientLiquidityForMigration",
+      "msg": "Insufficient liquidity for migration"
+    },
+    {
+      "code": 6030,
+      "name": "MissingPoolConfigInRemainingAccount",
+      "msg": "Missing pool config in remaining account"
+    },
+    {
       "code": 6031,
-      "name": "InsufficentLiquidityForMigration",
-      "msg": "Insufficent liquidity for migration"
-    },
-    {
-      "code": 6032,
-      "name": "MissingPoolConfigInRemaningAccount",
-      "msg": "Missing pool config in remaning account"
-    },
-    {
-      "code": 6033,
       "name": "InvalidVestingParameters",
       "msg": "Invalid vesting parameters"
     }
@@ -3719,14 +3633,24 @@
             "type": "u8"
           },
           {
+            "name": "token_supply",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "TokenSupplyParams"
+                }
+              }
+            }
+          },
+          {
             "name": "padding",
             "docs": [
               "padding for future use"
             ],
             "type": {
               "array": [
-                "u8",
-                7
+                "u64",
+                8
               ]
             }
           },
@@ -4058,6 +3982,30 @@
             "type": "u128"
           },
           {
+            "name": "locked_vesting",
+            "type": {
+              "defined": {
+                "name": "LockedVestingParams"
+              }
+            }
+          },
+          {
+            "name": "migration_fee_option",
+            "type": "u8"
+          },
+          {
+            "name": "fixed_token_suppply_flag",
+            "type": "u8"
+          },
+          {
+            "name": "pre_migration_token_supply",
+            "type": "u64"
+          },
+          {
+            "name": "post_migration_token_supply",
+            "type": "u64"
+          },
+          {
             "name": "curve",
             "type": {
               "vec": {
@@ -4264,6 +4212,26 @@
           {
             "name": "virtual_pool",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EvtWithdrawLeftover",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "leftover_receiver",
+            "type": "pubkey"
+          },
+          {
+            "name": "leftover_amount",
+            "type": "u64"
           }
         ]
       }
@@ -4670,9 +4638,9 @@
             "type": "pubkey"
           },
           {
-            "name": "owner",
+            "name": "leftover_receiver",
             "docs": [
-              "Owner of that config key"
+              "Address to receive extra base token after migration, in case token is fixed supply"
             ],
             "type": "pubkey"
           },
@@ -4772,6 +4740,13 @@
             "type": "u8"
           },
           {
+            "name": "fixed_token_suppply_flag",
+            "docs": [
+              "flag to indicate whether token is dynamic supply (0) or fixed supply (1)"
+            ],
+            "type": "u8"
+          },
+          {
             "name": "_padding_0",
             "docs": [
               "padding 0"
@@ -4779,7 +4754,7 @@
             "type": {
               "array": [
                 "u8",
-                4
+                3
               ]
             }
           },
@@ -4835,6 +4810,20 @@
             }
           },
           {
+            "name": "pre_migration_token_supply",
+            "docs": [
+              "pre migration token supply"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "post_migration_token_supply",
+            "docs": [
+              "post migration token supply"
+            ],
+            "type": "u64"
+          },
+          {
             "name": "_padding_2",
             "docs": [
               "padding 2"
@@ -4842,7 +4831,7 @@
             "type": {
               "array": [
                 "u128",
-                3
+                2
               ]
             }
           },
@@ -5068,6 +5057,28 @@
       }
     },
     {
+      "name": "TokenSupplyParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pre_migration_token_supply",
+            "docs": [
+              "pre migration token supply"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "post_migration_token_supply",
+            "docs": [
+              "post migration token supply"
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "VirtualPool",
       "serialization": "bytemuck",
       "repr": {
@@ -5214,6 +5225,13 @@
             "type": "u8"
           },
           {
+            "name": "is_withdraw_leftover",
+            "docs": [
+              "is withdraw leftover"
+            ],
+            "type": "u8"
+          },
+          {
             "name": "_padding_0",
             "docs": [
               "padding"
@@ -5221,7 +5239,7 @@
             "type": {
               "array": [
                 "u8",
-                3
+                2
               ]
             }
           },

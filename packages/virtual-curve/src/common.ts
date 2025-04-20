@@ -14,9 +14,15 @@ import {
 import type { DynamicVault } from './idl/dynamic-vault/idl'
 import type { Program } from '@coral-xyz/anchor'
 import type { DammV1 } from './idl/damm-v1/idl'
-import type { PrepareSwapParams, TokenType } from './types'
+import type {
+    LiquidityDistributionParameters,
+    PrepareSwapParams,
+    TokenType,
+} from './types'
 import { getTokenProgram } from './utils'
 import { BASE_ADDRESS } from './constants'
+import BN from 'bn.js'
+import Decimal from 'decimal.js'
 
 /**
  * Create a permissionless dynamic vault
@@ -127,8 +133,6 @@ export async function createLockEscrowIx(
         })
         .instruction()
 
-    console.log('ix', ix)
-
     return ix
 }
 
@@ -165,4 +169,115 @@ export function prepareSwapParams(
             outputTokenProgram: getTokenProgram(virtualPoolState.poolType),
         }
     }
+}
+
+/**
+ * Get the sqrt price from the price
+ * @param price - The price
+ * @param tokenADecimal - The decimal of token A
+ * @param tokenBDecimal - The decimal of token B
+ * @returns The sqrt price
+ */
+// Original formula: price = (sqrtPrice >> 64)^2 * 10^(tokenADecimal - tokenBDecimal)
+export const getSqrtPriceFromPrice = (
+    price: string,
+    tokenADecimal: number,
+    tokenBDecimal: number
+): BN => {
+    const decimalPrice = new Decimal(price)
+    const adjustedByDecimals = decimalPrice.div(
+        new Decimal(10 ** (tokenADecimal - tokenBDecimal))
+    )
+    const sqrtValue = Decimal.sqrt(adjustedByDecimals)
+    const sqrtValueQ64 = sqrtValue.mul(Decimal.pow(2, 64))
+    return new BN(sqrtValueQ64.floor().toFixed())
+}
+
+/**
+ * Get the price from the sqrt price
+ * @param sqrtPrice - The sqrt price
+ * @param tokenADecimal - The decimal of token A
+ * @param tokenBDecimal - The decimal of token B
+ * @returns The price
+ */
+// Reverse formula: sqrtPrice = sqrt(price / 10^(tokenADecimal - tokenBDecimal)) << 64
+export const getPriceFromSqrtPrice = (
+    sqrtPrice: BN,
+    tokenADecimal: number,
+    tokenBDecimal: number
+): Decimal => {
+    const decimalSqrtPrice = new Decimal(sqrtPrice.toString())
+    const price = decimalSqrtPrice
+        .mul(decimalSqrtPrice)
+        .mul(new Decimal(10 ** (tokenADecimal - tokenBDecimal)))
+        .div(Decimal.pow(2, 128))
+
+    return price
+}
+
+/**
+ * Get the base token for swap
+ * @param sqrtStartPrice - The start sqrt price
+ * @param sqrtMigrationPrice - The migration sqrt price
+ * @param curve - The curve
+ * @returns The base token
+ */
+export function getBaseTokenForSwap(
+    sqrtStartPrice: BN,
+    sqrtMigrationPrice: BN,
+    curve: Array<LiquidityDistributionParameters>
+): BN {
+    let totalAmount = new BN(0)
+    for (let i = 0; i < curve.length; i++) {
+        const lowerSqrtPrice = i == 0 ? sqrtStartPrice : curve[i - 1]?.sqrtPrice
+        if (curve[i]?.sqrtPrice && curve[i]?.sqrtPrice.gt(sqrtMigrationPrice)) {
+            const deltaAmount = getDeltaAmountBase(
+                lowerSqrtPrice ?? new BN(0),
+                sqrtMigrationPrice,
+                curve[i]?.liquidity ?? new BN(0)
+            )
+            totalAmount = totalAmount.add(deltaAmount)
+            break
+        } else {
+            const deltaAmount = getDeltaAmountBase(
+                lowerSqrtPrice ?? new BN(0),
+                curve[i]?.sqrtPrice ?? new BN(0),
+                curve[i]?.liquidity ?? new BN(0)
+            )
+            totalAmount = totalAmount.add(deltaAmount)
+        }
+    }
+    return totalAmount
+}
+
+/**
+ * Get the base token for migration
+ * @param sqrtMigrationPrice - The migration sqrt price
+ * @param migrationQuoteThreshold - The migration quote threshold
+ * @returns The base token
+ */
+export function getBaseTokenForMigration(
+    sqrtMigrationPrice: BN,
+    migrationQuoteThreshold: BN
+): BN {
+    const price = sqrtMigrationPrice.mul(sqrtMigrationPrice)
+    const base = migrationQuoteThreshold.shln(128).div(price)
+    return base
+}
+
+/**
+ * Get the delta amount base
+ * @param lowerSqrtPrice - The lower sqrt price
+ * @param upperSqrtPrice - The upper sqrt price
+ * @param liquidity - The liquidity
+ * @returns The delta amount base
+ */
+export function getDeltaAmountBase(
+    lowerSqrtPrice: BN,
+    upperSqrtPrice: BN,
+    liquidity: BN
+): BN {
+    const numerator = liquidity.mul(upperSqrtPrice.sub(lowerSqrtPrice))
+    const denominator = lowerSqrtPrice.mul(upperSqrtPrice)
+    return numerator.add(denominator).sub(new BN(1)).div(denominator)
 }
