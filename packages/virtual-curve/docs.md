@@ -237,6 +237,8 @@ const transaction = await client.pools.createPool({
 })
 ```
 
+---
+
 ### swap
 
 Swaps between base and quote or quote and base.
