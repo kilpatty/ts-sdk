@@ -159,23 +159,6 @@ export class VirtualCurveProgramClient {
     }
 
     /**
-     * Get pool migration quote threshold
-     * @param poolAddress - The address of the pool
-     * @returns The migration quote threshold
-     */
-    async getPoolMigrationQuoteThreshold(
-        poolAddress: PublicKey | string
-    ): Promise<BN> {
-        const pool = await this.getPool(poolAddress)
-        if (!pool) {
-            throw new Error(`Pool not found: ${poolAddress.toString()}`)
-        }
-        const configAddress = pool.config
-        const config = await this.getPoolConfig(configAddress)
-        return config.migrationQuoteThreshold
-    }
-
-    /**
      * Retrieve all pool config keys (list of all configs owned by partner)
      * @param owner - The owner of the pool configs
      * @returns An array of pool configs
@@ -204,6 +187,23 @@ export class VirtualCurveProgramClient {
             ...config,
             createdAt: timestamps[index],
         }))
+    }
+
+    /**
+     * Get pool migration quote threshold
+     * @param poolAddress - The address of the pool
+     * @returns The migration quote threshold
+     */
+    async getPoolMigrationQuoteThreshold(
+        poolAddress: PublicKey | string
+    ): Promise<BN> {
+        const pool = await this.getPool(poolAddress)
+        if (!pool) {
+            throw new Error(`Pool not found: ${poolAddress.toString()}`)
+        }
+        const configAddress = pool.config
+        const config = await this.getPoolConfig(configAddress)
+        return config.migrationQuoteThreshold
     }
 
     /**
