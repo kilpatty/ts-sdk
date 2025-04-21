@@ -98,6 +98,34 @@ export function getSwapResult(
         actualAmountOut = feeResult.amount
     }
 
+    let beforePrice = 0
+    let afterPrice = 0
+
+    try {
+        const sqrtPriceDecimal = new Decimal(poolState.sqrtPrice.toString())
+        const nextSqrtPriceDecimal = new Decimal(
+            swapAmount.nextSqrtPrice.toString()
+        )
+
+        // Square the values
+        const beforePriceDecimal = sqrtPriceDecimal
+            .pow(2)
+            .div(new Decimal(2).pow(128))
+        const afterPriceDecimal = nextSqrtPriceDecimal
+            .pow(2)
+            .div(new Decimal(2).pow(128))
+
+        if (beforePriceDecimal.lte(Number.MAX_SAFE_INTEGER)) {
+            beforePrice = beforePriceDecimal.toNumber()
+        }
+
+        if (afterPriceDecimal.lte(Number.MAX_SAFE_INTEGER)) {
+            afterPrice = afterPriceDecimal.toNumber()
+        }
+    } catch (error) {
+        console.warn('Error calculating price:', error)
+    }
+
     return {
         amountOut: actualAmountOut,
         minimumAmountOut: actualAmountOut,
@@ -108,12 +136,8 @@ export function getSwapResult(
             referral: actualReferralFee,
         },
         price: {
-            beforeSwap: Number(
-                poolState.sqrtPrice.mul(poolState.sqrtPrice).shrn(128)
-            ),
-            afterSwap: Number(
-                swapAmount.nextSqrtPrice.mul(swapAmount.nextSqrtPrice).shrn(128)
-            ),
+            beforeSwap: beforePrice,
+            afterSwap: afterPrice,
         },
     }
 }
@@ -385,7 +409,7 @@ export function getFeeMode(
             feesOnBaseToken = true
         }
     } else {
-        throw new Error('Invalid collect fee mode')
+        throw new Error('InvalidCollectFeeMode')
     }
 
     return {

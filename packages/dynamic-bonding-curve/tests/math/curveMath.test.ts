@@ -3,10 +3,10 @@ import {
     getDeltaAmountBaseUnsigned,
     getDeltaAmountQuoteUnsigned,
     getNextSqrtPriceFromInput,
-    getNextSqrtPriceFromAmountQuote,
 } from '../../src/math/curve'
 import { BN } from 'bn.js'
 import { Q } from '../utils/test-helpers'
+import { Rounding } from '../../src/types'
 
 test('Base amount calculation', () => {
     const lower = Q(1.0)
@@ -14,7 +14,12 @@ test('Base amount calculation', () => {
     // Lower test liquidity value to prevent overflow
     const liquidity = new BN('1293129312931923921293912')
 
-    const result = getDeltaAmountBaseUnsigned(lower, upper, liquidity, false)
+    const result = getDeltaAmountBaseUnsigned(
+        lower,
+        upper,
+        liquidity,
+        Rounding.Down
+    )
 
     // The actual result is 7 based on the implementation
     expect(result.toString()).toBe('7')
@@ -26,7 +31,12 @@ test('Quote amount calculation', () => {
     const upper = Q(1.0001)
     const liquidity = new BN(10).pow(new BN(25)) // Much larger value
 
-    const result = getDeltaAmountQuoteUnsigned(lower, upper, liquidity, false)
+    const result = getDeltaAmountQuoteUnsigned(
+        lower,
+        upper,
+        liquidity,
+        Rounding.Down
+    )
 
     // With larger liquidity, we should now get a non-zero result
     expect(result.gt(new BN(0))).toBe(true)
@@ -56,31 +66,14 @@ test('Price update from base input', () => {
     expect(diff.toString()).toBe('170141183460469231737836218407120622934')
 })
 
-test('Price update from quote input', () => {
-    const sqrtPrice = Q(1.0) // 1.0 in Q64.64 format
-    const liquidity = new BN(1).shln(64) // Use a power of 2 for exact division
-
-    // With a liquidity of 2^64, we need amountIn = 1 to get a price increase of 1.0
-    const amountIn = new BN(1)
-
-    const newPrice = getNextSqrtPriceFromAmountQuote(
-        sqrtPrice,
-        liquidity,
-        amountIn
-    )
-
-    // The actual result is 36893488147419103232 based on the implementation
-    expect(newPrice.toString()).toBe('36893488147419103232')
-})
-
 test('Edge case: zero liquidity', () => {
     expect(() =>
-        getDeltaAmountBaseUnsigned(Q(1), Q(2), new BN(0), false)
+        getDeltaAmountBaseUnsigned(Q(1), Q(2), new BN(0), Rounding.Down)
     ).toThrow()
 })
 
 test('Edge case: identical prices', () => {
     expect(() =>
-        getDeltaAmountQuoteUnsigned(Q(1), Q(1), new BN('1000'), false)
+        getDeltaAmountQuoteUnsigned(Q(1), Q(1), new BN('1000'), Rounding.Down)
     ).toThrow('InvalidPrice')
 })

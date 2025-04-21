@@ -7,7 +7,7 @@ test('getFeeInPeriod calculation', () => {
     const result1 = getFeeInPeriod(
         new BN(1000), // cliff fee
         new BN(0), // reduction factor
-        new BN(1) // period
+        0 // period as number, not BN
     )
     expect(result1.eq(new BN(1000))).toBe(true)
 
@@ -15,7 +15,7 @@ test('getFeeInPeriod calculation', () => {
     const result2 = getFeeInPeriod(
         new BN(1000), // cliff fee
         new BN(100), // 1% reduction factor
-        new BN(1) // period
+        1 // period as number, not BN
     )
     expect(result2.gt(new BN(989))).toBe(true)
     expect(result2.lt(new BN(991))).toBe(true)

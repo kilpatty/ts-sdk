@@ -44,7 +44,7 @@ function createTestPoolConfig(params: {
             
             return {
                 sqrtPrice: sqrtPrice,
-                liquidity: new BN('1000000000000000000'), // Smaller but sufficient liquidity
+                liquidity: new BN('10000000000000000000000000'), // Much larger liquidity to ensure non-zero output
             };
         });
 

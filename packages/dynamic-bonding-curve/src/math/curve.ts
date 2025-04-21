@@ -20,9 +20,9 @@ export function getDeltaAmountBaseUnsigned(
     liquidity: BN,
     round: Rounding
 ): BN {
-    // Skip calculation for zero liquidity
+    // Throw error for zero liquidity
     if (liquidity.isZero()) {
-        return new BN(0)
+        throw new Error('Liquidity cannot be zero')
     }
 
     // Convert to Decimal for higher precision in one batch
@@ -65,9 +65,14 @@ export function getDeltaAmountQuoteUnsigned(
     liquidity: BN,
     round: Rounding
 ): BN {
-    // Skip calculation for zero liquidity
+    // Throw error for zero liquidity
     if (liquidity.isZero()) {
-        return new BN(0)
+        throw new Error('Liquidity cannot be zero')
+    }
+
+    // Throw error for identical prices
+    if (lowerSqrtPrice.eq(upperSqrtPrice)) {
+        throw new Error('InvalidPrice')
     }
 
     try {
