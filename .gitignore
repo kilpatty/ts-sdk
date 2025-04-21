@@ -6,6 +6,7 @@ node_modules
 .pnp.js
 package-lock.json
 bun.lockb
+bun.lock
 
 # Local env files
 .env

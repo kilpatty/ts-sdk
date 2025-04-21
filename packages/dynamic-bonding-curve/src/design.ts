@@ -1,18 +1,16 @@
 import Decimal from 'decimal.js'
 import BN from 'bn.js'
 import {
-    ActivationType,
-    CollectFeeMode,
     FeeSchedulerMode,
-    MigrationFeeOption,
-    MigrationOption,
-    TokenType,
     type ConfigParameters,
+    type DesignConstantProductCurveWithLockVestingParam,
+    type DesignConstantProductCurveWithoutLockVestingParam,
     type DesignCurveParam,
     type DesignCurveResponse,
 } from './types'
 import { MAX_SQRT_PRICE } from './constants'
 import {
+    getLiquidityBuffer,
     getBaseTokenForMigration,
     getBaseTokenForSwap,
     getPriceFromSqrtPrice,
@@ -20,29 +18,34 @@ import {
 } from './common'
 
 /**
- * Design the curve for the Pumpfun curve
- * @param totalTokenSupply - The total token supply
- * @param percentageSupplyOnMigration - The percentage of supply on migration
- * @param percentageSupplyVesting - The percentage of supply on vesting
- * @param frequency - The frequency of the vesting
- * @param numberOfPeriod - The number of periods of the vesting
- * @param startPrice - The start price of the curve
- * @param migrationPrice - The migration price of the curve
- * @param tokenBaseDecimal - The base token decimal
- * @param tokenQuoteDecimal - The quote token decimal
+ * Design the curve for the Constant Product curve with lock vesting
+ * @param designConstantProductCurveWithLockVestingParam - The parameters for the curve
  * @returns The instruction parameters
  */
-export function designPumpFunCurve(
-    totalTokenSupply: number,
-    percentageSupplyOnMigration: number,
-    percentageSupplyVesting: number,
-    frequency: number,
-    numberOfPeriod: number,
-    startPrice: Decimal,
-    migrationPrice: Decimal,
-    tokenBaseDecimal: number,
-    tokenQuoteDecimal: number
+export function designConstantProductCurveWithLockVesting(
+    designConstantProductCurveWithLockVestingParam: DesignConstantProductCurveWithLockVestingParam
 ): ConfigParameters {
+    const {
+        totalTokenSupply,
+        percentageSupplyOnMigration,
+        lockVestingParams,
+        startPrice,
+        migrationPrice,
+        tokenBaseDecimal,
+        tokenQuoteDecimal,
+        baseFeeBps,
+        dynamicFeeEnabled,
+        activationType,
+        collectFeeMode,
+        migrationOption,
+        migrationFeeOption,
+        tokenType,
+        partnerLpPercentage,
+        creatorLpPercentage,
+        partnerLockedLpPercentage,
+        creatorLockedLpPercentage,
+    } = designConstantProductCurveWithLockVestingParam
+
     const totalSupply = new BN(totalTokenSupply).mul(
         new BN(10).pow(new BN(tokenBaseDecimal))
     )
@@ -55,14 +58,16 @@ export function designPumpFunCurve(
         .div(new BN(100))
 
     let lockedVestingAmount = totalSupply
-        .mul(new BN(percentageSupplyVesting))
+        .mul(new BN(lockVestingParams.percentageSupplyVesting))
         .div(new BN(100))
 
     const amountPerPeriod =
-        numberOfPeriod == 0
+        lockVestingParams.numberOfPeriod == 0
             ? new BN(0)
-            : lockedVestingAmount.div(new BN(numberOfPeriod))
-    lockedVestingAmount = amountPerPeriod.mul(new BN(numberOfPeriod))
+            : lockedVestingAmount.div(new BN(lockVestingParams.numberOfPeriod))
+    lockedVestingAmount = amountPerPeriod.mul(
+        new BN(lockVestingParams.numberOfPeriod)
+    )
 
     const sqrtStartPrice = getSqrtPriceFromPrice(
         startPrice.toString(),
@@ -95,7 +100,11 @@ export function designPumpFunCurve(
         },
         {
             sqrtPrice: MAX_SQRT_PRICE,
-            liquidity: new BN(1),
+            liquidity: getLiquidityBuffer(
+                liquidity,
+                migrationSqrtPrice,
+                MAX_SQRT_PRICE
+            ),
         },
     ]
 
@@ -109,8 +118,9 @@ export function designPumpFunCurve(
         migrationSqrtPrice,
         migrationQuoteThreshold
     )
+
     const cliffUnlockAmount =
-        percentageSupplyVesting == 0
+        lockVestingParams.cliffUnlockEnabled == false
             ? new BN(0)
             : totalSupply
                   .sub(maxSwapAmount)
@@ -120,33 +130,43 @@ export function designPumpFunCurve(
     const config: ConfigParameters = {
         poolFees: {
             baseFee: {
-                cliffFeeNumerator: new BN('2500000'),
+                cliffFeeNumerator: new BN((baseFeeBps * 100000).toString()),
                 numberOfPeriod: 0,
                 reductionFactor: new BN('0'),
                 periodFrequency: new BN('0'),
                 feeSchedulerMode: FeeSchedulerMode.Linear,
             },
-            dynamicFee: null,
+            dynamicFee: dynamicFeeEnabled
+                ? {
+                      binStep: 1,
+                      binStepU128: new BN('1844674407370955'),
+                      filterPeriod: 10,
+                      decayPeriod: 120,
+                      reductionFactor: 5000,
+                      variableFeeControl: 2000000,
+                      maxVolatilityAccumulator: 100000,
+                  }
+                : null,
         },
-        activationType: ActivationType.Slot,
-        collectFeeMode: CollectFeeMode.Both,
-        migrationOption: MigrationOption.MET_DAMM,
-        tokenType: TokenType.SPL,
+        activationType: activationType,
+        collectFeeMode: collectFeeMode,
+        migrationOption: migrationOption,
+        tokenType: tokenType,
         tokenDecimal: tokenBaseDecimal,
         migrationQuoteThreshold: new BN(migrationQuoteThreshold.toString()),
-        partnerLpPercentage: 0,
-        creatorLpPercentage: 0,
-        partnerLockedLpPercentage: 100,
-        creatorLockedLpPercentage: 0,
+        partnerLpPercentage: partnerLpPercentage,
+        creatorLpPercentage: creatorLpPercentage,
+        partnerLockedLpPercentage: partnerLockedLpPercentage,
+        creatorLockedLpPercentage: creatorLockedLpPercentage,
         sqrtStartPrice: new BN(sqrtStartPrice.toString()),
         lockedVesting: {
             amountPerPeriod: new BN(amountPerPeriod.toString()),
             cliffDurationFromMigrationTime: new BN('0'),
-            frequency: new BN(frequency.toString()),
-            numberOfPeriod: new BN(numberOfPeriod.toString()),
+            frequency: new BN(lockVestingParams.frequency.toString()),
+            numberOfPeriod: new BN(lockVestingParams.numberOfPeriod.toString()),
             cliffUnlockAmount: new BN(cliffUnlockAmount.toString()),
         },
-        migrationFeeOption: MigrationFeeOption.FixedBps25,
+        migrationFeeOption: migrationFeeOption,
         tokenSupply: {
             preMigrationTokenSupply: new BN(preMigrationTokenSupply.toString()),
             postMigrationTokenSupply: new BN(
@@ -172,21 +192,32 @@ export function designPumpFunCurve(
 }
 
 /**
- * Design the curve for the Pump Fun curve without lock vesting
- * @param totalTokenSupply - The total token supply
- * @param percentageSupplyOnMigration - The percentage of supply on migration
- * @param startPrice - The start price of the curve
- * @param tokenBaseDecimal - The base token decimal
- * @param tokenQuoteDecimal - The quote token decimal
+ * Design the curve for the Constant Product curve without lock vesting
+ * @param designConstantProductCurveWithoutLockVestingParam - The parameters for the curve
  * @returns The instruction parameters
  */
-export function designPumpFunCurveWithoutLockVesting(
-    totalTokenSupply: number,
-    percentageSupplyOnMigration: number,
-    startPrice: Decimal,
-    tokenBaseDecimal: number,
-    tokenQuoteDecimal: number
+export function designConstantProductCurveWithoutLockVesting(
+    designConstantProductCurveWithoutLockVestingParam: DesignConstantProductCurveWithoutLockVestingParam
 ): ConfigParameters {
+    const {
+        totalTokenSupply,
+        percentageSupplyOnMigration,
+        startPrice,
+        tokenBaseDecimal,
+        tokenQuoteDecimal,
+        baseFeeBps,
+        dynamicFeeEnabled,
+        activationType,
+        collectFeeMode,
+        migrationOption,
+        migrationFeeOption,
+        tokenType,
+        partnerLpPercentage,
+        creatorLpPercentage,
+        partnerLockedLpPercentage,
+        creatorLockedLpPercentage,
+    } = designConstantProductCurveWithoutLockVestingParam
+
     const totalSupply = new BN(totalTokenSupply).mul(
         new BN(10).pow(new BN(tokenBaseDecimal))
     )
@@ -231,31 +262,45 @@ export function designPumpFunCurveWithoutLockVesting(
         },
         {
             sqrtPrice: MAX_SQRT_PRICE,
-            liquidity: new BN(1),
+            liquidity: getLiquidityBuffer(
+                liquidity,
+                migrationSqrtPrice,
+                MAX_SQRT_PRICE
+            ),
         },
     ]
 
     const config: ConfigParameters = {
         poolFees: {
             baseFee: {
-                cliffFeeNumerator: new BN('2500000'),
+                cliffFeeNumerator: new BN((baseFeeBps * 100000).toString()),
                 numberOfPeriod: 0,
                 reductionFactor: new BN('0'),
                 periodFrequency: new BN('0'),
                 feeSchedulerMode: FeeSchedulerMode.Linear,
             },
-            dynamicFee: null,
+            dynamicFee: dynamicFeeEnabled
+                ? {
+                      binStep: 1,
+                      binStepU128: new BN('1844674407370955'),
+                      filterPeriod: 10,
+                      decayPeriod: 120,
+                      reductionFactor: 5000,
+                      variableFeeControl: 2000000,
+                      maxVolatilityAccumulator: 100000,
+                  }
+                : null,
         },
-        activationType: ActivationType.Slot,
-        collectFeeMode: CollectFeeMode.Both,
-        migrationOption: MigrationOption.MET_DAMM,
-        tokenType: TokenType.SPL,
+        activationType: activationType,
+        collectFeeMode: collectFeeMode,
+        migrationOption: migrationOption,
+        tokenType: tokenType,
         tokenDecimal: tokenBaseDecimal,
         migrationQuoteThreshold: new BN(migrationQuoteThreshold.toString()),
-        partnerLpPercentage: 0,
-        creatorLpPercentage: 0,
-        partnerLockedLpPercentage: 100,
-        creatorLockedLpPercentage: 0,
+        partnerLpPercentage: partnerLpPercentage,
+        creatorLpPercentage: creatorLpPercentage,
+        partnerLockedLpPercentage: partnerLockedLpPercentage,
+        creatorLockedLpPercentage: creatorLockedLpPercentage,
         sqrtStartPrice: new BN(sqrtStartPrice.toString()),
         lockedVesting: {
             amountPerPeriod: new BN('0'),
@@ -264,7 +309,7 @@ export function designPumpFunCurveWithoutLockVesting(
             numberOfPeriod: new BN('0'),
             cliffUnlockAmount: new BN('0'),
         },
-        migrationFeeOption: MigrationFeeOption.FixedBps25,
+        migrationFeeOption: migrationFeeOption,
         tokenSupply: {
             preMigrationTokenSupply: new BN(preMigrationTokenSupply.toString()),
             postMigrationTokenSupply: new BN(
@@ -290,7 +335,7 @@ export function designPumpFunCurveWithoutLockVesting(
 }
 
 /**
- * Design the curve for the Pump Fun curve
+ * Design a Constant Product curve
  * @param params - The parameters for the curve
  * @returns The instruction parameters
  */
@@ -310,10 +355,10 @@ export async function designCurve(
 
     // Scale the base supply by the migration percent and token decimals
     // baseSupplyDecimal: e.g. 1e9
-    // migrationBaseSupplyDecimal = 1e9 * 0.2 * 10^9 = 2e17
+    // migrationBaseSupplyDecimal = 1e9 * 0.15 * 10^9 = 1.5e17
     const baseSupplyDecimal = new Decimal(tokenBaseSupply.toString())
     const migrationBaseSupplyDecimal = baseSupplyDecimal
-        .mul(migrationBasePercent)
+        .mul(migrationBasePercent / 100)
         .mul(new Decimal(10).pow(tokenDecimal))
 
     // quoteThresholdDecimal: e.g. 80 * 10^9

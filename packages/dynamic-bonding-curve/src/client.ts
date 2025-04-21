@@ -22,13 +22,13 @@ import {
     type CreateVirtualPoolMetadataParameters,
     type VirtualPoolMetadata,
     type CreateLockerParam,
-    type DesignPumpFunCurveParam,
-    type DesignPumpFunCurveWithoutLockVestingParam,
     type ConfigParameters,
     type WithdrawLeftoverParam,
     type LockEscrow,
     type MigrateToDammV2Response,
     type SwapQuoteParam,
+    type CreateConstantProductConfigWithLockVestingParam,
+    type CreateConstantProductConfigWithoutLockVestingParam,
 } from './types'
 import {
     ComputeBudgetProgram,
@@ -76,7 +76,7 @@ import {
     LOCKER_PROGRAM_ID,
     METAPLEX_PROGRAM_ID,
     VAULT_PROGRAM_ID,
-    VIRTUAL_CURVE_PROGRAM_ID,
+    DYNAMIC_BONDING_CURVE_PROGRAM_ID,
 } from './constants'
 import {
     createDammV1Program,
@@ -88,9 +88,10 @@ import {
     unwrapSOLInstruction,
     wrapSOLInstruction,
     createProgramAccountFilter,
+    convertBNToDecimal,
 } from './utils'
 import type { Program, ProgramAccount } from '@coral-xyz/anchor'
-import type { VirtualCurve as VirtualCurveIDL } from './idl/virtual-curve/idl'
+import type { DynamicBondingCurve as DynamicBondingCurveIDL } from './idl/dynamic-bonding-curve/idl'
 import BN from 'bn.js'
 import { swapQuote } from './math/swapQuote'
 import {
@@ -99,14 +100,14 @@ import {
     prepareSwapParams,
 } from './common'
 import {
-    designPumpFunCurve,
-    designPumpFunCurveWithoutLockVesting,
+    designConstantProductCurveWithLockVesting,
+    designConstantProductCurveWithoutLockVesting,
 } from './design'
 import type { DynamicVault } from './idl/dynamic-vault/idl'
 import type { DammV1 } from './idl/damm-v1/idl'
 
-export class VirtualCurveProgramClient {
-    private program: Program<VirtualCurveIDL>
+export class DynamicBondingCurveProgramClient {
+    private program: Program<DynamicBondingCurveIDL>
 
     constructor(connection: Connection) {
         const { program } = createProgram(connection)
@@ -117,7 +118,7 @@ export class VirtualCurveProgramClient {
      * Get the underlying program instance
      * @returns The program instance
      */
-    getProgram(): Program<VirtualCurveIDL> {
+    getProgram(): Program<DynamicBondingCurveIDL> {
         return this.program
     }
 
@@ -274,7 +275,7 @@ export class VirtualCurveProgramClient {
  * Pool-related operations
  */
 export class PoolService {
-    constructor(private programClient: VirtualCurveProgramClient) {}
+    constructor(private programClient: DynamicBondingCurveProgramClient) {}
 
     /**
      * Create a new pool
@@ -571,7 +572,7 @@ export class PoolService {
  * Partner-related operations
  */
 export class PartnerService {
-    constructor(private programClient: VirtualCurveProgramClient) {}
+    constructor(private programClient: DynamicBondingCurveProgramClient) {}
 
     /**
      * Create a new config
@@ -611,44 +612,143 @@ export class PartnerService {
     }
 
     /**
-     * Create a new pump fun config
-     * @param designPumpFunCurveParams - The parameters for the pump fun config
-     * @returns A new pump fun config
+     * Create a new constant product config with lock vesting
+     * @param createConstantProductConfigWithLockVestingParam - The parameters for the constant product config with lock vesting
+     * @returns A new constant product config with lock vesting
      */
-    async createPumpFunConfigWithLockVesting(
-        designPumpFunCurveParams: DesignPumpFunCurveParam
+    async createConstantProductConfigWithLockVesting(
+        createConstantProductConfigWithLockVestingParam: CreateConstantProductConfigWithLockVestingParam
+    ): Promise<Transaction> {
+        const program = this.programClient.getProgram()
+
+        const {
+            lockVestingParams,
+            totalTokenSupply,
+            percentageSupplyOnMigration,
+            startPrice,
+            migrationPrice,
+            tokenBaseDecimal,
+            tokenQuoteDecimal,
+            swapBufferPercentage,
+            baseFeeBps,
+            dynamicFeeEnabled,
+            activationType,
+            collectFeeMode,
+            migrationOption,
+            migrationFeeOption,
+            tokenType,
+            partnerLpPercentage,
+            creatorLpPercentage,
+            partnerLockedLpPercentage,
+            creatorLockedLpPercentage,
+            feeClaimer,
+            leftoverReceiver,
+            payer,
+            quoteMint,
+            config,
+        } = createConstantProductConfigWithLockVestingParam
+
+        const eventAuthority = deriveEventAuthority()
+
+        const constantProductCurveWithLockVestingConfig: ConfigParameters =
+            designConstantProductCurveWithLockVesting({
+                lockVestingParams,
+                totalTokenSupply,
+                percentageSupplyOnMigration,
+                startPrice,
+                migrationPrice,
+                tokenBaseDecimal,
+                tokenQuoteDecimal,
+                swapBufferPercentage,
+                baseFeeBps,
+                dynamicFeeEnabled,
+                activationType,
+                collectFeeMode,
+                migrationOption,
+                migrationFeeOption,
+                tokenType,
+                partnerLpPercentage,
+                creatorLpPercentage,
+                partnerLockedLpPercentage,
+                creatorLockedLpPercentage,
+            })
+
+        const accounts = {
+            config,
+            feeClaimer,
+            leftoverReceiver,
+            quoteMint,
+            payer,
+            eventAuthority,
+            program: program.programId,
+        }
+
+        return program.methods
+            .createConfig(constantProductCurveWithLockVestingConfig)
+            .accounts(accounts)
+            .transaction()
+    }
+
+    /**
+     * Create a new constant product config without lock vesting
+     * @param createConstantProductConfigWithoutLockVestingParam - The parameters for the constant product config without lock vesting
+     * @returns A new constant product config without lock vesting
+     */
+    async createConstantProductConfigWithoutLockVesting(
+        createConstantProductConfigWithoutLockVestingParam: CreateConstantProductConfigWithoutLockVestingParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
 
         const {
             totalTokenSupply,
             percentageSupplyOnMigration,
-            percentageSupplyVesting,
-            frequency,
-            numberOfPeriod,
             startPrice,
-            migrationPrice,
             tokenBaseDecimal,
             tokenQuoteDecimal,
+            swapBufferPercentage,
+            baseFeeBps,
+            dynamicFeeEnabled,
+            activationType,
+            collectFeeMode,
+            migrationOption,
+            migrationFeeOption,
+            tokenType,
+            partnerLpPercentage,
+            creatorLpPercentage,
+            partnerLockedLpPercentage,
+            creatorLockedLpPercentage,
             feeClaimer,
             leftoverReceiver,
             payer,
             quoteMint,
             config,
-        } = designPumpFunCurveParams
+        } = createConstantProductConfigWithoutLockVestingParam
 
         const eventAuthority = deriveEventAuthority()
 
-        const pumpFunCurveConfig: ConfigParameters = designPumpFunCurve(
-            totalTokenSupply,
-            percentageSupplyOnMigration,
-            percentageSupplyVesting,
-            frequency,
-            numberOfPeriod,
-            startPrice,
-            migrationPrice,
-            tokenBaseDecimal,
-            tokenQuoteDecimal
+        const constantProductCurveWithoutLockVestingConfig: ConfigParameters =
+            designConstantProductCurveWithoutLockVesting({
+                totalTokenSupply,
+                percentageSupplyOnMigration,
+                startPrice,
+                tokenBaseDecimal,
+                tokenQuoteDecimal,
+                swapBufferPercentage,
+                baseFeeBps,
+                dynamicFeeEnabled,
+                activationType,
+                collectFeeMode,
+                migrationOption,
+                migrationFeeOption,
+                tokenType,
+                partnerLpPercentage,
+                creatorLpPercentage,
+                partnerLockedLpPercentage,
+                creatorLockedLpPercentage,
+            })
+
+        console.log(
+            convertBNToDecimal(constantProductCurveWithoutLockVestingConfig)
         )
 
         const accounts = {
@@ -662,57 +762,7 @@ export class PartnerService {
         }
 
         return program.methods
-            .createConfig(pumpFunCurveConfig)
-            .accounts(accounts)
-            .transaction()
-    }
-
-    /**
-     * Create a new pump fun config without lock vesting
-     * @param designPumpFunCurveWithoutLockVestingParams - The parameters for the pump fun config without lock vesting
-     * @returns A new pump fun config without lock vesting
-     */
-    async createPumpFunConfigWithoutLockVesting(
-        designPumpFunCurveWithoutLockVestingParams: DesignPumpFunCurveWithoutLockVestingParam
-    ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-
-        const {
-            totalTokenSupply,
-            percentageSupplyOnMigration,
-            startPrice,
-            tokenBaseDecimal,
-            tokenQuoteDecimal,
-            feeClaimer,
-            leftoverReceiver,
-            payer,
-            quoteMint,
-            config,
-        } = designPumpFunCurveWithoutLockVestingParams
-
-        const eventAuthority = deriveEventAuthority()
-
-        const pumpFunCurveWithoutLockVestingConfig: ConfigParameters =
-            designPumpFunCurveWithoutLockVesting(
-                totalTokenSupply,
-                percentageSupplyOnMigration,
-                startPrice,
-                tokenBaseDecimal,
-                tokenQuoteDecimal
-            )
-
-        const accounts = {
-            config,
-            feeClaimer,
-            leftoverReceiver,
-            quoteMint,
-            payer,
-            eventAuthority,
-            program: program.programId,
-        }
-
-        return program.methods
-            .createConfig(pumpFunCurveWithoutLockVestingConfig)
+            .createConfig(constantProductCurveWithoutLockVestingConfig)
             .accounts(accounts)
             .transaction()
     }
@@ -1027,7 +1077,7 @@ export class PartnerService {
 export class MigrationService {
     private connection: Connection
 
-    constructor(private programClient: VirtualCurveProgramClient) {
+    constructor(private programClient: DynamicBondingCurveProgramClient) {
         this.connection = this.programClient.getProgram().provider.connection
     }
 
@@ -1367,7 +1417,7 @@ export class MigrationService {
 
         const migrationMetadata = deriveDammMigrationMetadataAddress(
             lockDammV1LpTokenParam.virtualPool,
-            VIRTUAL_CURVE_PROGRAM_ID,
+            DYNAMIC_BONDING_CURVE_PROGRAM_ID,
             false
         )
 
@@ -1573,7 +1623,7 @@ export class MigrationService {
 
         const migrationMetadata = deriveDammMigrationMetadataAddress(
             claimDammV1LpTokenParam.virtualPool,
-            VIRTUAL_CURVE_PROGRAM_ID,
+            DYNAMIC_BONDING_CURVE_PROGRAM_ID,
             false
         )
 
@@ -1763,14 +1813,14 @@ export class MigrationService {
 /**
  * Main client class
  */
-export class VirtualCurveClient {
-    private programClient: VirtualCurveProgramClient
+export class DynamicBondingCurveClient {
+    private programClient: DynamicBondingCurveProgramClient
     public pools: PoolService
     public partners: PartnerService
     public migrations: MigrationService
 
     constructor(connection: Connection) {
-        this.programClient = new VirtualCurveProgramClient(connection)
+        this.programClient = new DynamicBondingCurveProgramClient(connection)
         this.pools = new PoolService(this.programClient)
         this.partners = new PartnerService(this.programClient)
         this.migrations = new MigrationService(this.programClient)
@@ -1780,17 +1830,19 @@ export class VirtualCurveClient {
      * Get the underlying program client
      * @returns The program client
      */
-    getProgramClient(): VirtualCurveProgramClient {
+    getProgramClient(): DynamicBondingCurveProgramClient {
         return this.programClient
     }
 
     /**
      * Static method to create a client instance for a specific pool
      * @param connection - The connection to the Solana network
-     * @returns A VirtualCurveClient instance
+     * @returns A DynamicBondingCurveClient instance
      */
-    static async create(connection: Connection): Promise<VirtualCurveClient> {
-        const client = new VirtualCurveClient(connection)
+    static async create(
+        connection: Connection
+    ): Promise<DynamicBondingCurveClient> {
+        const client = new DynamicBondingCurveClient(connection)
         return client
     }
 }

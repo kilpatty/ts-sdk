@@ -6,7 +6,7 @@ import {
     LOCKER_PROGRAM_ID,
     METAPLEX_PROGRAM_ID,
     VAULT_PROGRAM_ID,
-    VIRTUAL_CURVE_PROGRAM_ID,
+    DYNAMIC_BONDING_CURVE_PROGRAM_ID,
 } from './constants'
 import { getFirstKey, getSecondKey } from './utils'
 
@@ -36,13 +36,13 @@ const SEED = Object.freeze({
 /////////////////////
 
 /**
- * Derive the virtual curve event authority
+ * Derive the dynamic bonding curve event authority
  * @returns The event authority
  */
 export function deriveEventAuthority(): PublicKey {
     const [eventAuthority] = PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.EVENT_AUTHORITY)],
-        VIRTUAL_CURVE_PROGRAM_ID
+        DYNAMIC_BONDING_CURVE_PROGRAM_ID
     )
     return eventAuthority
 }
@@ -221,7 +221,7 @@ export function derivePartnerMetadata(
 export function deriveVirtualPoolMetadata(pool: PublicKey): PublicKey {
     return PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.VIRTUAL_POOL_METADATA), pool.toBuffer()],
-        VIRTUAL_CURVE_PROGRAM_ID
+        DYNAMIC_BONDING_CURVE_PROGRAM_ID
     )[0]
 }
 
@@ -483,6 +483,6 @@ export function deriveProtocolFeeAddress(
 export function deriveBaseKeyForLocker(virtualPool: PublicKey): PublicKey {
     return PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.BASE_LOCKER), virtualPool.toBuffer()],
-        VIRTUAL_CURVE_PROGRAM_ID
+        DYNAMIC_BONDING_CURVE_PROGRAM_ID
     )[0]
 }

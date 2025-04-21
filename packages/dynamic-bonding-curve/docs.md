@@ -1,12 +1,12 @@
-# Virtual Curve SDK: Function Documentation
+# Dynamic Bonding Curve SDK: Function Documentation
 
 ## Table of Contents
 
 - [Partner Functions](#partner-functions)
 
-    - [createConfig](#createconfig)
-    - [createPumpFunConfigWithLockVesting](#createPumpFunConfigWithLockVesting)
-    - [createPumpFunConfigWithoutLockVesting](#createPumpFunConfigWithoutLockVesting)
+    - [createConfig](#createConfig)
+    - [createConstantProductConfigWithLockVesting](#createConstantProductConfigWithLockVesting)
+    - [createConstantProductConfigWithoutLockVesting](#createConstantProductConfigWithoutLockVesting)
     - [createPartnerMetadata](#createPartnerMetadata)
     - [claimTradingFee](#claimTradingFee)
     - [partnerWithdrawSurplus](#partnerWithdrawSurplus)

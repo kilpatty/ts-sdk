@@ -2,12 +2,12 @@
  * Program IDL in camelCase format in order to be used in JS/TS.
  *
  * Note that this is only a type helper and is not the actual IDL. The original
- * IDL can be found at `target/idl/virtual_curve.json`.
+ * IDL can be found at `target/idl/dynamic_bonding_curve.json`.
  */
-export type VirtualCurve = {
-    address: 'dbceTyRHnt38cShTHTiDJDKeHgyvJSaXeGrn1xMLjA9'
+export type DynamicBondingCurve = {
+    address: 'virEFLZsQm1iFAs8py1XnziJ67gTzW2bfCWhxNPfccD'
     metadata: {
-        name: 'virtualCurve'
+        name: 'dynamicBondingCurve'
         version: '0.1.0'
         spec: '0.1.0'
         description: 'Created with Anchor'
@@ -19,7 +19,7 @@ export type VirtualCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'config'
@@ -292,7 +292,7 @@ export type VirtualCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'config'
@@ -612,7 +612,7 @@ export type VirtualCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'baseVault'
@@ -904,7 +904,7 @@ export type VirtualCurve = {
                 },
                 {
                     name: 'poolAuthority'
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'creator'
@@ -1069,7 +1069,7 @@ export type VirtualCurve = {
                 },
                 {
                     name: 'poolAuthority'
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'creator'
@@ -1238,7 +1238,7 @@ export type VirtualCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'pool'
@@ -1367,7 +1367,7 @@ export type VirtualCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'lpMint'
@@ -1584,7 +1584,7 @@ export type VirtualCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'pool'
@@ -1749,7 +1749,7 @@ export type VirtualCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'pool'
@@ -1989,7 +1989,7 @@ export type VirtualCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'config'
@@ -2065,7 +2065,7 @@ export type VirtualCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'config'
@@ -2223,7 +2223,7 @@ export type VirtualCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    address: '4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE'
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'config'
@@ -2334,29 +2334,7 @@ export type VirtualCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    pda: {
-                        seeds: [
-                            {
-                                kind: 'const'
-                                value: [
-                                    112,
-                                    111,
-                                    111,
-                                    108,
-                                    95,
-                                    97,
-                                    117,
-                                    116,
-                                    104,
-                                    111,
-                                    114,
-                                    105,
-                                    116,
-                                    121,
-                                ]
-                            },
-                        ]
-                    }
+                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
                 },
                 {
                     name: 'config'
@@ -2739,6 +2717,11 @@ export type VirtualCurve = {
             code: 6031
             name: 'invalidVestingParameters'
             msg: 'Invalid vesting parameters'
+        },
+        {
+            code: 6032
+            name: 'invalidLeftoverAddress'
+            msg: 'Invalid leftover address'
         },
     ]
     types: [
@@ -3283,7 +3266,7 @@ export type VirtualCurve = {
                         type: 'u8'
                     },
                     {
-                        name: 'fixedTokenSuppplyFlag'
+                        name: 'fixedTokenSupplyFlag'
                         type: 'u8'
                     },
                     {
@@ -3940,7 +3923,7 @@ export type VirtualCurve = {
                         type: 'u8'
                     },
                     {
-                        name: 'fixedTokenSuppplyFlag'
+                        name: 'fixedTokenSupplyFlag'
                         docs: [
                             'flag to indicate whether token is dynamic supply (0) or fixed supply (1)',
                         ]

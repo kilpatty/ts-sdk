@@ -19,8 +19,8 @@ export const ONE_Q64 = new BN(1).shln(RESOLUTION)
 export const PARTNER_SURPLUS_SHARE = 90
 
 // Pubkey
-export const VIRTUAL_CURVE_PROGRAM_ID = new PublicKey(
-    'dbceTyRHnt38cShTHTiDJDKeHgyvJSaXeGrn1xMLjA9'
+export const DYNAMIC_BONDING_CURVE_PROGRAM_ID = new PublicKey(
+    'virEFLZsQm1iFAs8py1XnziJ67gTzW2bfCWhxNPfccD'
 )
 export const METAPLEX_PROGRAM_ID = new PublicKey(
     'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'

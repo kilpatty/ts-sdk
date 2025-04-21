@@ -14,10 +14,10 @@ import {
 import type { DynamicVault } from './idl/dynamic-vault/idl'
 import type { Program } from '@coral-xyz/anchor'
 import type { DammV1 } from './idl/damm-v1/idl'
-import type {
-    LiquidityDistributionParameters,
-    PrepareSwapParams,
-    TokenType,
+import {
+    type LiquidityDistributionParameters,
+    type PrepareSwapParams,
+    type TokenType,
 } from './types'
 import { getTokenProgram } from './utils'
 import { BASE_ADDRESS } from './constants'
@@ -248,4 +248,28 @@ export function getDeltaAmountBase(
     const numerator = liquidity.mul(upperSqrtPrice.sub(lowerSqrtPrice))
     const denominator = lowerSqrtPrice.mul(upperSqrtPrice)
     return numerator.add(denominator).sub(new BN(1)).div(denominator)
+}
+
+/**
+ * Adds a buffer to the liquidity to ensure large swaps don't fail
+ * @param liquidity Original liquidity
+ * @param migrationSqrtPrice The migration sqrt price
+ * @param maxSqrtPrice The maximum sqrt price
+ * @returns Liquidity with buffer
+ */
+export function getLiquidityBuffer(
+    liquidity: BN,
+    migrationSqrtPrice: BN,
+    maxSqrtPrice: BN
+): BN {
+    // (max-min)
+    const priceDiff = maxSqrtPrice.sub(migrationSqrtPrice)
+
+    // (max*min)
+    const priceProduct = maxSqrtPrice.mul(migrationSqrtPrice)
+
+    // swap_buffer_amount = liquidity * (max-min) / (max*min)
+    const bufferSwapAmount = liquidity.mul(priceDiff).div(priceProduct)
+
+    return bufferSwapAmount
 }

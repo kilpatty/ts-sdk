@@ -5,126 +5,132 @@ import type {
     IdlTypes,
     Program,
 } from '@coral-xyz/anchor'
-import type { VirtualCurve } from './idl/virtual-curve/idl'
+import type { DynamicBondingCurve } from './idl/dynamic-bonding-curve/idl'
 import type { Keypair, PublicKey, Transaction } from '@solana/web3.js'
 import Decimal from 'decimal.js'
 
 // Program Type
-export type VirtualCurveProgram = Program<VirtualCurve>
+export type DynamicBondingCurveProgram = Program<DynamicBondingCurve>
 
 /////////////////
 // IX ACCOUNTS //
 /////////////////
 
 export type ClaimProtocolFeeAccounts = Accounts<
-    VirtualCurve['instructions']['0']
+    DynamicBondingCurve['instructions']['0']
 >['claimProtocolFee']
 
 export type ClaimTradingFeeAccounts = Accounts<
-    VirtualCurve['instructions']['1']
+    DynamicBondingCurve['instructions']['1']
 >['claimTradingFee']
 
 export type CloseClaimFeeOperatorAccounts = Accounts<
-    VirtualCurve['instructions']['2']
+    DynamicBondingCurve['instructions']['2']
 >['closeClaimFeeOperator']
 
 export type CreateClaimFeeOperatorAccounts = Accounts<
-    VirtualCurve['instructions']['3']
+    DynamicBondingCurve['instructions']['3']
 >['createClaimFeeOperator']
 
 export type CreateConfigAccounts = Accounts<
-    VirtualCurve['instructions']['4']
+    DynamicBondingCurve['instructions']['4']
 >['createConfig']
 
 export type CreateLockerAccounts = Accounts<
-    VirtualCurve['instructions']['5']
+    DynamicBondingCurve['instructions']['5']
 >['createLocker']
 
 export type CreatePartnerMetadata = Accounts<
-    VirtualCurve['instructions']['6']
+    DynamicBondingCurve['instructions']['6']
 >['createPartnerMetadata']
 
 export type CreateVirtualPoolMetadata = Accounts<
-    VirtualCurve['instructions']['7']
+    DynamicBondingCurve['instructions']['7']
 >['createVirtualPoolMetadata']
 
 export type InitializeVirtualPoolWithSplTokenAccounts = Accounts<
-    VirtualCurve['instructions']['8']
+    DynamicBondingCurve['instructions']['8']
 >['initializeVirtualPoolWithSplToken']
 
 export type InitializeVirtualPoolWithToken2022Accounts = Accounts<
-    VirtualCurve['instructions']['9']
+    DynamicBondingCurve['instructions']['9']
 >['initializeVirtualPoolWithToken2022']
 
 export type MigrateMeteoraDammAccounts = Accounts<
-    VirtualCurve['instructions']['10']
+    DynamicBondingCurve['instructions']['10']
 >['migrateMeteoraDamm']
 
 export type MigrateMeteoraDammClaimLpTokenAccounts = Accounts<
-    VirtualCurve['instructions']['11']
+    DynamicBondingCurve['instructions']['11']
 >['migrateMeteoraDammClaimLpToken']
 
 export type MigrateMeteoraDammLockLpTokenAccounts = Accounts<
-    VirtualCurve['instructions']['12']
+    DynamicBondingCurve['instructions']['12']
 >['migrateMeteoraDammLockLpToken']
 
 export type MigrationDammV2Accounts = Accounts<
-    VirtualCurve['instructions']['13']
+    DynamicBondingCurve['instructions']['13']
 >['migrationDammV2']
 
 export type MigrationDammV2CreateMetadataAccounts = Accounts<
-    VirtualCurve['instructions']['14']
+    DynamicBondingCurve['instructions']['14']
 >['migrationDammV2CreateMetadata']
 
 export type MigrationMeteoraDammCreateMetadataAccounts = Accounts<
-    VirtualCurve['instructions']['15']
+    DynamicBondingCurve['instructions']['15']
 >['migrationMeteoraDammCreateMetadata']
 
 export type PartnerWithdrawSurplusAccounts = Accounts<
-    VirtualCurve['instructions']['16']
+    DynamicBondingCurve['instructions']['16']
 >['partnerWithdrawSurplus']
 
-export type SwapAccounts = Accounts<VirtualCurve['instructions']['18']>['swap']
+export type SwapAccounts = Accounts<
+    DynamicBondingCurve['instructions']['18']
+>['swap']
 
 ///////////////
 // IDL Types //
 ///////////////
 
-export type ConfigParameters = IdlTypes<VirtualCurve>['configParameters']
+export type ConfigParameters = IdlTypes<DynamicBondingCurve>['configParameters']
 export type InitializePoolParameters =
-    IdlTypes<VirtualCurve>['initializePoolParameters']
-export type SwapParameters = IdlTypes<VirtualCurve>['swapParameters']
-export type PoolFeeParameters = IdlTypes<VirtualCurve>['poolFeeParameters']
+    IdlTypes<DynamicBondingCurve>['initializePoolParameters']
+export type SwapParameters = IdlTypes<DynamicBondingCurve>['swapParameters']
+export type PoolFeeParameters =
+    IdlTypes<DynamicBondingCurve>['poolFeeParameters']
 export type DynamicFeeParameters =
-    IdlTypes<VirtualCurve>['dynamicFeeParameters']
+    IdlTypes<DynamicBondingCurve>['dynamicFeeParameters']
 export type LiquidityDistributionParameters =
-    IdlTypes<VirtualCurve>['liquidityDistributionParameters']
-export type PoolFeesConfig = IdlTypes<VirtualCurve>['poolFeesConfig']
-export type DynamicFeeConfig = IdlTypes<VirtualCurve>['dynamicFeeConfig']
-export type BaseFeeConfig = IdlTypes<VirtualCurve>['baseFeeConfig']
-export type PoolFees = IdlTypes<VirtualCurve>['poolFees']
-export type PoolMetrics = IdlTypes<VirtualCurve>['poolMetrics']
-export type SwapResult = IdlTypes<VirtualCurve>['swapResult']
+    IdlTypes<DynamicBondingCurve>['liquidityDistributionParameters']
+export type PoolFeesConfig = IdlTypes<DynamicBondingCurve>['poolFeesConfig']
+export type DynamicFeeConfig = IdlTypes<DynamicBondingCurve>['dynamicFeeConfig']
+export type BaseFeeConfig = IdlTypes<DynamicBondingCurve>['baseFeeConfig']
+export type PoolFees = IdlTypes<DynamicBondingCurve>['poolFees']
+export type PoolMetrics = IdlTypes<DynamicBondingCurve>['poolMetrics']
+export type SwapResult = IdlTypes<DynamicBondingCurve>['swapResult']
 export type CreatePartnerMetadataParameters =
-    IdlTypes<VirtualCurve>['createPartnerMetadataParameters']
+    IdlTypes<DynamicBondingCurve>['createPartnerMetadataParameters']
 export type CreateVirtualPoolMetadataParameters =
-    IdlTypes<VirtualCurve>['createVirtualPoolMetadataParameters']
+    IdlTypes<DynamicBondingCurve>['createVirtualPoolMetadataParameters']
 
 //////////////////
 // IDL ACCOUNTS //
 //////////////////
 
-export type ClaimFeeOperator = IdlAccounts<VirtualCurve>['claimFeeOperator']
-export type Config = IdlAccounts<VirtualCurve>['config']
+export type ClaimFeeOperator =
+    IdlAccounts<DynamicBondingCurve>['claimFeeOperator']
+export type Config = IdlAccounts<DynamicBondingCurve>['config']
 export type MeteoraDammMigrationMetadata =
-    IdlAccounts<VirtualCurve>['meteoraDammMigrationMetadata']
-export type LockEscrow = IdlAccounts<VirtualCurve>['lockEscrow']
-export type VolatilityTracker = IdlTypes<VirtualCurve>['volatilityTracker']
-export type VirtualPool = IdlAccounts<VirtualCurve>['virtualPool']
-export type PoolConfig = IdlAccounts<VirtualCurve>['poolConfig']
-export type PartnerMetadata = IdlAccounts<VirtualCurve>['partnerMetadata']
+    IdlAccounts<DynamicBondingCurve>['meteoraDammMigrationMetadata']
+export type LockEscrow = IdlAccounts<DynamicBondingCurve>['lockEscrow']
+export type VolatilityTracker =
+    IdlTypes<DynamicBondingCurve>['volatilityTracker']
+export type VirtualPool = IdlAccounts<DynamicBondingCurve>['virtualPool']
+export type PoolConfig = IdlAccounts<DynamicBondingCurve>['poolConfig']
+export type PartnerMetadata =
+    IdlAccounts<DynamicBondingCurve>['partnerMetadata']
 export type VirtualPoolMetadata =
-    IdlAccounts<VirtualCurve>['virtualPoolMetadata']
+    IdlAccounts<DynamicBondingCurve>['virtualPoolMetadata']
 
 ///////////
 // ENUMS //
@@ -199,16 +205,31 @@ export type CreateDammMigrationMetadataParam = {
     migrateToDammV2: boolean
 }
 
-export type DesignPumpFunCurveParam = {
+export type CreateConstantProductConfigWithLockVestingParam = {
+    lockVestingParams: {
+        percentageSupplyVesting: number
+        frequency: number
+        numberOfPeriod: number
+        cliffUnlockEnabled: boolean
+    }
     totalTokenSupply: number
     percentageSupplyOnMigration: number
-    percentageSupplyVesting: number
-    frequency: number
-    numberOfPeriod: number
     startPrice: Decimal
     migrationPrice: Decimal
-    tokenBaseDecimal: TokenDecimal
-    tokenQuoteDecimal: TokenDecimal
+    tokenBaseDecimal: number
+    tokenQuoteDecimal: number
+    swapBufferPercentage: number
+    baseFeeBps: number
+    dynamicFeeEnabled: boolean
+    activationType: ActivationType
+    collectFeeMode: CollectFeeMode
+    migrationOption: MigrationOption
+    migrationFeeOption: MigrationFeeOption
+    tokenType: TokenType
+    partnerLpPercentage: number
+    creatorLpPercentage: number
+    partnerLockedLpPercentage: number
+    creatorLockedLpPercentage: number
     feeClaimer: PublicKey
     leftoverReceiver: PublicKey
     payer: PublicKey
@@ -216,12 +237,24 @@ export type DesignPumpFunCurveParam = {
     config: PublicKey
 }
 
-export type DesignPumpFunCurveWithoutLockVestingParam = {
+export type CreateConstantProductConfigWithoutLockVestingParam = {
     totalTokenSupply: number
     percentageSupplyOnMigration: number
     startPrice: Decimal
-    tokenBaseDecimal: TokenDecimal
-    tokenQuoteDecimal: TokenDecimal
+    tokenBaseDecimal: number
+    tokenQuoteDecimal: number
+    swapBufferPercentage: number
+    baseFeeBps: number
+    dynamicFeeEnabled: boolean
+    activationType: ActivationType
+    collectFeeMode: CollectFeeMode
+    migrationOption: MigrationOption
+    migrationFeeOption: MigrationFeeOption
+    tokenType: TokenType
+    partnerLpPercentage: number
+    creatorLpPercentage: number
+    partnerLockedLpPercentage: number
+    creatorLockedLpPercentage: number
     feeClaimer: PublicKey
     leftoverReceiver: PublicKey
     payer: PublicKey
@@ -234,6 +267,53 @@ export type DesignCurveParam = {
     migrationQuoteThreshold: BN
     tokenBaseSupply: BN
     migrationBasePercent: number
+}
+
+export type DesignConstantProductCurveWithLockVestingParam = {
+    lockVestingParams: {
+        percentageSupplyVesting: number
+        frequency: number
+        numberOfPeriod: number
+        cliffUnlockEnabled: boolean
+    }
+    totalTokenSupply: number
+    percentageSupplyOnMigration: number
+    startPrice: Decimal
+    migrationPrice: Decimal
+    tokenBaseDecimal: number
+    tokenQuoteDecimal: number
+    swapBufferPercentage: number
+    baseFeeBps: number
+    dynamicFeeEnabled: boolean
+    activationType: ActivationType
+    collectFeeMode: CollectFeeMode
+    migrationOption: MigrationOption
+    migrationFeeOption: MigrationFeeOption
+    tokenType: TokenType
+    partnerLpPercentage: number
+    creatorLpPercentage: number
+    partnerLockedLpPercentage: number
+    creatorLockedLpPercentage: number
+}
+
+export type DesignConstantProductCurveWithoutLockVestingParam = {
+    totalTokenSupply: number
+    percentageSupplyOnMigration: number
+    startPrice: Decimal
+    tokenBaseDecimal: number
+    tokenQuoteDecimal: number
+    swapBufferPercentage: number
+    baseFeeBps: number
+    dynamicFeeEnabled: boolean
+    activationType: ActivationType
+    collectFeeMode: CollectFeeMode
+    migrationOption: MigrationOption
+    migrationFeeOption: MigrationFeeOption
+    tokenType: TokenType
+    partnerLpPercentage: number
+    creatorLpPercentage: number
+    partnerLockedLpPercentage: number
+    creatorLockedLpPercentage: number
 }
 
 export type DesignCurveResponse = {

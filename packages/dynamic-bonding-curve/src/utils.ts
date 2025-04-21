@@ -7,8 +7,8 @@ import {
     type Connection,
     type GetProgramAccountsFilter,
 } from '@solana/web3.js'
-import type { VirtualCurve } from './idl/virtual-curve/idl'
-import VirtualCurveIDL from './idl/virtual-curve/idl.json'
+import type { DynamicBondingCurve } from './idl/dynamic-bonding-curve/idl'
+import DynamicBondingCurveIDL from './idl/dynamic-bonding-curve/idl.json'
 import type { DynamicVault } from './idl/dynamic-vault/idl'
 import DynamicVaultIDL from './idl/dynamic-vault/idl.json'
 import type { DammV1 } from './idl/damm-v1/idl'
@@ -52,7 +52,10 @@ export function createProgram(connection: Connection) {
     const provider = new AnchorProvider(connection, null as unknown as Wallet, {
         commitment: 'confirmed',
     })
-    const program = new Program<VirtualCurve>(VirtualCurveIDL, provider)
+    const program = new Program<DynamicBondingCurve>(
+        DynamicBondingCurveIDL,
+        provider
+    )
 
     return { program }
 }
@@ -210,8 +213,8 @@ export function createProgramAccountFilter(
  */
 export async function getAccountData<T>(
     accountAddress: PublicKey | string,
-    accountType: keyof Program<VirtualCurve>['account'],
-    program: Program<VirtualCurve>
+    accountType: keyof Program<DynamicBondingCurve>['account'],
+    program: Program<DynamicBondingCurve>
 ): Promise<T> {
     const address =
         accountAddress instanceof PublicKey

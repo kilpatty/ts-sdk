@@ -1,7 +1,7 @@
 {
-  "address": "dbceTyRHnt38cShTHTiDJDKeHgyvJSaXeGrn1xMLjA9",
+  "address": "virEFLZsQm1iFAs8py1XnziJ67gTzW2bfCWhxNPfccD",
   "metadata": {
-    "name": "virtual_curve",
+    "name": "dynamic_bonding_curve",
     "version": "0.1.0",
     "spec": "0.1.0",
     "description": "Created with Anchor"
@@ -22,7 +22,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "config",
@@ -336,7 +336,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "config",
@@ -733,7 +733,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "base_vault",
@@ -1082,7 +1082,7 @@
         },
         {
           "name": "pool_authority",
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "creator"
@@ -1270,7 +1270,7 @@
         },
         {
           "name": "pool_authority",
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "creator"
@@ -1468,7 +1468,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "pool",
@@ -1620,7 +1620,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "lp_mint",
@@ -1854,7 +1854,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "pool",
@@ -2046,7 +2046,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "pool",
@@ -2341,7 +2341,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "config",
@@ -2442,7 +2442,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "config",
@@ -2625,7 +2625,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "address": "4BxnRi2yDrzPWo2VvULUYQe5RxAuRDRJ1DyjG5u8rtpE"
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "config",
@@ -2775,29 +2775,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
+          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
         },
         {
           "name": "config",
@@ -3412,6 +3390,11 @@
       "code": 6031,
       "name": "InvalidVestingParameters",
       "msg": "Invalid vesting parameters"
+    },
+    {
+      "code": 6032,
+      "name": "InvalidLeftoverAddress",
+      "msg": "Invalid leftover address"
     }
   ],
   "types": [
@@ -3994,7 +3977,7 @@
             "type": "u8"
           },
           {
-            "name": "fixed_token_suppply_flag",
+            "name": "fixed_token_supply_flag",
             "type": "u8"
           },
           {
@@ -4740,7 +4723,7 @@
             "type": "u8"
           },
           {
-            "name": "fixed_token_suppply_flag",
+            "name": "fixed_token_supply_flag",
             "docs": [
               "flag to indicate whether token is dynamic supply (0) or fixed supply (1)"
             ],

@@ -1,6 +1,6 @@
 {
-  "name": "@meteora-ag/virtual-curve-sdk",
-  "version": "1.0.0-rc.7",
+  "name": "@meteora-ag/dynamic-bonding-curve-sdk",
+  "version": "1.0.0",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "source": "src/index.ts",
@@ -8,14 +8,13 @@
   "author": "Dann Wee <dann@raccoons.dev>",
   "keywords": [
     "meteora-ag",
-    "virtual-curve"
+    "dynamic-bonding-curve",
+    "damm-v1",
+    "damm-v2",
+    "dynamic-vaults"
   ],
-  "description": "A Typescript SDK for interacting with the Virtual Bonding Curve on Meteora.",
+  "description": "A Typescript SDK for interacting with the Dynamic Bonding Curve on Meteora.",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/MeteoraAg/ts-sdk/tree/main/packages/virtual-curve"
-  },
   "type": "module",
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts",
