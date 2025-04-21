@@ -218,7 +218,6 @@ export type CreateConstantProductConfigWithLockVestingParam = {
     migrationPrice: Decimal
     tokenBaseDecimal: number
     tokenQuoteDecimal: number
-    swapBufferPercentage: number
     baseFeeBps: number
     dynamicFeeEnabled: boolean
     activationType: ActivationType
@@ -243,7 +242,6 @@ export type CreateConstantProductConfigWithoutLockVestingParam = {
     startPrice: Decimal
     tokenBaseDecimal: number
     tokenQuoteDecimal: number
-    swapBufferPercentage: number
     baseFeeBps: number
     dynamicFeeEnabled: boolean
     activationType: ActivationType
@@ -282,7 +280,6 @@ export type DesignConstantProductCurveWithLockVestingParam = {
     migrationPrice: Decimal
     tokenBaseDecimal: number
     tokenQuoteDecimal: number
-    swapBufferPercentage: number
     baseFeeBps: number
     dynamicFeeEnabled: boolean
     activationType: ActivationType
@@ -302,7 +299,6 @@ export type DesignConstantProductCurveWithoutLockVestingParam = {
     startPrice: Decimal
     tokenBaseDecimal: number
     tokenQuoteDecimal: number
-    swapBufferPercentage: number
     baseFeeBps: number
     dynamicFeeEnabled: boolean
     activationType: ActivationType

@@ -24,6 +24,10 @@ const connection = new Connection('https://api.mainnet-beta.solana.com')
 const client = new DynamicBondingCurveClient(connection)
 ```
 
+## Usage
+
+Refer to the [docs](docs.md) for more information.
+
 ### Test
 
 ```bash

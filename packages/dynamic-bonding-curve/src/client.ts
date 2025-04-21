@@ -88,7 +88,6 @@ import {
     unwrapSOLInstruction,
     wrapSOLInstruction,
     createProgramAccountFilter,
-    convertBNToDecimal,
 } from './utils'
 import type { Program, ProgramAccount } from '@coral-xyz/anchor'
 import type { DynamicBondingCurve as DynamicBondingCurveIDL } from './idl/dynamic-bonding-curve/idl'
@@ -629,7 +628,6 @@ export class PartnerService {
             migrationPrice,
             tokenBaseDecimal,
             tokenQuoteDecimal,
-            swapBufferPercentage,
             baseFeeBps,
             dynamicFeeEnabled,
             activationType,
@@ -659,7 +657,6 @@ export class PartnerService {
                 migrationPrice,
                 tokenBaseDecimal,
                 tokenQuoteDecimal,
-                swapBufferPercentage,
                 baseFeeBps,
                 dynamicFeeEnabled,
                 activationType,
@@ -705,7 +702,6 @@ export class PartnerService {
             startPrice,
             tokenBaseDecimal,
             tokenQuoteDecimal,
-            swapBufferPercentage,
             baseFeeBps,
             dynamicFeeEnabled,
             activationType,
@@ -733,7 +729,6 @@ export class PartnerService {
                 startPrice,
                 tokenBaseDecimal,
                 tokenQuoteDecimal,
-                swapBufferPercentage,
                 baseFeeBps,
                 dynamicFeeEnabled,
                 activationType,
@@ -746,10 +741,6 @@ export class PartnerService {
                 partnerLockedLpPercentage,
                 creatorLockedLpPercentage,
             })
-
-        console.log(
-            convertBNToDecimal(constantProductCurveWithoutLockVestingConfig)
-        )
 
         const accounts = {
             config,
@@ -1512,8 +1503,6 @@ export class MigrationService {
                 DAMM_V1_PROGRAM_ID
             )
 
-            console.log('lockEscrowKey', lockEscrowKey)
-
             const lockEscrowData =
                 await this.connection.getAccountInfo(lockEscrowKey)
 
@@ -1628,8 +1617,6 @@ export class MigrationService {
         )
 
         const lpMint = deriveLpMintAddress(dammPool, DAMM_V1_PROGRAM_ID)
-
-        console.log('lpMint', lpMint.toString())
 
         const destinationToken = findAssociatedTokenAddress(
             claimDammV1LpTokenParam.payer,
