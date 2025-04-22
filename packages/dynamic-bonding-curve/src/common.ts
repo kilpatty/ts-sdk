@@ -187,7 +187,7 @@ export function getBaseTokenForSwap(
         const lowerSqrtPrice = i == 0 ? sqrtStartPrice : curve[i - 1]?.sqrtPrice
         if (curve[i]?.sqrtPrice && curve[i]?.sqrtPrice.gt(sqrtMigrationPrice)) {
             const deltaAmount = getDeltaAmountBase(
-                lowerSqrtPrice ?? new BN(0),
+                lowerSqrtPrice ?? new BN(1),
                 sqrtMigrationPrice,
                 curve[i]?.liquidity ?? new BN(0)
             )
@@ -195,7 +195,7 @@ export function getBaseTokenForSwap(
             break
         } else {
             const deltaAmount = getDeltaAmountBase(
-                lowerSqrtPrice ?? new BN(0),
+                lowerSqrtPrice ?? new BN(1),
                 curve[i]?.sqrtPrice ?? new BN(0),
                 curve[i]?.liquidity ?? new BN(0)
             )
@@ -206,7 +206,7 @@ export function getBaseTokenForSwap(
 }
 
 /**
- * Get the delta amount base
+ * Calculates the amount of base token needed for a price range
  * @param lowerSqrtPrice - The lower sqrt price
  * @param upperSqrtPrice - The upper sqrt price
  * @param liquidity - The liquidity
@@ -217,6 +217,11 @@ export function getDeltaAmountBase(
     upperSqrtPrice: BN,
     liquidity: BN
 ): BN {
+    // Formula: Δx = L * (√Pb - √Pa) / (√Pa * √Pb)
+    // Where:
+    // - L is the liquidity
+    // - √Pa is the lower sqrt price
+    // - √Pb is the upper sqrt price
     const numerator = liquidity.mul(upperSqrtPrice.sub(lowerSqrtPrice))
     const denominator = lowerSqrtPrice.mul(upperSqrtPrice)
     return numerator.add(denominator).sub(new BN(1)).div(denominator)
