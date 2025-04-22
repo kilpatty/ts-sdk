@@ -15,14 +15,22 @@ import type { DynamicVault } from './idl/dynamic-vault/idl'
 import type { Program } from '@coral-xyz/anchor'
 import type { DammV1 } from './idl/damm-v1/idl'
 import {
+    Rounding,
     type LiquidityDistributionParameters,
+    type LockedVestingParameters,
     type PrepareSwapParams,
     type TokenType,
 } from './types'
 import { getTokenProgram } from './utils'
-import { BASE_ADDRESS } from './constants'
+import { BASE_ADDRESS, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from './constants'
 import BN from 'bn.js'
 import Decimal from 'decimal.js'
+import {
+    getDeltaAmountQuoteUnsigned,
+    getInitialLiquidityFromDeltaBase,
+    getInitialLiquidityFromDeltaQuote,
+    getNextSqrtPriceFromInput,
+} from './math/curve'
 
 /**
  * Create a permissionless dynamic vault
@@ -158,29 +166,8 @@ export const getSqrtPriceFromPrice = (
     )
     const sqrtValue = Decimal.sqrt(adjustedByDecimals)
     const sqrtValueQ64 = sqrtValue.mul(Decimal.pow(2, 64))
+
     return new BN(sqrtValueQ64.floor().toFixed())
-}
-
-/**
- * Get the price from the sqrt price
- * @param sqrtPrice - The sqrt price
- * @param tokenADecimal - The decimal of token A
- * @param tokenBDecimal - The decimal of token B
- * @returns The price
- */
-// Reverse formula: sqrtPrice = sqrt(price / 10^(tokenADecimal - tokenBDecimal)) << 64
-export const getPriceFromSqrtPrice = (
-    sqrtPrice: BN,
-    tokenADecimal: number,
-    tokenBDecimal: number
-): Decimal => {
-    const decimalSqrtPrice = new Decimal(sqrtPrice.toString())
-    const price = decimalSqrtPrice
-        .mul(decimalSqrtPrice)
-        .mul(new Decimal(10 ** (tokenADecimal - tokenBDecimal)))
-        .div(Decimal.pow(2, 128))
-
-    return price
 }
 
 /**
@@ -216,21 +203,6 @@ export function getBaseTokenForSwap(
         }
     }
     return totalAmount
-}
-
-/**
- * Get the base token for migration
- * @param sqrtMigrationPrice - The migration sqrt price
- * @param migrationQuoteThreshold - The migration quote threshold
- * @returns The base token
- */
-export function getBaseTokenForMigration(
-    sqrtMigrationPrice: BN,
-    migrationQuoteThreshold: BN
-): BN {
-    const price = sqrtMigrationPrice.mul(sqrtMigrationPrice)
-    const base = migrationQuoteThreshold.shln(128).div(price)
-    return base
 }
 
 /**
@@ -272,4 +244,243 @@ export function getLiquidityBuffer(
     const bufferSwapAmount = liquidity.mul(priceDiff).div(priceProduct)
 
     return bufferSwapAmount
+}
+
+/**
+ * Get the base token for migration
+ * @param migrationQuoteThreshold - The migration quote threshold
+ * @param sqrtMigrationPrice - The migration sqrt price
+ * @param migrationOption - The migration option
+ * @returns The base token
+ */
+export const getMigrationBaseToken = (
+    migrationQuoteThreshold: BN,
+    sqrtMigrationPrice: BN,
+    migrationOption: number
+): BN => {
+    if (migrationOption == 0) {
+        const price = sqrtMigrationPrice.mul(sqrtMigrationPrice)
+        const quote = migrationQuoteThreshold.shln(128)
+        const { div: baseDiv, mod } = quote.divmod(price)
+        let div = baseDiv
+        if (!mod.isZero()) {
+            div = div.add(new BN(1))
+        }
+        return div
+    } else if (migrationOption == 1) {
+        const liquidity = getInitialLiquidityFromDeltaQuote(
+            migrationQuoteThreshold,
+            MIN_SQRT_PRICE,
+            sqrtMigrationPrice
+        )
+        // calculate base threshold
+        const baseAmount = getDeltaAmountBase(
+            sqrtMigrationPrice,
+            MAX_SQRT_PRICE,
+            liquidity
+        )
+        return baseAmount
+    } else {
+        throw Error('Invalid migration option')
+    }
+}
+
+/**
+ * Get the total vesting amount
+ * @param lockedVesting - The locked vesting
+ * @returns The total vesting amount
+ */
+export const getTotalVestingAmount = (
+    lockedVesting: LockedVestingParameters
+): BN => {
+    const totalVestingAmount = lockedVesting.cliffUnlockAmount.add(
+        lockedVesting.amountPerPeriod.mul(lockedVesting.numberOfPeriod)
+    )
+    return totalVestingAmount
+}
+
+/**
+ * Get the liquidity
+ * @param baseAmount - The base amount
+ * @param quoteAmount - The quote amount
+ * @param minSqrtPrice - The min sqrt price
+ * @param maxSqrtPrice - The max sqrt price
+ * @returns The liquidity
+ */
+export const getLiquidity = (
+    baseAmount: BN,
+    quoteAmount: BN,
+    minSqrtPrice: BN,
+    maxSqrtPrice: BN
+): BN => {
+    const liquidityFromBase = getInitialLiquidityFromDeltaBase(
+        baseAmount,
+        maxSqrtPrice,
+        minSqrtPrice
+    )
+    const liquidityFromQuote = getInitialLiquidityFromDeltaQuote(
+        quoteAmount,
+        minSqrtPrice,
+        maxSqrtPrice
+    )
+    return BN.min(liquidityFromBase, liquidityFromQuote)
+}
+
+/**
+ * Get the first curve
+ * @param migrationSqrPrice - The migration sqrt price
+ * @param migrationAmount - The migration amount
+ * @param swapAmount - The swap amount
+ * @param migrationQuoteThreshold - The migration quote threshold
+ * @returns The first curve
+ */
+export const getFirstCurve = (
+    migrationSqrPrice: BN,
+    migrationAmount: BN,
+    swapAmount: BN,
+    migrationQuoteThreshold: BN
+) => {
+    const sqrtStartPrice = migrationSqrPrice
+        .mul(migrationAmount)
+        .div(swapAmount)
+    const liquidity = getLiquidity(
+        swapAmount,
+        migrationQuoteThreshold,
+        sqrtStartPrice,
+        migrationSqrPrice
+    )
+    return {
+        sqrtStartPrice,
+        curve: [
+            {
+                sqrtPrice: migrationSqrPrice,
+                liquidity,
+            },
+        ],
+    }
+}
+
+/**
+ * Get the total supply from curve
+ * @param migrationQuoteThreshold - The migration quote threshold
+ * @param sqrtStartPrice - The start sqrt price
+ * @param curve - The curve
+ * @param lockedVesting - The locked vesting
+ * @param migrationOption - The migration option
+ * @returns The total supply
+ */
+export const getTotalSupplyFromCurve = (
+    migrationQuoteThreshold: BN,
+    sqrtStartPrice: BN,
+    curve: Array<LiquidityDistributionParameters>,
+    lockedVesting: LockedVestingParameters,
+    migrationOption: number
+): BN => {
+    const sqrtMigrationPrice = getMigrationThresholdPrice(
+        migrationQuoteThreshold,
+        sqrtStartPrice,
+        curve
+    )
+    const swapBaseAmount = getBaseTokenForSwap(
+        sqrtStartPrice,
+        sqrtMigrationPrice,
+        curve
+    )
+    const swapBaseAmountBuffer = getSwapAmountWithBuffer(
+        swapBaseAmount,
+        sqrtStartPrice,
+        curve
+    )
+    const migrationBaseAmount = getMigrationBaseToken(
+        migrationQuoteThreshold,
+        sqrtMigrationPrice,
+        migrationOption
+    )
+    const totalVestingAmount = getTotalVestingAmount(lockedVesting)
+    const minimumBaseSupplyWithBuffer = swapBaseAmountBuffer
+        .add(migrationBaseAmount)
+        .add(totalVestingAmount)
+    return minimumBaseSupplyWithBuffer
+}
+
+/**
+ * Get the migration threshold price
+ * @param migrationThreshold - The migration threshold
+ * @param sqrtStartPrice - The start sqrt price
+ * @param curve - The curve
+ * @returns The migration threshold price
+ */
+export const getMigrationThresholdPrice = (
+    migrationThreshold: BN,
+    sqrtStartPrice: BN,
+    curve: Array<LiquidityDistributionParameters>
+): BN => {
+    let nextSqrtPrice = sqrtStartPrice
+    const totalAmount = getDeltaAmountQuoteUnsigned(
+        nextSqrtPrice,
+        curve[0]?.sqrtPrice ?? new BN(0),
+        curve[0]?.liquidity ?? new BN(0),
+        Rounding.Up
+    )
+    if (totalAmount.gt(migrationThreshold)) {
+        nextSqrtPrice = getNextSqrtPriceFromInput(
+            nextSqrtPrice,
+            curve[0]?.liquidity ?? new BN(0),
+            migrationThreshold,
+            false
+        )
+    } else {
+        let amountLeft = migrationThreshold.sub(totalAmount)
+        nextSqrtPrice = curve[0]?.sqrtPrice ?? new BN(0)
+        for (let i = 1; i < curve.length; i++) {
+            const maxAmount = getDeltaAmountQuoteUnsigned(
+                nextSqrtPrice,
+                curve[i]?.sqrtPrice ?? new BN(0),
+                curve[i]?.liquidity ?? new BN(0),
+                Rounding.Up
+            )
+            if (maxAmount.gt(amountLeft)) {
+                nextSqrtPrice = getNextSqrtPriceFromInput(
+                    nextSqrtPrice,
+                    curve[i]?.liquidity ?? new BN(0),
+                    amountLeft,
+                    false
+                )
+                amountLeft = new BN(0)
+                break
+            } else {
+                amountLeft = amountLeft.sub(maxAmount)
+                nextSqrtPrice = curve[i]?.sqrtPrice ?? new BN(0)
+            }
+        }
+        if (!amountLeft.isZero()) {
+            throw Error(
+                'Not enough liquidity, amountLeft: ' + amountLeft.toString()
+            )
+        }
+    }
+    return nextSqrtPrice
+}
+
+/**
+ * Get the swap amount with buffer
+ * @param swapBaseAmount - The swap base amount
+ * @param sqrtStartPrice - The start sqrt price
+ * @param curve - The curve
+ * @returns The swap amount with buffer
+ */
+export const getSwapAmountWithBuffer = (
+    swapBaseAmount: BN,
+    sqrtStartPrice: BN,
+    curve: Array<LiquidityDistributionParameters>
+): BN => {
+    const swapAmountBuffer = swapBaseAmount.add(
+        swapBaseAmount.mul(new BN(25)).div(new BN(100))
+    )
+    const maxBaseAmountOnCurve = getBaseTokenForSwap(
+        sqrtStartPrice,
+        MAX_SQRT_PRICE,
+        curve
+    )
+    return BN.min(swapAmountBuffer, maxBaseAmountOnCurve)
 }

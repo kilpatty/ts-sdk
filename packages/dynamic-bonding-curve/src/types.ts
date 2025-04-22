@@ -7,7 +7,6 @@ import type {
 } from '@coral-xyz/anchor'
 import type { DynamicBondingCurve } from './idl/dynamic-bonding-curve/idl'
 import type { Keypair, PublicKey, Transaction } from '@solana/web3.js'
-import Decimal from 'decimal.js'
 
 // Program Type
 export type DynamicBondingCurveProgram = Program<DynamicBondingCurve>
@@ -93,6 +92,8 @@ export type SwapAccounts = Accounts<
 ///////////////
 
 export type ConfigParameters = IdlTypes<DynamicBondingCurve>['configParameters']
+export type LockedVestingParameters =
+    IdlTypes<DynamicBondingCurve>['lockedVestingParams']
 export type InitializePoolParameters =
     IdlTypes<DynamicBondingCurve>['initializePoolParameters']
 export type SwapParameters = IdlTypes<DynamicBondingCurve>['swapParameters']
@@ -174,7 +175,15 @@ export enum MigrationFeeOption {
 }
 
 export enum TokenDecimal {
+    ZERO = 0,
+    ONE = 1,
+    TWO = 2,
+    THREE = 3,
+    FOUR = 4,
+    FIVE = 5,
     SIX = 6,
+    SEVEN = 7,
+    EIGHT = 8,
     NINE = 9,
 }
 
@@ -205,30 +214,40 @@ export type CreateDammMigrationMetadataParam = {
     migrateToDammV2: boolean
 }
 
-export type CreateConstantProductConfigWithLockVestingParam = {
-    lockVestingParams: {
-        percentageSupplyVesting: number
-        frequency: number
-        numberOfPeriod: number
-        cliffUnlockEnabled: boolean
-    }
+export type FeeSchedulerParameters = {
+    numberOfPeriod: number
+    reductionFactor: number
+    periodFrequency: number
+    feeSchedulerMode: FeeSchedulerMode
+}
+
+export type DesignConstantProductCurveParam = {
     totalTokenSupply: number
     percentageSupplyOnMigration: number
-    startPrice: Decimal
-    migrationPrice: Decimal
-    tokenBaseDecimal: number
-    tokenQuoteDecimal: number
+    migrationQuoteThreshold: number
+    migrationOption: MigrationOption
+    tokenBaseDecimal: TokenDecimal
+    tokenQuoteDecimal: TokenDecimal
+    lockedVesting: LockedVestingParameters
+}
+
+export type DesignCustomConstantProductCurveParam = {
+    constantProductCurveParam: DesignConstantProductCurveParam
+    feeSchedulerParam: FeeSchedulerParameters
     baseFeeBps: number
     dynamicFeeEnabled: boolean
     activationType: ActivationType
     collectFeeMode: CollectFeeMode
-    migrationOption: MigrationOption
     migrationFeeOption: MigrationFeeOption
     tokenType: TokenType
     partnerLpPercentage: number
     creatorLpPercentage: number
     partnerLockedLpPercentage: number
     creatorLockedLpPercentage: number
+}
+
+export type CreateConstantProductConfigParam = {
+    constantProductCurveParam: DesignConstantProductCurveParam
     feeClaimer: PublicKey
     leftoverReceiver: PublicKey
     payer: PublicKey
@@ -236,85 +255,13 @@ export type CreateConstantProductConfigWithLockVestingParam = {
     config: PublicKey
 }
 
-export type CreateConstantProductConfigWithoutLockVestingParam = {
-    totalTokenSupply: number
-    percentageSupplyOnMigration: number
-    startPrice: Decimal
-    tokenBaseDecimal: number
-    tokenQuoteDecimal: number
-    baseFeeBps: number
-    dynamicFeeEnabled: boolean
-    activationType: ActivationType
-    collectFeeMode: CollectFeeMode
-    migrationOption: MigrationOption
-    migrationFeeOption: MigrationFeeOption
-    tokenType: TokenType
-    partnerLpPercentage: number
-    creatorLpPercentage: number
-    partnerLockedLpPercentage: number
-    creatorLockedLpPercentage: number
+export type CreateCustomConstantProductConfigParam = {
+    customConstantProductCurveParam: DesignCustomConstantProductCurveParam
     feeClaimer: PublicKey
     leftoverReceiver: PublicKey
     payer: PublicKey
     quoteMint: PublicKey
     config: PublicKey
-}
-
-export type DesignCurveParam = {
-    tokenDecimal: TokenDecimal
-    migrationQuoteThreshold: BN
-    tokenBaseSupply: BN
-    migrationBasePercent: number
-}
-
-export type DesignConstantProductCurveWithLockVestingParam = {
-    lockVestingParams: {
-        percentageSupplyVesting: number
-        frequency: number
-        numberOfPeriod: number
-        cliffUnlockEnabled: boolean
-    }
-    totalTokenSupply: number
-    percentageSupplyOnMigration: number
-    startPrice: Decimal
-    migrationPrice: Decimal
-    tokenBaseDecimal: number
-    tokenQuoteDecimal: number
-    baseFeeBps: number
-    dynamicFeeEnabled: boolean
-    activationType: ActivationType
-    collectFeeMode: CollectFeeMode
-    migrationOption: MigrationOption
-    migrationFeeOption: MigrationFeeOption
-    tokenType: TokenType
-    partnerLpPercentage: number
-    creatorLpPercentage: number
-    partnerLockedLpPercentage: number
-    creatorLockedLpPercentage: number
-}
-
-export type DesignConstantProductCurveWithoutLockVestingParam = {
-    totalTokenSupply: number
-    percentageSupplyOnMigration: number
-    startPrice: Decimal
-    tokenBaseDecimal: number
-    tokenQuoteDecimal: number
-    baseFeeBps: number
-    dynamicFeeEnabled: boolean
-    activationType: ActivationType
-    collectFeeMode: CollectFeeMode
-    migrationOption: MigrationOption
-    migrationFeeOption: MigrationFeeOption
-    tokenType: TokenType
-    partnerLpPercentage: number
-    creatorLpPercentage: number
-    partnerLockedLpPercentage: number
-    creatorLockedLpPercentage: number
-}
-
-export type DesignCurveResponse = {
-    sqrtStartPrice: BN
-    curve: LiquidityDistributionParameters[]
 }
 
 export type MigrateToDammV1Param = {
@@ -442,10 +389,10 @@ export interface QuoteResult {
 }
 
 export interface FeeOnAmountResult {
-    amount: BN // Amount remaining after taking trading fee
-    protocolFee: BN // Final protocol fee (after referral deduction)
-    tradingFee: BN // Portion of trading fee NOT going to protocol
-    referralFee: BN // Referral fee amount
+    amount: BN
+    protocolFee: BN
+    tradingFee: BN
+    referralFee: BN
 }
 
 export interface PrepareSwapParams {
@@ -458,10 +405,4 @@ export interface PrepareSwapParams {
 export interface SwapAmount {
     outputAmount: BN
     nextSqrtPrice: BN
-}
-
-export interface TransferFeeConfig {
-    transferFeeBasisPoints: number
-    maximumFee: bigint
-    epoch: number
 }

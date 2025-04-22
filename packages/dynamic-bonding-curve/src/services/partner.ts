@@ -10,8 +10,8 @@ import {
     type ClaimTradingFeeParam,
     type ConfigParameters,
     type CreateConfigParam,
-    type CreateConstantProductConfigWithLockVestingParam,
-    type CreateConstantProductConfigWithoutLockVestingParam,
+    type CreateConstantProductConfigParam,
+    type CreateCustomConstantProductConfigParam,
     type CreatePartnerMetadataParam,
     type CreatePartnerMetadataParameters,
     type PartnerWithdrawSurplusParam,
@@ -23,15 +23,16 @@ import {
     derivePoolAuthority,
 } from '../derive'
 import {
-    designConstantProductCurveWithLockVesting,
-    designConstantProductCurveWithoutLockVesting,
-} from '../design'
-import {
     createAssociatedTokenAccountIdempotentInstruction,
+    NATIVE_MINT,
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 import { findAssociatedTokenAddress, unwrapSOLInstruction } from '../utils'
+import {
+    designConstantProductCurve,
+    designCustomConstantProductCurve,
+} from '../design'
 
 export class PartnerService {
     private connection: Connection
@@ -78,63 +79,29 @@ export class PartnerService {
     }
 
     /**
-     * Create a new constant product config with lock vesting
-     * @param createConstantProductConfigWithLockVestingParam - The parameters for the constant product config with lock vesting
-     * @returns A new constant product config with lock vesting
+     * Create a new constant product config
+     * @param createConstantProductConfigParam - The parameters for the constant product config
+     * @returns A new constant product config
      */
-    async createConstantProductConfigWithLockVesting(
-        createConstantProductConfigWithLockVestingParam: CreateConstantProductConfigWithLockVestingParam
+    async createConstantProductConfig(
+        createConstantProductConfigParam: CreateConstantProductConfigParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
 
         const {
-            lockVestingParams,
-            totalTokenSupply,
-            percentageSupplyOnMigration,
-            startPrice,
-            migrationPrice,
-            tokenBaseDecimal,
-            tokenQuoteDecimal,
-            baseFeeBps,
-            dynamicFeeEnabled,
-            activationType,
-            collectFeeMode,
-            migrationOption,
-            migrationFeeOption,
-            tokenType,
-            partnerLpPercentage,
-            creatorLpPercentage,
-            partnerLockedLpPercentage,
-            creatorLockedLpPercentage,
+            constantProductCurveParam,
             feeClaimer,
             leftoverReceiver,
             payer,
             quoteMint,
             config,
-        } = createConstantProductConfigWithLockVestingParam
+        } = createConstantProductConfigParam
 
         const eventAuthority = deriveEventAuthority()
 
-        const constantProductCurveWithLockVestingConfig: ConfigParameters =
-            designConstantProductCurveWithLockVesting({
-                lockVestingParams,
-                totalTokenSupply,
-                percentageSupplyOnMigration,
-                startPrice,
-                migrationPrice,
-                tokenBaseDecimal,
-                tokenQuoteDecimal,
-                baseFeeBps,
-                dynamicFeeEnabled,
-                activationType,
-                collectFeeMode,
-                migrationOption,
-                migrationFeeOption,
-                tokenType,
-                partnerLpPercentage,
-                creatorLpPercentage,
-                partnerLockedLpPercentage,
-                creatorLockedLpPercentage,
+        const constantProductCurveConfig: ConfigParameters =
+            designConstantProductCurve({
+                ...constantProductCurveParam,
             })
 
         const accounts = {
@@ -148,65 +115,35 @@ export class PartnerService {
         }
 
         return program.methods
-            .createConfig(constantProductCurveWithLockVestingConfig)
+            .createConfig(constantProductCurveConfig)
             .accounts(accounts)
             .transaction()
     }
 
     /**
-     * Create a new constant product config without lock vesting
-     * @param createConstantProductConfigWithoutLockVestingParam - The parameters for the constant product config without lock vesting
-     * @returns A new constant product config without lock vesting
+     * Create a new custom constant product config
+     * @param createCustomConstantProductConfigParam - The parameters for the custom constant product config
+     * @returns A new custom constant product config
      */
-    async createConstantProductConfigWithoutLockVesting(
-        createConstantProductConfigWithoutLockVestingParam: CreateConstantProductConfigWithoutLockVestingParam
+    async createCustomConstantProductConfig(
+        createCustomConstantProductConfigParam: CreateCustomConstantProductConfigParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
 
         const {
-            totalTokenSupply,
-            percentageSupplyOnMigration,
-            startPrice,
-            tokenBaseDecimal,
-            tokenQuoteDecimal,
-            baseFeeBps,
-            dynamicFeeEnabled,
-            activationType,
-            collectFeeMode,
-            migrationOption,
-            migrationFeeOption,
-            tokenType,
-            partnerLpPercentage,
-            creatorLpPercentage,
-            partnerLockedLpPercentage,
-            creatorLockedLpPercentage,
+            customConstantProductCurveParam,
             feeClaimer,
             leftoverReceiver,
             payer,
             quoteMint,
             config,
-        } = createConstantProductConfigWithoutLockVestingParam
+        } = createCustomConstantProductConfigParam
 
         const eventAuthority = deriveEventAuthority()
 
-        const constantProductCurveWithoutLockVestingConfig: ConfigParameters =
-            designConstantProductCurveWithoutLockVesting({
-                totalTokenSupply,
-                percentageSupplyOnMigration,
-                startPrice,
-                tokenBaseDecimal,
-                tokenQuoteDecimal,
-                baseFeeBps,
-                dynamicFeeEnabled,
-                activationType,
-                collectFeeMode,
-                migrationOption,
-                migrationFeeOption,
-                tokenType,
-                partnerLpPercentage,
-                creatorLpPercentage,
-                partnerLockedLpPercentage,
-                creatorLockedLpPercentage,
+        const customConstantProductCurveConfig: ConfigParameters =
+            designCustomConstantProductCurve({
+                ...customConstantProductCurveParam,
             })
 
         const accounts = {
@@ -220,7 +157,7 @@ export class PartnerService {
         }
 
         return program.methods
-            .createConfig(constantProductCurveWithoutLockVestingConfig)
+            .createConfig(customConstantProductCurveConfig)
             .accounts(accounts)
             .transaction()
     }
@@ -339,12 +276,14 @@ export class PartnerService {
             preInstructions.push(createQuoteTokenAccountIx)
         }
 
-        const unwrapSolIx = unwrapSOLInstruction(
-            claimTradingFeeParam.feeClaimer
-        )
+        if (poolConfigState.quoteMint.equals(NATIVE_MINT)) {
+            const unwrapSolIx = unwrapSOLInstruction(
+                claimTradingFeeParam.feeClaimer
+            )
 
-        if (unwrapSolIx) {
-            postInstructions.push(unwrapSolIx)
+            if (unwrapSolIx) {
+                postInstructions.push(unwrapSolIx)
+            }
         }
 
         const accounts = {
@@ -427,12 +366,14 @@ export class PartnerService {
             preInstructions.push(createQuoteTokenAccountIx)
         }
 
-        const unwrapSolIx = unwrapSOLInstruction(
-            partnerWithdrawSurplusParam.feeClaimer
-        )
+        if (poolConfigState.quoteMint.equals(NATIVE_MINT)) {
+            const unwrapSolIx = unwrapSOLInstruction(
+                partnerWithdrawSurplusParam.feeClaimer
+            )
 
-        if (unwrapSolIx) {
-            postInstructions.push(unwrapSolIx)
+            if (unwrapSolIx) {
+                postInstructions.push(unwrapSolIx)
+            }
         }
 
         const accounts = {
