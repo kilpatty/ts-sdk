@@ -1,6 +1,6 @@
 import BN from 'bn.js'
-import Decimal from 'decimal.js'
-import { decimalToBN, batchBnToDecimal } from './utilsMath'
+import { SafeMath } from './safeMath'
+import { mulDiv } from './utilsMath'
 import { RESOLUTION } from '../constants'
 import { Rounding } from '../types'
 
@@ -20,34 +20,23 @@ export function getDeltaAmountBaseUnsigned(
     liquidity: BN,
     round: Rounding
 ): BN {
-    // Throw error for zero liquidity
+    // Skip calculation for zero liquidity
     if (liquidity.isZero()) {
-        throw new Error('Liquidity cannot be zero')
+        return new BN(0)
     }
 
-    // Convert to Decimal for higher precision in one batch
-    const [lowerSqrtPriceDecimal, upperSqrtPriceDecimal, liquidityDecimal] =
-        batchBnToDecimal(lowerSqrtPrice, upperSqrtPrice, liquidity)
-
-    // Batch operations in Decimal
-    const numerator = upperSqrtPriceDecimal
-        ? upperSqrtPriceDecimal.sub(lowerSqrtPriceDecimal ?? new Decimal(0))
-        : new Decimal(0)
-    const denominator = lowerSqrtPriceDecimal
-        ? lowerSqrtPriceDecimal.mul(upperSqrtPriceDecimal ?? new Decimal(0))
-        : new Decimal(0)
-
-    if (denominator.isZero()) {
-        throw new Error('Denominator cannot be zero')
+    if (lowerSqrtPrice.isZero() || upperSqrtPrice.isZero()) {
+        throw new Error('Sqrt price cannot be zero')
     }
 
-    // Calculate with Decimal.js in one operation
-    const result = liquidityDecimal
-        ? liquidityDecimal.mul(numerator).div(denominator)
-        : new Decimal(0)
+    // Calculate numerator: (√P_upper - √P_lower)
+    const numerator = SafeMath.sub(upperSqrtPrice, lowerSqrtPrice)
 
-    // Convert back to BN with appropriate rounding
-    return decimalToBN(result, round)
+    // Calculate denominator: (√P_upper * √P_lower)
+    const denominator = SafeMath.mul(lowerSqrtPrice, upperSqrtPrice)
+
+    // Calculate L * (√P_upper - √P_lower) / (√P_upper * √P_lower)
+    return mulDiv(liquidity, numerator, denominator, round)
 }
 
 /**
@@ -65,52 +54,28 @@ export function getDeltaAmountQuoteUnsigned(
     liquidity: BN,
     round: Rounding
 ): BN {
-    // Throw error for zero liquidity
+    // Skip calculation for zero liquidity
     if (liquidity.isZero()) {
-        throw new Error('Liquidity cannot be zero')
+        return new BN(0)
     }
 
-    // Throw error for identical prices
-    if (lowerSqrtPrice.eq(upperSqrtPrice)) {
-        throw new Error('InvalidPrice')
-    }
+    // Calculate delta sqrt price: (√P_upper - √P_lower)
+    const deltaSqrtPrice = SafeMath.sub(upperSqrtPrice, lowerSqrtPrice)
 
-    try {
-        // Convert to Decimal for higher precision in one batch
-        const [lowerSqrtPriceDecimal, upperSqrtPriceDecimal, liquidityDecimal] =
-            batchBnToDecimal(lowerSqrtPrice, upperSqrtPrice, liquidity)
+    // Calculate L * (√P_upper - √P_lower)
+    const prod = SafeMath.mul(liquidity, deltaSqrtPrice)
 
-        // Validate inputs
-        if (
-            !lowerSqrtPriceDecimal ||
-            !upperSqrtPriceDecimal ||
-            !liquidityDecimal
-        ) {
-            throw new Error('Failed to convert BN to Decimal')
-        }
-
-        // Batch operations in Decimal
-        const deltaSqrtPrice = upperSqrtPriceDecimal.sub(lowerSqrtPriceDecimal)
-        const denominator = new Decimal(2).pow(RESOLUTION * 2)
-
-        // Calculate with Decimal.js in one operation
-        const result = liquidityDecimal.mul(deltaSqrtPrice).div(denominator)
-
-        // Validate result
-        if (!result.isFinite()) {
-            throw new Error('Invalid calculation result: not finite')
-        }
-
-        // Convert back to BN with appropriate rounding
-        return decimalToBN(result, round)
-    } catch (error: unknown) {
-        console.error('Error in getDeltaAmountQuoteUnsigned:', {
-            lowerSqrtPrice: lowerSqrtPrice.toString(),
-            upperSqrtPrice: upperSqrtPrice.toString(),
-            liquidity: liquidity.toString(),
-            error: error instanceof Error ? error.message : String(error),
-        })
-        throw error
+    // Shift right by RESOLUTION * 2
+    if (round === Rounding.Up) {
+        const denominator = new BN(1).shln(RESOLUTION * 2)
+        // Calculate ceiling division: (a + b - 1) / b
+        const numerator = SafeMath.add(
+            prod,
+            SafeMath.sub(denominator, new BN(1))
+        )
+        return SafeMath.div(numerator, denominator)
+    } else {
+        return SafeMath.shr(prod, RESOLUTION * 2)
     }
 }
 
@@ -166,27 +131,14 @@ export function getNextSqrtPriceFromAmountBaseRoundingUp(
         return sqrtPrice
     }
 
-    // Convert to Decimal for higher precision in one batch
-    const [sqrtPriceDecimal, liquidityDecimal, amountDecimal] =
-        batchBnToDecimal(sqrtPrice, liquidity, amount)
+    // Calculate product: Δx * √P
+    const product = SafeMath.mul(amount, sqrtPrice)
 
-    // Batch operations in Decimal
-    const product = amountDecimal
-        ? amountDecimal.mul(sqrtPriceDecimal ?? new Decimal(0))
-        : new Decimal(0)
-    const denominator = liquidityDecimal
-        ? liquidityDecimal.add(product)
-        : new Decimal(0)
+    // Calculate denominator: L + Δx * √P
+    const denominator = SafeMath.add(liquidity, product)
 
-    // Calculate with Decimal.js in one operation
-    const result = liquidityDecimal
-        ? liquidityDecimal
-              .mul(sqrtPriceDecimal ?? new Decimal(0))
-              .div(denominator)
-        : new Decimal(0)
-
-    // Convert back to BN with ceiling rounding
-    return decimalToBN(result, Rounding.Up)
+    // Calculate √P * L / (L + Δx * √P) with rounding up
+    return mulDiv(liquidity, sqrtPrice, denominator, Rounding.Up)
 }
 
 /**
@@ -207,24 +159,83 @@ export function getNextSqrtPriceFromAmountQuoteRoundingDown(
         return sqrtPrice
     }
 
-    // Convert to Decimal for higher precision in one batch
-    const [sqrtPriceDecimal, liquidityDecimal, amountDecimal] =
-        batchBnToDecimal(sqrtPrice, liquidity, amount)
+    // Calculate quotient: Δy << (RESOLUTION * 2) / L
+    const quotient = SafeMath.div(
+        SafeMath.shl(amount, RESOLUTION * 2),
+        liquidity
+    )
 
-    // Batch operations in Decimal
-    const scaleFactor = new Decimal(2).pow(RESOLUTION * 2)
+    // Calculate √P + quotient
+    return SafeMath.add(sqrtPrice, quotient)
+}
 
-    // Calculate with Decimal.js in one operation
-    const result = sqrtPriceDecimal
-        ? sqrtPriceDecimal.add(
-              amountDecimal
-                  ? amountDecimal
-                        .mul(scaleFactor)
-                        .div(liquidityDecimal ?? new Decimal(0))
-                  : new Decimal(0)
-          )
-        : new Decimal(0)
+/**
+ * Gets the initial liquidity from delta quote
+ * Formula: L = Δb / (√P_upper - √P_lower)
+ * @param quoteAmount Quote amount
+ * @param sqrtMinPrice Minimum sqrt price
+ * @param sqrtPrice Current sqrt price
+ * @returns Initial liquidity
+ */
+export function getInitialLiquidityFromDeltaQuote(
+    quoteAmount: BN,
+    sqrtMinPrice: BN,
+    sqrtPrice: BN
+): BN {
+    const priceDelta = SafeMath.sub(sqrtPrice, sqrtMinPrice)
+    const quoteAmountShifted = SafeMath.shl(quoteAmount, RESOLUTION * 2)
 
-    // Convert back to BN with floor rounding
-    return decimalToBN(result, Rounding.Down)
+    return SafeMath.div(quoteAmountShifted, priceDelta)
+}
+
+/**
+ * Gets the initial liquidity from delta base
+ * Formula: L = Δa / (1/√P_lower - 1/√P_upper)
+ * @param baseAmount Base amount
+ * @param sqrtMaxPrice Maximum sqrt price
+ * @param sqrtPrice Current sqrt price
+ * @returns Initial liquidity
+ */
+export function getInitialLiquidityFromDeltaBase(
+    baseAmount: BN,
+    sqrtMaxPrice: BN,
+    sqrtPrice: BN
+): BN {
+    const priceDelta = SafeMath.sub(sqrtMaxPrice, sqrtPrice)
+    const prod = SafeMath.mul(SafeMath.mul(baseAmount, sqrtPrice), sqrtMaxPrice)
+
+    return SafeMath.div(prod, priceDelta)
+}
+
+/**
+ * Gets the initialize amounts
+ * @param sqrtMinPrice Minimum sqrt price
+ * @param sqrtMaxPrice Maximum sqrt price
+ * @param sqrtPrice Current sqrt price
+ * @param liquidity Liquidity
+ * @returns [base amount, quote amount]
+ */
+export function getInitializeAmounts(
+    sqrtMinPrice: BN,
+    sqrtMaxPrice: BN,
+    sqrtPrice: BN,
+    liquidity: BN
+): [BN, BN] {
+    // BASE TOKEN
+    const amountBase = getDeltaAmountBaseUnsigned(
+        sqrtPrice,
+        sqrtMaxPrice,
+        liquidity,
+        Rounding.Up
+    )
+
+    // QUOTE TOKEN
+    const amountQuote = getDeltaAmountQuoteUnsigned(
+        sqrtMinPrice,
+        sqrtPrice,
+        liquidity,
+        Rounding.Up
+    )
+
+    return [amountBase, amountQuote]
 }

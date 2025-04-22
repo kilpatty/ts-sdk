@@ -1,5 +1,4 @@
 import BN from 'bn.js'
-import Decimal from 'decimal.js'
 import { SafeMath } from './safeMath'
 import { MAX_CURVE_POINT } from '../constants'
 import {
@@ -8,17 +7,14 @@ import {
     getNextSqrtPriceFromInput,
 } from './curve'
 import { getFeeOnAmount } from './feeMath'
-import { bnToDecimal, decimalToBN } from './utilsMath'
-import {
-    TradeDirection,
-    type FeeOnAmountResult,
-    type FeeMode,
-    type SwapAmount,
-} from '../types'
 import {
     Rounding,
+    TradeDirection,
+    type FeeMode,
+    type FeeOnAmountResult,
     type PoolConfig,
     type QuoteResult,
+    type SwapAmount,
     type VirtualPool,
 } from '../types'
 
@@ -98,34 +94,6 @@ export function getSwapResult(
         actualAmountOut = feeResult.amount
     }
 
-    let beforePrice = 0
-    let afterPrice = 0
-
-    try {
-        const sqrtPriceDecimal = new Decimal(poolState.sqrtPrice.toString())
-        const nextSqrtPriceDecimal = new Decimal(
-            swapAmount.nextSqrtPrice.toString()
-        )
-
-        // Square the values
-        const beforePriceDecimal = sqrtPriceDecimal
-            .pow(2)
-            .div(new Decimal(2).pow(128))
-        const afterPriceDecimal = nextSqrtPriceDecimal
-            .pow(2)
-            .div(new Decimal(2).pow(128))
-
-        if (beforePriceDecimal.lte(Number.MAX_SAFE_INTEGER)) {
-            beforePrice = beforePriceDecimal.toNumber()
-        }
-
-        if (afterPriceDecimal.lte(Number.MAX_SAFE_INTEGER)) {
-            afterPrice = afterPriceDecimal.toNumber()
-        }
-    } catch (error) {
-        console.warn('Error calculating price:', error)
-    }
-
     return {
         amountOut: actualAmountOut,
         minimumAmountOut: actualAmountOut,
@@ -136,8 +104,8 @@ export function getSwapResult(
             referral: actualReferralFee,
         },
         price: {
-            beforeSwap: beforePrice,
-            afterSwap: afterPrice,
+            beforeSwap: poolState.sqrtPrice,
+            afterSwap: swapAmount.nextSqrtPrice,
         },
     }
 }
@@ -167,8 +135,8 @@ export function getSwapAmountFromBaseToQuote(
         }
     }
 
-    // Using Decimal.js for tracking total output with higher precision
-    let totalOutputAmountDecimal = new Decimal(0)
+    // Track total output with BN
+    let totalOutputAmount = new BN(0)
     let sqrtPrice = currentSqrtPrice
     let amountLeft = amountIn
 
@@ -208,9 +176,10 @@ export function getSwapAmountFromBaseToQuote(
                     Rounding.Down
                 )
 
-                // Add to total using Decimal.js
-                totalOutputAmountDecimal = totalOutputAmountDecimal.add(
-                    bnToDecimal(outputAmount)
+                // Add to total using BN
+                totalOutputAmount = SafeMath.add(
+                    totalOutputAmount,
+                    outputAmount
                 )
                 sqrtPrice = nextSqrtPrice
                 amountLeft = new BN(0)
@@ -225,9 +194,10 @@ export function getSwapAmountFromBaseToQuote(
                     Rounding.Down
                 )
 
-                // Add to total using Decimal.js
-                totalOutputAmountDecimal = totalOutputAmountDecimal.add(
-                    bnToDecimal(outputAmount)
+                // Add to total using BN
+                totalOutputAmount = SafeMath.add(
+                    totalOutputAmount,
+                    outputAmount
                 )
                 sqrtPrice = nextSqrtPrice
                 amountLeft = SafeMath.sub(amountLeft, maxAmountIn)
@@ -236,7 +206,7 @@ export function getSwapAmountFromBaseToQuote(
     }
 
     // Process remaining amount
-    if (!amountLeft.isZero() && !configState.curve[0]?.liquidity?.isZero()) {
+    if (!amountLeft.isZero() && !configState.curve[0]?.liquidity.isZero()) {
         const nextSqrtPrice = getNextSqrtPriceFromInput(
             sqrtPrice,
             configState.curve[0]?.liquidity ?? new BN(0),
@@ -251,18 +221,10 @@ export function getSwapAmountFromBaseToQuote(
             Rounding.Down
         )
 
-        // Add to total using Decimal.js
-        totalOutputAmountDecimal = totalOutputAmountDecimal.add(
-            bnToDecimal(outputAmount)
-        )
+        // Add to total using BN
+        totalOutputAmount = SafeMath.add(totalOutputAmount, outputAmount)
         sqrtPrice = nextSqrtPrice
     }
-
-    // Convert final Decimal result back to BN
-    const totalOutputAmount = decimalToBN(
-        totalOutputAmountDecimal,
-        Rounding.Down
-    )
 
     return {
         outputAmount: totalOutputAmount,
@@ -296,8 +258,8 @@ export function getSwapAmountFromQuoteToBase(
         }
     }
 
-    // Using Decimal.js for tracking total output with higher precision
-    let totalOutputAmountDecimal = new Decimal(0)
+    // Track total output with BN
+    let totalOutputAmount = new BN(0)
     let sqrtPrice = currentSqrtPrice
     let amountLeft = amountIn
 
@@ -306,9 +268,9 @@ export function getSwapAmountFromQuoteToBase(
         if (i >= configState.curve.length) continue
 
         // Skip if liquidity is zero
-        if (configState.curve[i]?.liquidity?.isZero()) continue
+        if (configState.curve[i]?.liquidity.isZero()) continue
 
-        if (configState.curve[i]?.sqrtPrice?.gt(sqrtPrice)) {
+        if (configState.curve[i]?.sqrtPrice.gt(sqrtPrice)) {
             const maxAmountIn = getDeltaAmountQuoteUnsigned(
                 sqrtPrice,
                 configState.curve[i]?.sqrtPrice ?? new BN(0),
@@ -331,9 +293,10 @@ export function getSwapAmountFromQuoteToBase(
                     Rounding.Down
                 )
 
-                // Add to total using Decimal.js
-                totalOutputAmountDecimal = totalOutputAmountDecimal.add(
-                    bnToDecimal(outputAmount)
+                // Add to total using BN
+                totalOutputAmount = SafeMath.add(
+                    totalOutputAmount,
+                    outputAmount
                 )
                 sqrtPrice = nextSqrtPrice
                 amountLeft = new BN(0)
@@ -348,9 +311,10 @@ export function getSwapAmountFromQuoteToBase(
                     Rounding.Down
                 )
 
-                // Add to total using Decimal.js
-                totalOutputAmountDecimal = totalOutputAmountDecimal.add(
-                    bnToDecimal(outputAmount)
+                // Add to total
+                totalOutputAmount = SafeMath.add(
+                    totalOutputAmount,
+                    outputAmount
                 )
                 sqrtPrice = nextSqrtPrice
                 amountLeft = SafeMath.sub(amountLeft, maxAmountIn)
@@ -362,12 +326,6 @@ export function getSwapAmountFromQuoteToBase(
     if (!amountLeft.isZero()) {
         throw new Error('Not enough liquidity to process the entire amount')
     }
-
-    // Convert final Decimal result back to BN
-    const totalOutputAmount = decimalToBN(
-        totalOutputAmountDecimal,
-        Rounding.Down
-    )
 
     return {
         outputAmount: totalOutputAmount,
@@ -409,7 +367,7 @@ export function getFeeMode(
             feesOnBaseToken = true
         }
     } else {
-        throw new Error('InvalidCollectFeeMode')
+        throw new Error('Invalid collect fee mode')
     }
 
     return {
@@ -423,14 +381,14 @@ export function getFeeMode(
  * Calculate quote for a swap with exact input amount
  * Matches Rust's quote_exact_in function
  */
-export function swapQuote(
+export async function swapQuote(
     virtualPool: VirtualPool,
     config: PoolConfig,
     swapBaseForQuote: boolean,
     amountIn: BN,
     hasReferral: boolean = false,
     currentPoint: BN
-): QuoteResult {
+): Promise<QuoteResult> {
     // Match Rust's validation checks
     if (virtualPool.quoteReserve.gte(config.migrationQuoteThreshold)) {
         throw new Error('Virtual pool is completed')
@@ -452,7 +410,6 @@ export function swapQuote(
         hasReferral
     )
 
-    // Get swap result
     return getSwapResult(
         virtualPool,
         config,

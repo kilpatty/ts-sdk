@@ -436,8 +436,8 @@ export interface QuoteResult {
         referral?: BN
     }
     price: {
-        beforeSwap: number
-        afterSwap: number
+        beforeSwap: BN
+        afterSwap: BN
     }
 }
 
@@ -458,4 +458,10 @@ export interface PrepareSwapParams {
 export interface SwapAmount {
     outputAmount: BN
     nextSqrtPrice: BN
+}
+
+export interface TransferFeeConfig {
+    transferFeeBasisPoints: number
+    maximumFee: bigint
+    epoch: number
 }

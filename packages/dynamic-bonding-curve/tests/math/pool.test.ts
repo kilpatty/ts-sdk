@@ -10,7 +10,7 @@ test('createMockPoolAndConfig with custom parameters', () => {
         baseReserve,
         quoteReserve,
         poolType: 1,
-        cliffFeeNumerator: new BN(30), // 0.3% fee
+        cliffFeeNumerator: new BN(30),
         protocolFeePercent: 20,
     })
 

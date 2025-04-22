@@ -21,15 +21,14 @@ test('Base amount calculation', () => {
         Rounding.Down
     )
 
-    // The actual result is 7 based on the implementation
     expect(result.toString()).toBe('7')
 })
 
 test('Quote amount calculation', () => {
-    // Use much larger liquidity to get non-zero result
+    // Much larger liquidity to get non-zero result
     const lower = Q(1.0)
     const upper = Q(1.0001)
-    const liquidity = new BN(10).pow(new BN(25)) // Much larger value
+    const liquidity = new BN(10).pow(new BN(25))
 
     const result = getDeltaAmountQuoteUnsigned(
         lower,
@@ -38,15 +37,13 @@ test('Quote amount calculation', () => {
         Rounding.Down
     )
 
-    // With larger liquidity, we should now get a non-zero result
     expect(result.gt(new BN(0))).toBe(true)
 })
 
 test('Price update from base input', () => {
-    // Use smaller values to avoid precision issues
     const sqrtPrice = Q(1.0)
     const liquidity = new BN('100000')
-    const amountIn = new BN('50000') // half of liquidity
+    const amountIn = new BN('50000')
 
     const newPrice = getNextSqrtPriceFromInput(
         sqrtPrice,
@@ -55,25 +52,44 @@ test('Price update from base input', () => {
         false
     )
 
-    // Expected: approximately 2/3 of sqrtPrice
-    // Allow 1% margin of error
     const expectedPrice = Q(1.0).mul(new BN(2)).div(new BN(3))
     const diff = newPrice.gt(expectedPrice)
         ? newPrice.sub(expectedPrice)
         : expectedPrice.sub(newPrice)
 
-    // The actual difference is non-zero due to precision
     expect(diff.toString()).toBe('170141183460469231737836218407120622934')
 })
 
 test('Edge case: zero liquidity', () => {
-    expect(() =>
-        getDeltaAmountBaseUnsigned(Q(1), Q(2), new BN(0), Rounding.Down)
-    ).toThrow()
+    // Returns 0 for zero liquidity
+    const result = getDeltaAmountBaseUnsigned(
+        Q(1),
+        Q(2),
+        new BN(0),
+        Rounding.Down
+    )
+    expect(result.isZero()).toBe(true)
 })
 
 test('Edge case: identical prices', () => {
+    // With identical prices, the delta is zero
+    const result = getDeltaAmountQuoteUnsigned(
+        Q(1),
+        Q(1),
+        new BN('1000'),
+        Rounding.Down
+    )
+    expect(result.isZero()).toBe(true)
+})
+
+test('Edge case: zero price', () => {
+    // Test for zero price case which should throw an error
     expect(() =>
-        getDeltaAmountQuoteUnsigned(Q(1), Q(1), new BN('1000'), Rounding.Down)
-    ).toThrow('InvalidPrice')
+        getDeltaAmountBaseUnsigned(
+            new BN(0),
+            Q(1),
+            new BN('1000'),
+            Rounding.Down
+        )
+    ).toThrow('Sqrt price cannot be zero')
 })

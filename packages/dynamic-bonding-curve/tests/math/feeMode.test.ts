@@ -1,11 +1,6 @@
 import { test, expect } from 'bun:test'
 import { getFeeMode } from '../../src/math/swapQuote'
-import { TradeDirection } from '../../src/types'
-
-enum CollectFeeMode {
-    QuoteToken = 0,
-    OutputToken = 1,
-}
+import { CollectFeeMode, TradeDirection } from '../../src/types'
 
 test('fee mode output token base to quote', () => {
     const feeMode = getFeeMode(
@@ -62,7 +57,7 @@ test('invalid collect fee mode', () => {
             TradeDirection.QuoteToBase,
             false
         )
-    ).toThrow('InvalidCollectFeeMode')
+    ).toThrow('Invalid collect fee mode')
 })
 
 test('fee mode default values', () => {

@@ -1,69 +1,10 @@
 import BN from 'bn.js'
-import Decimal from 'decimal.js'
 import { SafeMath } from './safeMath'
+import { RESOLUTION } from '../constants'
 import { Rounding } from '../types'
 
-// Configure Decimal.js for high precision
-Decimal.set({ precision: 64, rounding: Decimal.ROUND_DOWN })
-
 /**
- * Convert BN to Decimal
- * @param bn BN value
- * @returns Decimal value
- */
-export function bnToDecimal(bn: BN): Decimal {
-    return new Decimal(bn.toString())
-}
-
-/**
- * Convert multiple BN values to Decimal
- * @param values BN values
- * @returns Decimal values
- */
-export function batchBnToDecimal(...values: BN[]): Decimal[] {
-    return values.map((bn) => new Decimal(bn.toString()))
-}
-
-/**
- * Convert Decimal to BN
- * @param decimal Decimal value
- * @param round Rounding direction
- * @returns BN value
- */
-export function decimalToBN(
-    decimal: Decimal,
-    round: Rounding = Rounding.Down
-): BN {
-    try {
-        // Ensure the decimal is a valid number
-        if (!decimal.isFinite()) {
-            throw new Error('Invalid decimal value: not finite')
-        }
-
-        // Convert to string and remove any scientific notation
-        const str = decimal.toFixed(0)
-
-        // Validate the string is a valid number
-        if (!/^-?\d+$/.test(str)) {
-            throw new Error(`Invalid decimal string: ${str}`)
-        }
-
-        if (round === Rounding.Up) {
-            return new BN(str)
-        } else {
-            return new BN(str)
-        }
-    } catch (error: unknown) {
-        console.error('Error converting decimal to BN:', {
-            decimal: decimal.toString(),
-            error: error instanceof Error ? error.message : String(error),
-        })
-        throw error
-    }
-}
-
-/**
- * Multiply and divide with rounding using Decimal.js for higher precision
+ * Multiply and divide with rounding using BN
  * @param x First number
  * @param y Second number
  * @param denominator Denominator
@@ -71,68 +12,94 @@ export function decimalToBN(
  * @returns (x * y) / denominator
  */
 export function mulDiv(x: BN, y: BN, denominator: BN, rounding: Rounding): BN {
+    if (denominator.isZero()) {
+        throw new Error('MulDiv: division by zero')
+    }
+
     // For simple cases where precision loss is minimal, use BN directly
     if (denominator.eq(new BN(1)) || x.isZero() || y.isZero()) {
         return x.mul(y)
     }
 
-    // For small numbers where BN math is sufficient, use BN directly
-    if (
-        x.lt(new BN(1000)) &&
-        y.lt(new BN(1000)) &&
-        denominator.lt(new BN(1000))
-    ) {
-        return mulDivBN(x, y, denominator, rounding)
-    }
+    // Create U256-like calculation
+    // We need to handle potential overflow when multiplying x and y
+    // by using a larger representation (similar to U256 in Rust)
+    const xHex = x.toString(16).padStart(32, '0')
+    const yHex = y.toString(16).padStart(32, '0')
 
-    if (denominator.isZero()) {
-        throw new Error('MulDiv: division by zero')
-    }
+    // Split into high and low parts (simulating U256 behavior)
+    const xLow = new BN(xHex.slice(16), 16)
+    const xHigh = new BN(xHex.slice(0, 16), 16)
+    const yLow = new BN(yHex.slice(16), 16)
+    const yHigh = new BN(yHex.slice(0, 16), 16)
 
-    // Convert to Decimal for higher precision in one batch
-    const [xDecimal, yDecimal, denominatorDecimal] = batchBnToDecimal(
-        x,
-        y,
-        denominator
-    )
+    // Calculate product parts
+    const lowLow = xLow.mul(yLow)
+    const lowHigh = xLow.mul(yHigh)
+    const highLow = xHigh.mul(yLow)
+    const highHigh = xHigh.mul(yHigh)
 
-    // Batch operations in Decimal
-    if (!xDecimal || !yDecimal || !denominatorDecimal) {
-        throw new Error('MulDiv: conversion to Decimal failed')
-    }
-    const result = xDecimal.mul(yDecimal).div(denominatorDecimal)
-
-    // Apply rounding and convert back to BN
-    return decimalToBN(
-        rounding === Rounding.Up ? result.ceil() : result.floor(),
-        rounding
-    )
-}
-
-/**
- * BN-based mulDiv implementation for simpler cases
- */
-export function mulDivBN(
-    x: BN,
-    y: BN,
-    denominator: BN,
-    rounding: Rounding
-): BN {
-    if (denominator.isZero()) {
-        throw new Error('MulDiv: division by zero')
-    }
-
-    const prod = SafeMath.mul(x, y)
+    // Combine parts with proper shifting
+    const shift = new BN(2).pow(new BN(64))
+    let prod = lowLow
+    prod = prod.add(lowHigh.mul(shift))
+    prod = prod.add(highLow.mul(shift))
+    prod = prod.add(highHigh.mul(shift).mul(shift))
 
     if (rounding === Rounding.Up) {
         // Calculate ceiling division: (a + b - 1) / b
-        const numerator = SafeMath.add(
-            prod,
-            SafeMath.sub(denominator, new BN(1))
-        )
-        return SafeMath.div(numerator, denominator)
+        const numerator = prod.add(denominator.sub(new BN(1)))
+        return numerator.div(denominator)
     } else {
-        return SafeMath.div(prod, denominator)
+        return prod.div(denominator)
+    }
+}
+
+/**
+ * Multiply and shift right with BN
+ * @param x First number
+ * @param y Second number
+ * @param offset Number of bits to shift
+ * @returns (x * y) >> offset
+ */
+export function mulShr(x: BN, y: BN, offset: number): BN {
+    if (offset === 0 || x.isZero() || y.isZero()) {
+        return x.mul(y)
+    }
+
+    // Create product with BN
+    const prod = SafeMath.mul(x, y)
+
+    // Shift right
+    return SafeMath.shr(prod, offset)
+}
+
+/**
+ * Shift left and divide with BN
+ * @param x First number
+ * @param y Second number
+ * @param offset Number of bits to shift
+ * @param rounding Rounding direction
+ * @returns (x << offset) / y
+ */
+export function shlDiv(x: BN, y: BN, offset: number, rounding: Rounding): BN {
+    if (y.isZero()) {
+        throw new Error('ShlDiv: division by zero')
+    }
+
+    if (offset === 0 || x.isZero()) {
+        return x.div(y)
+    }
+
+    // Shift left
+    const shifted = SafeMath.shl(x, offset)
+
+    if (rounding === Rounding.Up) {
+        // Calculate ceiling division: (a + b - 1) / b
+        const numerator = SafeMath.add(shifted, SafeMath.sub(y, new BN(1)))
+        return SafeMath.div(numerator, y)
+    } else {
+        return SafeMath.div(shifted, y)
     }
 }
 
@@ -151,4 +118,81 @@ export function safeMulDivCastU64(
     rounding: Rounding
 ): BN {
     return mulDiv(x, y, denominator, rounding)
+}
+
+/**
+ * Safe multiplication and division for u128
+ * @param x First number
+ * @param y Second number
+ * @param denominator Denominator
+ * @returns (x * y) / denominator as u128
+ */
+export function safeMulDivCastU128(x: BN, y: BN, denominator: BN): BN {
+    if (denominator.isZero()) {
+        throw new Error('MulDiv: division by zero')
+    }
+
+    // Create U256-like calculation using BN
+    const prod = SafeMath.mul(x, y)
+    return SafeMath.div(prod, denominator)
+}
+
+/**
+ * Safe shift left, division, and casting
+ * @param x First number
+ * @param y Second number
+ * @param offset Number of bits to shift
+ * @param rounding Rounding direction
+ * @returns (x << offset) / y
+ */
+export function safeShlDivCast(
+    x: BN,
+    y: BN,
+    offset: number,
+    rounding: Rounding
+): BN {
+    return shlDiv(x, y, offset, rounding)
+}
+
+/**
+ * Safe multiplication, shift right, and casting
+ * @param x First number
+ * @param y Second number
+ * @param offset Number of bits to shift
+ * @returns (x * y) >> offset
+ */
+export function safeMulShrCast(x: BN, y: BN, offset: number): BN {
+    return mulShr(x, y, offset)
+}
+
+/**
+ * Get delta bin ID
+ * @param binStepU128 Bin step
+ * @param sqrtPriceA First sqrt price
+ * @param sqrtPriceB Second sqrt price
+ * @returns Delta bin ID
+ */
+export function getDeltaBinId(
+    binStepU128: BN,
+    sqrtPriceA: BN,
+    sqrtPriceB: BN
+): BN {
+    const [upperSqrtPrice, lowerSqrtPrice] = sqrtPriceA.gt(sqrtPriceB)
+        ? [sqrtPriceA, sqrtPriceB]
+        : [sqrtPriceB, sqrtPriceA]
+
+    const priceRatio = safeShlDivCast(
+        upperSqrtPrice,
+        lowerSqrtPrice,
+        RESOLUTION,
+        Rounding.Down
+    )
+
+    const ONE_Q64_BN = new BN(1).shln(RESOLUTION)
+    const deltaBinId = SafeMath.div(
+        SafeMath.sub(priceRatio, ONE_Q64_BN),
+        binStepU128
+    )
+
+    return SafeMath.mul(deltaBinId, new BN(2))
 }
