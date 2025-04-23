@@ -1,0 +1,46 @@
+{
+  "name": "@meteora-ag/dynamic-bonding-curve-sdk",
+  "version": "1.0.1",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "source": "src/index.ts",
+  "types": "dist/index.d.ts",
+  "author": "Dann Wee <dann@raccoons.dev>",
+  "keywords": [
+    "meteora-ag",
+    "dynamic-bonding-curve",
+    "damm-v1",
+    "damm-v2",
+    "dynamic-vaults"
+  ],
+  "description": "A Typescript SDK for interacting with the Dynamic Bonding Curve on Meteora.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "clean": "rm -rf node_modules dist"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "devDependencies": {
+    "@meteora-ag/ts-sdk-config": "*",
+    "@types/bun": "latest",
+    "eslint": "^9.24.0",
+    "tsup": "^8.4.0",
+    "tsx": "^4.19.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.31.0",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.98.0",
+    "solana-bankrun": "^0.4.0"
+  }
+}

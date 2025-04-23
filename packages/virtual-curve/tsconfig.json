@@ -1,8 +1,0 @@
-{
-  "extends": "@meteora-ag/ts-sdk-config/tsconfig",
-  "compilerOptions": {
-    "outDir": "dist"
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
-}
