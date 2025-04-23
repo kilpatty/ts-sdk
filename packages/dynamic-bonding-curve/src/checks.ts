@@ -8,6 +8,7 @@ import {
     TokenDecimal,
     TokenType,
     type CreateConfigParam,
+    type PoolConfig,
 } from './types'
 import { PublicKey } from '@solana/web3.js'
 import {
@@ -357,4 +358,17 @@ export function validateConfigParameters(
             throw new Error('Invalid token supply')
         }
     }
+}
+
+/**
+ * Validate that the base token type matches the pool config token type
+ * @param baseTokenType - The base token type from create pool parameters
+ * @param poolConfig - The pool config state
+ * @returns true if the token types match, false otherwise
+ */
+export function validateBaseTokenType(
+    baseTokenType: TokenType,
+    poolConfig: PoolConfig
+): boolean {
+    return baseTokenType === poolConfig.tokenType
 }

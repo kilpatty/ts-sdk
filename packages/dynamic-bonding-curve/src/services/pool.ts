@@ -38,6 +38,7 @@ import {
     wrapSOLInstruction,
 } from '../utils'
 import { swapQuote } from '../math/swapQuote'
+import { validateBaseTokenType } from '../checks'
 
 export class PoolService {
     private connection: Connection
@@ -64,6 +65,10 @@ export class PoolService {
             uri,
             creator,
         } = createPoolParam
+
+        const poolConfigState = await this.programClient.getPoolConfig(config)
+
+        validateBaseTokenType(baseTokenType, poolConfigState)
 
         const eventAuthority = deriveEventAuthority()
         const poolAuthority = derivePoolAuthority(program.programId)
@@ -233,7 +238,8 @@ export class PoolService {
                     owner,
                     inputTokenAccount,
                     owner,
-                    inputMint
+                    inputMint,
+                    inputTokenProgram
                 )
             )
             ixs.push(
@@ -254,7 +260,8 @@ export class PoolService {
                 owner,
                 outputTokenAccount,
                 owner,
-                outputMint
+                outputMint,
+                outputTokenProgram
             )
         )
 
