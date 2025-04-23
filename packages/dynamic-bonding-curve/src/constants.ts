@@ -21,7 +21,7 @@ export const COMMITMENT = 'confirmed'
 
 // Pubkey
 export const DYNAMIC_BONDING_CURVE_PROGRAM_ID = new PublicKey(
-    'virEFLZsQm1iFAs8py1XnziJ67gTzW2bfCWhxNPfccD'
+    'dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN'
 )
 export const METAPLEX_PROGRAM_ID = new PublicKey(
     'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'

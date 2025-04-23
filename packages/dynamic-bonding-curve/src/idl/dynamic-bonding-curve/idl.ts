@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/dynamic_bonding_curve.json`.
  */
 export type DynamicBondingCurve = {
-    address: 'virEFLZsQm1iFAs8py1XnziJ67gTzW2bfCWhxNPfccD'
+    address: 'dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN'
     metadata: {
         name: 'dynamicBondingCurve'
         version: '0.1.0'
@@ -19,7 +19,7 @@ export type DynamicBondingCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'config'
@@ -292,7 +292,7 @@ export type DynamicBondingCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'config'
@@ -612,7 +612,7 @@ export type DynamicBondingCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'baseVault'
@@ -904,7 +904,7 @@ export type DynamicBondingCurve = {
                 },
                 {
                     name: 'poolAuthority'
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'creator'
@@ -1069,7 +1069,7 @@ export type DynamicBondingCurve = {
                 },
                 {
                     name: 'poolAuthority'
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'creator'
@@ -1238,7 +1238,7 @@ export type DynamicBondingCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'pool'
@@ -1367,7 +1367,7 @@ export type DynamicBondingCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'lpMint'
@@ -1584,7 +1584,7 @@ export type DynamicBondingCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'pool'
@@ -1749,7 +1749,7 @@ export type DynamicBondingCurve = {
                 {
                     name: 'poolAuthority'
                     writable: true
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'pool'
@@ -1989,7 +1989,7 @@ export type DynamicBondingCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'config'
@@ -2065,7 +2065,7 @@ export type DynamicBondingCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'config'
@@ -2223,7 +2223,7 @@ export type DynamicBondingCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'config'
@@ -2334,7 +2334,7 @@ export type DynamicBondingCurve = {
             accounts: [
                 {
                     name: 'poolAuthority'
-                    address: 'FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
                 },
                 {
                     name: 'config'
@@ -2722,6 +2722,11 @@ export type DynamicBondingCurve = {
             code: 6032
             name: 'invalidLeftoverAddress'
             msg: 'Invalid leftover address'
+        },
+        {
+            code: 6033
+            name: 'swapAmountIsOverAThreshold'
+            msg: 'Swap amount is over a threshold'
         },
     ]
     types: [

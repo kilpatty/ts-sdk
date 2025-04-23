@@ -1,5 +1,5 @@
 {
-  "address": "virEFLZsQm1iFAs8py1XnziJ67gTzW2bfCWhxNPfccD",
+  "address": "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN",
   "metadata": {
     "name": "dynamic_bonding_curve",
     "version": "0.1.0",
@@ -22,7 +22,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "config",
@@ -336,7 +336,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "config",
@@ -733,7 +733,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "base_vault",
@@ -1082,7 +1082,7 @@
         },
         {
           "name": "pool_authority",
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "creator"
@@ -1270,7 +1270,7 @@
         },
         {
           "name": "pool_authority",
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "creator"
@@ -1468,7 +1468,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "pool",
@@ -1620,7 +1620,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "lp_mint",
@@ -1854,7 +1854,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "pool",
@@ -2046,7 +2046,7 @@
         {
           "name": "pool_authority",
           "writable": true,
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "pool",
@@ -2341,7 +2341,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "config",
@@ -2442,7 +2442,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "config",
@@ -2625,7 +2625,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "config",
@@ -2775,7 +2775,7 @@
       "accounts": [
         {
           "name": "pool_authority",
-          "address": "FDWrKWnAmrmJTGjaS5ztxNT6STuFYaYhgRUZd3MewQeY"
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
         },
         {
           "name": "config",
@@ -3395,6 +3395,11 @@
       "code": 6032,
       "name": "InvalidLeftoverAddress",
       "msg": "Invalid leftover address"
+    },
+    {
+      "code": 6033,
+      "name": "SwapAmountIsOverAThreshold",
+      "msg": "Swap amount is over a threshold"
     }
   ],
   "types": [
