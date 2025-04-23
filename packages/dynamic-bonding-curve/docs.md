@@ -189,6 +189,179 @@ const transaction = await client.partners.createConfig({
 
 ---
 
+### buildAndCreateConstantProductConfig
+
+Builds a new constant product config with majority preconfigured parameters. This creates a new configuration key that will dictate the behavior of all pools created with this key.
+
+#### Function
+
+```typescript
+async buildAndCreateConstantProductConfig(buildAndCreateConstantProductConfigParam: BuildAndCreateConstantProductConfigParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface BuildAndCreateConstantProductConfigParam {
+    constantProductCurveParam: {
+        totalTokenSupply: number
+        percentageSupplyOnMigration: number
+        migrationQuoteThreshold: number
+        migrationOption: number
+        tokenBaseDecimal: number
+        tokenQuoteDecimal: number
+        lockedVesting: {
+            amountPerPeriod: BN
+            cliffDurationFromMigrationTime: BN
+            frequency: BN
+            numberOfPeriod: BN
+            cliffUnlockAmount: BN
+        }
+    }
+    feeClaimer: PublicKey
+    leftoverReceiver: PublicKey
+    payer: PublicKey
+    quoteMint: PublicKey
+    config: PublicKey
+}
+```
+
+#### Returns
+
+A transaction that can be partially signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.partners.buildAndCreateConstantProductConfig({
+    constantProductCurveParam: {
+        totalTokenSupply: 1000000000,
+        percentageSupplyOnMigration: 10,
+        migrationQuoteThreshold: 10000000000,
+        migrationOption: 0,
+        tokenBaseDecimal: 9,
+        tokenQuoteDecimal: 9,
+        lockedVesting: {
+            amountPerPeriod: new BN('0'),
+            cliffDurationFromMigrationTime: new BN('0'),
+            frequency: new BN('0'),
+            numberOfPeriod: new BN('0'),
+            cliffUnlockAmount: new BN('0'),
+        },
+    },
+    feeClaimer: wallet.publicKey,
+    leftoverReceiver: wallet.publicKey,
+    payer: wallet.publicKey,
+    quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
+    config: config.publicKey,
+})
+```
+
+---
+
+### buildAndCreateCustomConstantProductConfig
+
+Builds a new constant product config with customisable parameters. This creates a new configuration key that will dictate the behavior of all pools created with this key.
+
+#### Function
+
+```typescript
+async buildAndCreateCustomConstantProductConfig(buildAndCreateCustomConstantProductConfigParam: BuildAndCreateCustomConstantProductConfigParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface BuildAndCreateCustomConstantProductConfigParam {
+    constantProductCurveParam: {
+        totalTokenSupply: number
+        percentageSupplyOnMigration: number
+        migrationQuoteThreshold: number
+        migrationOption: number
+        tokenBaseDecimal: number
+        tokenQuoteDecimal: number
+        lockedVesting: {
+            amountPerPeriod: BN
+            cliffDurationFromMigrationTime: BN
+            frequency: BN
+            numberOfPeriod: BN
+            cliffUnlockAmount: BN
+        }
+    }
+    feeSchedulerParam: {
+        numberOfPeriod: number
+        reductionFactor: number
+        periodFrequency: number
+        feeSchedulerMode: number
+    }
+    baseFeeBps: number
+    dynamicFeeEnabled: boolean
+    activationType: number
+    collectFeeMode: number
+    migrationFeeOption: number
+    tokenType: number
+    partnerLpPercentage: number
+    creatorLpPercentage: number
+    partnerLockedLpPercentage: number
+    creatorLockedLpPercentage: number
+    feeClaimer: PublicKey
+    leftoverReceiver: PublicKey
+    payer: PublicKey
+    quoteMint: PublicKey
+    config: PublicKey
+}
+```
+
+#### Returns
+
+A transaction that can be partially signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction =
+    await client.partners.buildAndCreateCustomConstantProductConfig({
+        constantProductCurveParam: {
+            totalTokenSupply: 1000000000,
+            percentageSupplyOnMigration: 10,
+            migrationQuoteThreshold: 10000000000,
+            migrationOption: 0,
+            tokenBaseDecimal: 9,
+            tokenQuoteDecimal: 9,
+            lockedVesting: {
+                amountPerPeriod: new BN('0'),
+                cliffDurationFromMigrationTime: new BN('0'),
+                frequency: new BN('0'),
+                numberOfPeriod: new BN('0'),
+                cliffUnlockAmount: new BN('0'),
+            },
+        },
+        feeSchedulerParam: {
+            numberOfPeriod: 0,
+            reductionFactor: 0,
+            periodFrequency: 0,
+            feeSchedulerMode: FeeSchedulerMode.Linear,
+        },
+        baseFeeBps: 2500000,
+        dynamicFeeEnabled: false,
+        activationType: 0,
+        collectFeeMode: 0,
+        migrationFeeOption: 0,
+        tokenType: 0,
+        partnerLpPercentage: 25,
+        creatorLpPercentage: 25,
+        partnerLockedLpPercentage: 25,
+        creatorLockedLpPercentage: 25,
+        feeClaimer: wallet.publicKey,
+        leftoverReceiver: wallet.publicKey,
+        payer: wallet.publicKey,
+        quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
+        config: config.publicKey,
+    })
+```
+
+---
+
 ## Pool Functions
 
 ### createPool
