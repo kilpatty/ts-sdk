@@ -363,6 +363,46 @@ const transaction =
 
 ---
 
+### createPartnerMetadata
+
+Creates a new partner metadata account.
+
+#### Function
+
+```typescript
+async createPartnerMetadata(createPartnerMetadataParam: CreatePartnerMetadataParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface CreatePartnerMetadataParam {
+    name: string
+    website: string
+    logo: string
+    feeClaimer: PublicKey
+    payer: PublicKey
+}
+```
+
+#### Returns
+
+A transaction that can be partially signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.partners.createPartnerMetadata({
+    name: 'Jupiter',
+    website: 'https://jup.ag',
+    logo: 'https://jup.ag/logo.png',
+    feeClaimer: wallet.publicKey,
+    payer: wallet.publicKey,
+})
+```
+
+---
+
 ## Pool Functions
 
 ### createPool
