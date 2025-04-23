@@ -26,7 +26,7 @@ const client = new DynamicBondingCurveClient(connection)
 
 ## Usage
 
-Refer to the [docs](docs.md) for more information.
+Refer to the [docs](./docs.md) for more information.
 
 ### Test
 
