@@ -24,6 +24,12 @@ import { TokenType } from './types'
 import BN from 'bn.js'
 import { COMMITMENT } from './constants'
 
+/**
+ * Get the first key
+ * @param key1 - The first key
+ * @param key2 - The second key
+ * @returns The first key
+ */
 export function getFirstKey(key1: PublicKey, key2: PublicKey) {
     const buf1 = key1.toBuffer()
     const buf2 = key2.toBuffer()
@@ -34,6 +40,12 @@ export function getFirstKey(key1: PublicKey, key2: PublicKey) {
     return buf2
 }
 
+/**
+ * Get the second key
+ * @param key1 - The first key
+ * @param key2 - The second key
+ * @returns The second key
+ */
 export function getSecondKey(key1: PublicKey, key2: PublicKey) {
     const buf1 = key1.toBuffer()
     const buf2 = key2.toBuffer()

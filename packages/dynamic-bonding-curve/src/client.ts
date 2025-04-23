@@ -183,6 +183,32 @@ export class DynamicBondingCurveProgramClient {
 
         return metadata
     }
+
+    /**
+     * Get the progress of the curve by comparing current quote reserve to migration threshold
+     * @param poolAddress - The address of the pool
+     * @returns The progress as a ratio between 0 and 1
+     */
+    async getCurveProgress(poolAddress: PublicKey | string): Promise<number> {
+        const pool = await this.getPool(poolAddress)
+        if (!pool) {
+            throw new Error(`Pool not found: ${poolAddress.toString()}`)
+        }
+
+        const config = await this.getPoolConfig(pool.config)
+        const quoteReserve = pool.quoteReserve
+        const migrationThreshold = config.migrationQuoteThreshold
+
+        // Convert BN to number for calculation
+        const quoteReserveNum = quoteReserve.toNumber()
+        const thresholdNum = migrationThreshold.toNumber()
+
+        // Calculate progress as a ratio
+        const progress = quoteReserveNum / thresholdNum
+
+        // Ensure progress is between 0 and 1
+        return Math.min(Math.max(progress, 0), 1)
+    }
 }
 
 /**

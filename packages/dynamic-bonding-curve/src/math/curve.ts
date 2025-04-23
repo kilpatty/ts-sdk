@@ -20,7 +20,6 @@ export function getDeltaAmountBaseUnsigned(
     liquidity: BN,
     round: Rounding
 ): BN {
-    // Skip calculation for zero liquidity
     if (liquidity.isZero()) {
         return new BN(0)
     }
@@ -29,13 +28,13 @@ export function getDeltaAmountBaseUnsigned(
         throw new Error('Sqrt price cannot be zero')
     }
 
-    // Calculate numerator: (√P_upper - √P_lower)
+    // numerator: (√P_upper - √P_lower)
     const numerator = SafeMath.sub(upperSqrtPrice, lowerSqrtPrice)
 
-    // Calculate denominator: (√P_upper * √P_lower)
+    // denominator: (√P_upper * √P_lower)
     const denominator = SafeMath.mul(lowerSqrtPrice, upperSqrtPrice)
 
-    // Calculate L * (√P_upper - √P_lower) / (√P_upper * √P_lower)
+    // L * (√P_upper - √P_lower) / (√P_upper * √P_lower)
     return mulDiv(liquidity, numerator, denominator, round)
 }
 
@@ -54,21 +53,19 @@ export function getDeltaAmountQuoteUnsigned(
     liquidity: BN,
     round: Rounding
 ): BN {
-    // Skip calculation for zero liquidity
     if (liquidity.isZero()) {
         return new BN(0)
     }
 
-    // Calculate delta sqrt price: (√P_upper - √P_lower)
+    // delta sqrt price: (√P_upper - √P_lower)
     const deltaSqrtPrice = SafeMath.sub(upperSqrtPrice, lowerSqrtPrice)
 
-    // Calculate L * (√P_upper - √P_lower)
+    // L * (√P_upper - √P_lower)
     const prod = SafeMath.mul(liquidity, deltaSqrtPrice)
 
-    // Shift right by RESOLUTION * 2
     if (round === Rounding.Up) {
         const denominator = new BN(1).shln(RESOLUTION * 2)
-        // Calculate ceiling division: (a + b - 1) / b
+        // ceiling division: (a + b - 1) / b
         const numerator = SafeMath.add(
             prod,
             SafeMath.sub(denominator, new BN(1))
@@ -97,7 +94,6 @@ export function getNextSqrtPriceFromInput(
         throw new Error('Price or liquidity cannot be zero')
     }
 
-    // Round off to make sure that we don't pass the target price
     if (baseForQuote) {
         return getNextSqrtPriceFromAmountBaseRoundingUp(
             sqrtPrice,
@@ -126,18 +122,17 @@ export function getNextSqrtPriceFromAmountBaseRoundingUp(
     liquidity: BN,
     amount: BN
 ): BN {
-    // Early return for zero amount
     if (amount.isZero()) {
         return sqrtPrice
     }
 
-    // Calculate product: Δx * √P
+    // Δx * √P
     const product = SafeMath.mul(amount, sqrtPrice)
 
-    // Calculate denominator: L + Δx * √P
+    // L + Δx * √P
     const denominator = SafeMath.add(liquidity, product)
 
-    // Calculate √P * L / (L + Δx * √P) with rounding up
+    // √P * L / (L + Δx * √P) with rounding up
     return mulDiv(liquidity, sqrtPrice, denominator, Rounding.Up)
 }
 
@@ -154,18 +149,17 @@ export function getNextSqrtPriceFromAmountQuoteRoundingDown(
     liquidity: BN,
     amount: BN
 ): BN {
-    // Early return for zero amount
     if (amount.isZero()) {
         return sqrtPrice
     }
 
-    // Calculate quotient: Δy << (RESOLUTION * 2) / L
+    // quotient: Δy << (RESOLUTION * 2) / L
     const quotient = SafeMath.div(
         SafeMath.shl(amount, RESOLUTION * 2),
         liquidity
     )
 
-    // Calculate √P + quotient
+    // √P + quotient
     return SafeMath.add(sqrtPrice, quotient)
 }
 
@@ -221,7 +215,6 @@ export function getInitializeAmounts(
     sqrtPrice: BN,
     liquidity: BN
 ): [BN, BN] {
-    // BASE TOKEN
     const amountBase = getDeltaAmountBaseUnsigned(
         sqrtPrice,
         sqrtMaxPrice,
@@ -229,7 +222,6 @@ export function getInitializeAmounts(
         Rounding.Up
     )
 
-    // QUOTE TOKEN
     const amountQuote = getDeltaAmountQuoteUnsigned(
         sqrtMinPrice,
         sqrtPrice,

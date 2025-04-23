@@ -98,16 +98,16 @@ export class SafeMath {
 export function pow(base: BN, exponent: BN, scaling: boolean = true): BN {
     const ONE = new BN(1).shln(RESOLUTION)
 
-    // Handle special cases
+    // special cases
     if (exponent.isZero()) return ONE
     if (base.isZero()) return new BN(0)
     if (base.eq(ONE)) return ONE
 
-    // Handle negative exponents
+    // handle negative exponent
     const isNegative = exponent.isNeg()
     const absExponent = isNegative ? exponent.neg() : exponent
 
-    // Use binary exponentiation
+    // binary exponentiation
     let result = ONE
     let currentBase = base
     let exp = absExponent
@@ -120,11 +120,11 @@ export function pow(base: BN, exponent: BN, scaling: boolean = true): BN {
         exp = exp.shrn(1)
     }
 
-    // Handle negative exponent
+    // handle negative exponent
     if (isNegative) {
         result = SafeMath.div(ONE.mul(ONE), result)
     }
 
-    // Apply scaling if requested
+    // apply scaling if needed
     return scaling ? result : SafeMath.div(result, ONE)
 }

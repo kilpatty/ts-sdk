@@ -27,12 +27,10 @@ export function getFeeInPeriod(
     reductionFactor: BN,
     period: number
 ): BN {
-    // Early return for period 0
     if (period === 0) {
         return cliffFeeNumerator
     }
 
-    // Early return for period 1 with simple calculation
     if (period === 1) {
         const basisPointMax = new BN(BASIS_POINT_MAX)
         return mulDiv(
@@ -43,10 +41,10 @@ export function getFeeInPeriod(
         )
     }
 
-    // For higher periods, calculate (1-reduction_factor/10_000)^period
+    // calculate (1-reduction_factor/10_000)^period
     const basisPointMax = new BN(BASIS_POINT_MAX)
 
-    // Calculate base = ONE_Q64 - (reductionFactor << RESOLUTION) / BASIS_POINT_MAX
+    // base = ONE_Q64 - (reductionFactor << RESOLUTION) / BASIS_POINT_MAX
     const ONE_Q64 = new BN(1).shln(64)
     const reductionFactorScaled = SafeMath.div(
         SafeMath.shl(reductionFactor, 64),
@@ -54,10 +52,9 @@ export function getFeeInPeriod(
     )
     let base = SafeMath.sub(ONE_Q64, reductionFactorScaled)
 
-    // Binary exponentiation to calculate base^period
     const result = pow(base, new BN(period))
 
-    // Calculate final fee: cliffFeeNumerator * result >> 64
+    // final fee: cliffFeeNumerator * result >> 64
     return SafeMath.div(SafeMath.mul(cliffFeeNumerator, result), ONE_Q64)
 }
 
@@ -79,22 +76,18 @@ export function getCurrentBaseFeeNumerator(
     currentPoint: BN,
     activationPoint: BN
 ): BN {
-    // Early return for zero period frequency
     if (baseFee.periodFrequency.isZero()) {
         return baseFee.cliffFeeNumerator
     }
 
-    // Calculate period
     let period: number
     if (currentPoint.lt(activationPoint)) {
-        // Before activation point, use max period (min fee)
+        // before activation point, use max period (min fee)
         period = baseFee.numberOfPeriod
     } else {
-        // Calculate elapsed periods
         const elapsedPoints = SafeMath.sub(currentPoint, activationPoint)
         const periodCount = SafeMath.div(elapsedPoints, baseFee.periodFrequency)
 
-        // Convert to number for comparison
         period = Math.min(
             parseInt(periodCount.toString()),
             baseFee.numberOfPeriod
@@ -104,7 +97,7 @@ export function getCurrentBaseFeeNumerator(
     const feeSchedulerMode = baseFee.feeSchedulerMode
 
     if (feeSchedulerMode === FeeSchedulerMode.Linear) {
-        // Linear fee calculation: cliffFeeNumerator - period * reductionFactor
+        // linear fee calculation: cliffFeeNumerator - period * reductionFactor
         const reduction = SafeMath.mul(new BN(period), baseFee.reductionFactor)
 
         if (reduction.gt(baseFee.cliffFeeNumerator)) {
@@ -113,7 +106,7 @@ export function getCurrentBaseFeeNumerator(
 
         return SafeMath.sub(baseFee.cliffFeeNumerator, reduction)
     } else if (feeSchedulerMode === FeeSchedulerMode.Exponential) {
-        // For exponential mode, use the optimized getFeeInPeriod function
+        // for exponential mode, use the optimized getFeeInPeriod function
         return getFeeInPeriod(
             baseFee.cliffFeeNumerator,
             baseFee.reductionFactor,
@@ -141,14 +134,14 @@ export function getFeeOnAmount(
     activationPoint: BN,
     volatilityTracker: VolatilityTracker
 ): FeeOnAmountResult {
-    // Get total trading fee
+    // get total trading fee
     const baseFeeNumerator = getCurrentBaseFeeNumerator(
         poolFees.baseFee,
         currentPoint,
         activationPoint
     )
 
-    // Add dynamic fee if enabled
+    // add dynamic fee if enabled
     let totalFeeNumerator = baseFeeNumerator
     if (poolFees.dynamicFee.initialized !== 0) {
         const variableFee = getVariableFee(
@@ -158,12 +151,11 @@ export function getFeeOnAmount(
         totalFeeNumerator = SafeMath.add(totalFeeNumerator, variableFee)
     }
 
-    // Cap at MAX_FEE_NUMERATOR
+    // cap at MAX_FEE_NUMERATOR
     if (totalFeeNumerator.gt(new BN(MAX_FEE_NUMERATOR))) {
         totalFeeNumerator = new BN(MAX_FEE_NUMERATOR)
     }
 
-    // Calculate trading fee
     const tradingFee = mulDiv(
         amount,
         totalFeeNumerator,
@@ -171,10 +163,8 @@ export function getFeeOnAmount(
         Rounding.Up
     )
 
-    // Update amount
     const amountAfterFee = SafeMath.sub(amount, tradingFee)
 
-    // Calculate protocol fee
     const protocolFee = mulDiv(
         tradingFee,
         new BN(poolFees.protocolFeePercent),
@@ -182,10 +172,9 @@ export function getFeeOnAmount(
         Rounding.Down
     )
 
-    // Update trading fee
     const tradingFeeAfterProtocol = SafeMath.sub(tradingFee, protocolFee)
 
-    // Calculate referral fee
+    // referral fee
     let referralFee = new BN(0)
     if (isReferral) {
         referralFee = mulDiv(
@@ -196,7 +185,7 @@ export function getFeeOnAmount(
         )
     }
 
-    // Update protocol fee
+    // update protocol fee
     const protocolFeeAfterReferral = SafeMath.sub(protocolFee, referralFee)
 
     return {
@@ -216,29 +205,26 @@ export function getVariableFee(
     dynamicFee: DynamicFeeConfig,
     volatilityTracker: VolatilityTracker
 ): BN {
-    // Early return if not initialized
     if (dynamicFee.initialized === 0) {
         return new BN(0)
     }
 
-    // Early return if volatility accumulator is zero
     if (volatilityTracker.volatilityAccumulator.isZero()) {
         return new BN(0)
     }
 
-    // Calculate (volatilityAccumulator * binStep)
+    // (volatilityAccumulator * binStep)
     const volatilityTimesBinStep = SafeMath.mul(
         volatilityTracker.volatilityAccumulator,
         new BN(dynamicFee.binStep)
     )
 
-    // Calculate (volatilityAccumulator * binStep)^2
+    // (volatilityAccumulator * binStep)^2
     const squared = SafeMath.mul(volatilityTimesBinStep, volatilityTimesBinStep)
 
-    // Calculate (volatilityAccumulator * binStep)^2 * variableFeeControl
+    // (volatilityAccumulator * binStep)^2 * variableFeeControl
     const vFee = SafeMath.mul(squared, new BN(dynamicFee.variableFeeControl))
 
-    // Scale down to 1e9 unit with ceiling
     const scaleFactor = new BN(100_000_000_000)
     const numerator = SafeMath.add(vFee, SafeMath.sub(scaleFactor, new BN(1)))
     return SafeMath.div(numerator, scaleFactor)

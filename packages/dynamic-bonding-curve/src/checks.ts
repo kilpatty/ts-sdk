@@ -18,6 +18,11 @@ import {
     getSwapAmountWithBuffer,
 } from './common'
 
+/**
+ * Check if the locked vesting is the default
+ * @param lockedVesting - The locked vesting parameters
+ * @returns true if the locked vesting is the default, false otherwise
+ */
 export function isDefaultLockedVesting(lockedVesting: {
     amountPerPeriod: BN
     cliffDurationFromMigrationTime: BN
@@ -34,6 +39,11 @@ export function isDefaultLockedVesting(lockedVesting: {
     )
 }
 
+/**
+ * Validate the pool fees
+ * @param poolFees - The pool fees
+ * @returns true if the pool fees are valid, false otherwise
+ */
 export function validatePoolFees(poolFees: any): boolean {
     if (!poolFees) return false
 
@@ -47,6 +57,13 @@ export function validatePoolFees(poolFees: any): boolean {
     return true
 }
 
+/**
+ * Get the total token supply
+ * @param swapBaseAmount - The swap base amount
+ * @param migrationBaseThreshold - The migration base threshold
+ * @param lockedVestingParams - The locked vesting parameters
+ * @returns The total token supply
+ */
 export function getTotalTokenSupply(
     swapBaseAmount: BN,
     migrationBaseThreshold: BN,
@@ -84,6 +101,11 @@ export function getTotalTokenSupply(
     }
 }
 
+/**
+ * Validate the collect fee mode
+ * @param collectFeeMode - The collect fee mode
+ * @returns true if the collect fee mode is valid, false otherwise
+ */
 export function validateCollectFeeMode(
     collectFeeMode: CollectFeeMode
 ): boolean {
@@ -92,6 +114,12 @@ export function validateCollectFeeMode(
     )
 }
 
+/**
+ * Validate the migration and token type
+ * @param migrationOption - The migration option
+ * @param tokenType - The token type
+ * @returns true if the migration and token type are valid, false otherwise
+ */
 export function validateMigrationAndTokenType(
     migrationOption: MigrationOption,
     tokenType: TokenType
@@ -102,6 +130,11 @@ export function validateMigrationAndTokenType(
     return true
 }
 
+/**
+ * Validate the activation type
+ * @param activationType - The activation type
+ * @returns true if the activation type is valid, false otherwise
+ */
 export function validateActivationType(
     activationType: ActivationType
 ): boolean {
@@ -110,6 +143,11 @@ export function validateActivationType(
     )
 }
 
+/**
+ * Validate the migration fee option
+ * @param migrationFeeOption - The migration fee option
+ * @returns true if the migration fee option is valid, false otherwise
+ */
 export function validateMigrationFeeOption(
     migrationFeeOption: MigrationFeeOption
 ): boolean {
@@ -121,10 +159,23 @@ export function validateMigrationFeeOption(
     ].includes(migrationFeeOption)
 }
 
+/**
+ * Validate the token decimals
+ * @param tokenDecimal - The token decimal
+ * @returns true if the token decimal is valid, false otherwise
+ */
 export function validateTokenDecimals(tokenDecimal: TokenDecimal): boolean {
     return tokenDecimal >= TokenDecimal.SIX && tokenDecimal <= TokenDecimal.NINE
 }
 
+/**
+ * Validate the LP percentages
+ * @param partnerLpPercentage - The partner LP percentage
+ * @param partnerLockedLpPercentage - The partner locked LP percentage
+ * @param creatorLpPercentage - The creator LP percentage
+ * @param creatorLockedLpPercentage - The creator locked LP percentage
+ * @returns true if the LP percentages are valid, false otherwise
+ */
 export function validateLPPercentages(
     partnerLpPercentage: number,
     partnerLockedLpPercentage: number,
@@ -139,6 +190,12 @@ export function validateLPPercentages(
     return totalLPPercentage === 100
 }
 
+/**
+ * Validate the curve
+ * @param curve - The curve
+ * @param sqrtStartPrice - The sqrt start price
+ * @returns true if the curve is valid, false otherwise
+ */
 export function validateCurve(
     curve: Array<{ sqrtPrice: BN; liquidity: BN }>,
     sqrtStartPrice: BN
@@ -177,6 +234,16 @@ export function validateCurve(
     return !curve[curve.length - 1]?.sqrtPrice.gt(new BN(MAX_SQRT_PRICE))
 }
 
+/**
+ * Validate the token supply
+ * @param tokenSupply - The token supply
+ * @param leftoverReceiver - The leftover receiver
+ * @param swapBaseAmount - The swap base amount
+ * @param migrationBaseAmount - The migration base amount
+ * @param lockedVesting - The locked vesting parameters
+ * @param swapBaseAmountBuffer - The swap base amount buffer
+ * @returns true if the token supply is valid, false otherwise
+ */
 export function validateTokenSupply(
     tokenSupply: any,
     leftoverReceiver: PublicKey,
@@ -226,6 +293,10 @@ export function validateTokenSupply(
     )
 }
 
+/**
+ * Validate the config parameters
+ * @param configParam - The config parameters
+ */
 export function validateConfigParameters(
     configParam: Omit<
         CreateConfigParam,

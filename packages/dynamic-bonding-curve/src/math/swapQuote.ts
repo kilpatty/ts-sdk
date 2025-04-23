@@ -1,6 +1,5 @@
 import BN from 'bn.js'
 import { SafeMath } from './safeMath'
-import { MAX_CURVE_POINT } from '../constants'
 import {
     getDeltaAmountBaseUnsigned,
     getDeltaAmountQuoteUnsigned,
@@ -40,7 +39,7 @@ export function getSwapResult(
     let actualTradingFee = new BN(0)
     let actualReferralFee = new BN(0)
 
-    // Apply fees on input if needed
+    // apply fees on input if needed
     let actualAmountIn: BN
     if (feeMode.feesOnInput) {
         const feeResult: FeeOnAmountResult = getFeeOnAmount(
@@ -60,7 +59,7 @@ export function getSwapResult(
         actualAmountIn = amountIn
     }
 
-    // Calculate swap amount
+    // calculate swap amount
     const swapAmount: SwapAmount =
         tradeDirection === TradeDirection.BaseToQuote
             ? getSwapAmountFromBaseToQuote(
@@ -74,7 +73,7 @@ export function getSwapResult(
                   actualAmountIn
               )
 
-    // Apply fees on output if needed
+    // apply fees on output if needed
     let actualAmountOut: BN
     if (feeMode.feesOnInput) {
         actualAmountOut = swapAmount.outputAmount
@@ -127,7 +126,6 @@ export function getSwapAmountFromBaseToQuote(
     currentSqrtPrice: BN,
     amountIn: BN
 ): SwapAmount {
-    // Early return for zero amount
     if (amountIn.isZero()) {
         return {
             outputAmount: new BN(0),
@@ -135,12 +133,12 @@ export function getSwapAmountFromBaseToQuote(
         }
     }
 
-    // Track total output with BN
+    // track total output with BN
     let totalOutputAmount = new BN(0)
     let sqrtPrice = currentSqrtPrice
     let amountLeft = amountIn
 
-    // Iterate through the curve points in reverse order
+    // iterate through the curve points in reverse order
     for (let i = configState.curve.length - 1; i >= 0; i--) {
         if (
             configState.curve[i].sqrtPrice.isZero() ||
@@ -150,13 +148,13 @@ export function getSwapAmountFromBaseToQuote(
         }
 
         if (configState.curve[i].sqrtPrice.lt(sqrtPrice)) {
-            // Get the current liquidity
+            // get the current liquidity
             const currentLiquidity =
                 i + 1 < configState.curve.length
                     ? configState.curve[i + 1].liquidity
                     : configState.curve[i].liquidity
 
-            // Skip if liquidity is zero
+            // skip if liquidity is zero
             if (currentLiquidity.isZero()) continue
 
             const maxAmountIn = getDeltaAmountBaseUnsigned(
@@ -181,7 +179,7 @@ export function getSwapAmountFromBaseToQuote(
                     Rounding.Down
                 )
 
-                // Add to total using BN
+                // add to total
                 totalOutputAmount = SafeMath.add(
                     totalOutputAmount,
                     outputAmount
@@ -198,7 +196,7 @@ export function getSwapAmountFromBaseToQuote(
                     Rounding.Down
                 )
 
-                // Add to total using BN
+                // add to total
                 totalOutputAmount = SafeMath.add(
                     totalOutputAmount,
                     outputAmount
@@ -209,7 +207,6 @@ export function getSwapAmountFromBaseToQuote(
         }
     }
 
-    // Process remaining amount
     if (!amountLeft.isZero() && !configState.curve[0].liquidity.isZero()) {
         const nextSqrtPrice = getNextSqrtPriceFromInput(
             sqrtPrice,
@@ -225,7 +222,7 @@ export function getSwapAmountFromBaseToQuote(
             Rounding.Down
         )
 
-        // Add to total using BN
+        // add to total
         totalOutputAmount = SafeMath.add(totalOutputAmount, outputAmount)
         sqrtPrice = nextSqrtPrice
     }
@@ -254,7 +251,6 @@ export function getSwapAmountFromQuoteToBase(
     currentSqrtPrice: BN,
     amountIn: BN
 ): SwapAmount {
-    // Early return for zero amount
     if (amountIn.isZero()) {
         return {
             outputAmount: new BN(0),
@@ -262,12 +258,11 @@ export function getSwapAmountFromQuoteToBase(
         }
     }
 
-    // Track total output with BN
     let totalOutputAmount = new BN(0)
     let sqrtPrice = currentSqrtPrice
     let amountLeft = amountIn
 
-    // Iterate through the curve points
+    // iterate through the curve points
     for (let i = 0; i < configState.curve.length; i++) {
         if (
             configState.curve[i].sqrtPrice.isZero() ||
@@ -276,7 +271,7 @@ export function getSwapAmountFromQuoteToBase(
             break
         }
 
-        // Skip if liquidity is zero
+        // skip if liquidity is zero
         if (configState.curve[i].liquidity.isZero()) continue
 
         if (configState.curve[i].sqrtPrice.gt(sqrtPrice)) {
@@ -302,7 +297,6 @@ export function getSwapAmountFromQuoteToBase(
                     Rounding.Down
                 )
 
-                // Add to total using BN
                 totalOutputAmount = SafeMath.add(
                     totalOutputAmount,
                     outputAmount
@@ -319,7 +313,6 @@ export function getSwapAmountFromQuoteToBase(
                     Rounding.Down
                 )
 
-                // Add to total
                 totalOutputAmount = SafeMath.add(
                     totalOutputAmount,
                     outputAmount
@@ -330,7 +323,7 @@ export function getSwapAmountFromQuoteToBase(
         }
     }
 
-    // Check if all amount was processed
+    // check if all amount was processed
     if (!amountLeft.isZero()) {
         throw new Error('Not enough liquidity to process the entire amount')
     }
@@ -357,7 +350,6 @@ export function getFeeMode(
     let feesOnBaseToken: boolean
 
     if (collectFeeMode === 0) {
-        // QuoteToken
         if (tradeDirection === TradeDirection.BaseToQuote) {
             feesOnInput = false
             feesOnBaseToken = false
@@ -366,7 +358,6 @@ export function getFeeMode(
             feesOnBaseToken = false
         }
     } else if (collectFeeMode === 1) {
-        // OutputToken
         if (tradeDirection === TradeDirection.BaseToQuote) {
             feesOnInput = false
             feesOnBaseToken = false
@@ -397,7 +388,6 @@ export async function swapQuote(
     hasReferral: boolean = false,
     currentPoint: BN
 ): Promise<QuoteResult> {
-    // Match Rust's validation checks
     if (virtualPool.quoteReserve.gte(config.migrationQuoteThreshold)) {
         throw new Error('Virtual pool is completed')
     }
@@ -406,12 +396,10 @@ export async function swapQuote(
         throw new Error('Amount is zero')
     }
 
-    // Match Rust's trade direction determination
     const tradeDirection = swapBaseForQuote
         ? TradeDirection.BaseToQuote
         : TradeDirection.QuoteToBase
 
-    // Get fee mode using Rust's logic
     const feeMode = getFeeMode(
         config.collectFeeMode,
         tradeDirection,

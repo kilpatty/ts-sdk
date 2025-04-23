@@ -17,24 +17,18 @@ export function mulDiv(x: BN, y: BN, denominator: BN, rounding: Rounding): BN {
         throw new Error('MulDiv: division by zero')
     }
 
-    // For simple cases, use BN directly
     if (denominator.eq(new BN(1)) || x.isZero() || y.isZero()) {
         return x.mul(y)
     }
 
-    try {
-        // Calculate the product
-        const prod = x.mul(y)
+    const prod = x.mul(y)
 
-        if (rounding === Rounding.Up) {
-            // Calculate ceiling division: (prod + denominator - 1) / denominator
-            const numerator = prod.add(denominator.sub(new BN(1)))
-            return numerator.div(denominator)
-        } else {
-            return prod.div(denominator)
-        }
-    } catch (error) {
-        throw new Error('MulDiv: overflow occurred')
+    if (rounding === Rounding.Up) {
+        // Calculate ceiling division: (prod + denominator - 1) / denominator
+        const numerator = prod.add(denominator.sub(new BN(1)))
+        return numerator.div(denominator)
+    } else {
+        return prod.div(denominator)
     }
 }
 
@@ -50,9 +44,7 @@ export function mulShr(x: BN, y: BN, offset: number): BN {
         return x.mul(y)
     }
 
-    // Create product with BN
     const prod = SafeMath.mul(x, y)
 
-    // Shift right
     return SafeMath.shr(prod, offset)
 }

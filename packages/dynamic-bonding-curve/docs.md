@@ -5,8 +5,8 @@
 - [Partner Functions](#partner-functions)
 
     - [createConfig](#createConfig)
-    - [createConstantProductConfigWithLockVesting](#createConstantProductConfigWithLockVesting)
-    - [createConstantProductConfigWithoutLockVesting](#createConstantProductConfigWithoutLockVesting)
+    - [buildAndCreateConstantProductConfig](#buildAndCreateConstantProductConfig)
+    - [buildAndCreateCustomConstantProductConfig](#buildAndCreateCustomConstantProductConfig)
     - [createPartnerMetadata](#createPartnerMetadata)
     - [claimTradingFee](#claimTradingFee)
     - [partnerWithdrawSurplus](#partnerWithdrawSurplus)
