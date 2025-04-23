@@ -1,5 +1,5 @@
 import BN from 'bn.js'
-import { SafeMath } from './safeMath'
+import { pow, SafeMath } from './safeMath'
 import { safeMulDivCastU64, mulDiv } from './utilsMath'
 import {
     BASIS_POINT_MAX,
@@ -56,16 +56,7 @@ export function getFeeInPeriod(
     let base = SafeMath.sub(ONE_Q64, reductionFactorScaled)
 
     // Binary exponentiation to calculate base^period
-    let result = ONE_Q64
-    let exp = period
-
-    while (exp > 0) {
-        if (exp & 1) {
-            result = SafeMath.div(SafeMath.mul(result, base), ONE_Q64)
-        }
-        base = SafeMath.div(SafeMath.mul(base, base), ONE_Q64)
-        exp >>= 1
-    }
+    const result = pow(base, new BN(period))
 
     // Calculate final fee: cliffFeeNumerator * result >> 64
     return SafeMath.div(SafeMath.mul(cliffFeeNumerator, result), ONE_Q64)

@@ -141,8 +141,13 @@ export function getSwapAmountFromBaseToQuote(
     let amountLeft = amountIn
 
     // Iterate through the curve points in reverse order
-    for (let i = MAX_CURVE_POINT - 1; i >= 0; i--) {
-        if (i >= configState.curve.length) continue
+    for (let i = configState.curve.length - 1; i >= 0; i--) {
+        if (
+            configState.curve[i]?.sqrtPrice.isZero() ||
+            configState.curve[i]?.liquidity.isZero()
+        ) {
+            continue
+        }
 
         if (configState.curve[i]?.sqrtPrice.lt(sqrtPrice)) {
             // Get the current liquidity
@@ -264,8 +269,13 @@ export function getSwapAmountFromQuoteToBase(
     let amountLeft = amountIn
 
     // Iterate through the curve points
-    for (let i = 0; i < MAX_CURVE_POINT; i++) {
-        if (i >= configState.curve.length) continue
+    for (let i = 0; i < configState.curve.length; i++) {
+        if (
+            configState.curve[i]?.sqrtPrice.isZero() ||
+            configState.curve[i]?.liquidity.isZero()
+        ) {
+            break
+        }
 
         // Skip if liquidity is zero
         if (configState.curve[i]?.liquidity.isZero()) continue

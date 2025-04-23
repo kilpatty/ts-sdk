@@ -129,6 +129,40 @@ export function derivePool(
     return pool
 }
 
+export function deriveTokenPool(
+    quoteMint: PublicKey,
+    baseMint: PublicKey,
+    config: PublicKey,
+    programId: PublicKey,
+    tokenProgram?: PublicKey
+): PublicKey {
+    const isQuoteMintBiggerThanBaseMint =
+        new PublicKey(quoteMint)
+            .toBuffer()
+            .compare(new Uint8Array(new PublicKey(baseMint).toBuffer())) > 0
+
+    // Add token program to seeds if provided
+    const seeds = [
+        Buffer.from(SEED.POOL),
+        new PublicKey(config).toBuffer(),
+        isQuoteMintBiggerThanBaseMint
+            ? new PublicKey(quoteMint).toBuffer()
+            : new PublicKey(baseMint).toBuffer(),
+        isQuoteMintBiggerThanBaseMint
+            ? new PublicKey(baseMint).toBuffer()
+            : new PublicKey(quoteMint).toBuffer(),
+    ]
+
+    // Add token program to seeds if provided
+    if (tokenProgram) {
+        seeds.push(tokenProgram.toBuffer())
+    }
+
+    const [pool] = PublicKey.findProgramAddressSync(seeds, programId)
+
+    return pool
+}
+
 /**
  * Derive the DAMM pool address
  * @param config - The config

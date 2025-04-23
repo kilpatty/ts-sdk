@@ -4,4 +4,4 @@ export * from './types'
 
 export * from './constants'
 
-export * from './design'
+export * from './build'

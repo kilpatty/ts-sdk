@@ -2,8 +2,8 @@ import Decimal from 'decimal.js'
 import BN from 'bn.js'
 import {
     type ConfigParameters,
-    type DesignConstantProductCurveParam,
-    type DesignCustomConstantProductCurveParam,
+    type BuildConstantProductCurveParam,
+    type BuildCustomConstantProductCurveParam,
 } from './types'
 import { MAX_SQRT_PRICE } from './constants'
 import {
@@ -16,12 +16,12 @@ import {
 import { getInitialLiquidityFromDeltaBase } from './math/curve'
 
 /**
- * Design a constant product curve
- * @param designConstantProductCurveParam - The parameters for the constant product curve
- * @returns The design constant product curve
+ * Build a constant product curve
+ * @param buildConstantProductCurveParam - The parameters for the constant product curve
+ * @returns The build constant product curve
  */
-export function designConstantProductCurve(
-    designConstantProductCurveParam: DesignConstantProductCurveParam
+export function buildConstantProductCurve(
+    buildConstantProductCurveParam: BuildConstantProductCurveParam
 ): ConfigParameters {
     const {
         totalTokenSupply,
@@ -31,7 +31,7 @@ export function designConstantProductCurve(
         tokenBaseDecimal,
         tokenQuoteDecimal,
         lockedVesting,
-    } = designConstantProductCurveParam
+    } = buildConstantProductCurveParam
 
     const migrationBaseSupply = new BN(totalTokenSupply)
         .mul(new BN(percentageSupplyOnMigration))
@@ -132,12 +132,12 @@ export function designConstantProductCurve(
 }
 
 /**
- * Design a custom constant product curve
- * @param designCustomConstantProductCurveParam - The parameters for the custom constant product curve
- * @returns The design custom constant product curve
+ * Build a custom constant product curve
+ * @param buildCustomConstantProductCurveParam - The parameters for the custom constant product curve
+ * @returns The build custom constant product curve
  */
-export function designCustomConstantProductCurve(
-    designCustomConstantProductCurveParam: DesignCustomConstantProductCurveParam
+export function buildCustomConstantProductCurve(
+    buildCustomConstantProductCurveParam: BuildCustomConstantProductCurveParam
 ): ConfigParameters {
     const {
         totalTokenSupply,
@@ -147,14 +147,14 @@ export function designCustomConstantProductCurve(
         tokenBaseDecimal,
         tokenQuoteDecimal,
         lockedVesting,
-    } = designCustomConstantProductCurveParam.constantProductCurveParam
+    } = buildCustomConstantProductCurveParam.constantProductCurveParam
 
     const {
         numberOfPeriod,
         reductionFactor,
         periodFrequency,
         feeSchedulerMode,
-    } = designCustomConstantProductCurveParam.feeSchedulerParam
+    } = buildCustomConstantProductCurveParam.feeSchedulerParam
 
     const {
         baseFeeBps,
@@ -167,7 +167,7 @@ export function designCustomConstantProductCurve(
         creatorLpPercentage,
         partnerLockedLpPercentage,
         creatorLockedLpPercentage,
-    } = designCustomConstantProductCurveParam
+    } = buildCustomConstantProductCurveParam
 
     const migrationBaseSupply = new BN(totalTokenSupply)
         .mul(new BN(percentageSupplyOnMigration))

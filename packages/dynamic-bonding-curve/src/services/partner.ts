@@ -1,4 +1,5 @@
 import {
+    PublicKey,
     SystemProgram,
     TransactionInstruction,
     type Connection,
@@ -6,12 +7,16 @@ import {
 } from '@solana/web3.js'
 import type { DynamicBondingCurveProgramClient } from '../client'
 import {
+    ActivationType,
+    CollectFeeMode,
+    MigrationFeeOption,
+    MigrationOption,
     TokenType,
     type ClaimTradingFeeParam,
     type ConfigParameters,
     type CreateConfigParam,
-    type CreateConstantProductConfigParam,
-    type CreateCustomConstantProductConfigParam,
+    type BuildAndCreateConstantProductConfigParam,
+    type BuildAndCreateCustomConstantProductConfigParam,
     type CreatePartnerMetadataParam,
     type CreatePartnerMetadataParameters,
     type PartnerWithdrawSurplusParam,
@@ -29,10 +34,32 @@ import {
     TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 import { findAssociatedTokenAddress, unwrapSOLInstruction } from '../utils'
+import BN from 'bn.js'
+import { MAX_CURVE_POINT, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '../constants'
 import {
-    designConstantProductCurve,
-    designCustomConstantProductCurve,
-} from '../design'
+    getTotalTokenSupply,
+    isDefaultLockedVesting,
+    validateActivationType,
+    validateCollectFeeMode,
+    validateConfigParameters,
+    validateCurve,
+    validateLPPercentages,
+    validateMigrationAndTokenType,
+    validateMigrationFeeOption,
+    validatePoolFees,
+    validateTokenDecimals,
+    validateTokenSupply,
+} from '../checks'
+import {
+    getBaseTokenForSwap,
+    getMigrationBaseToken,
+    getMigrationThresholdPrice,
+    getSwapAmountWithBuffer,
+} from '../common'
+import {
+    buildConstantProductCurve,
+    buildCustomConstantProductCurve,
+} from '../build'
 
 export class PartnerService {
     private connection: Connection
@@ -62,6 +89,9 @@ export class PartnerService {
 
         const eventAuthority = deriveEventAuthority()
 
+        // error checks
+        validateConfigParameters({ ...configParam, leftoverReceiver })
+
         const accounts = {
             config,
             feeClaimer,
@@ -79,12 +109,12 @@ export class PartnerService {
     }
 
     /**
-     * Create a new constant product config
-     * @param createConstantProductConfigParam - The parameters for the constant product config
+     * Build and create a new constant product config
+     * @param buildAndCreateConstantProductConfigParam - The parameters for the constant product config
      * @returns A new constant product config
      */
-    async createConstantProductConfig(
-        createConstantProductConfigParam: CreateConstantProductConfigParam
+    async buildAndCreateConstantProductConfig(
+        buildAndCreateConstantProductConfigParam: BuildAndCreateConstantProductConfigParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
 
@@ -95,14 +125,20 @@ export class PartnerService {
             payer,
             quoteMint,
             config,
-        } = createConstantProductConfigParam
+        } = buildAndCreateConstantProductConfigParam
 
         const eventAuthority = deriveEventAuthority()
 
         const constantProductCurveConfig: ConfigParameters =
-            designConstantProductCurve({
+            buildConstantProductCurve({
                 ...constantProductCurveParam,
             })
+
+        // error checks
+        validateConfigParameters({
+            ...constantProductCurveConfig,
+            leftoverReceiver,
+        })
 
         const accounts = {
             config,
@@ -121,12 +157,12 @@ export class PartnerService {
     }
 
     /**
-     * Create a new custom constant product config
-     * @param createCustomConstantProductConfigParam - The parameters for the custom constant product config
+     * Build and create a new custom constant product config
+     * @param buildAndCreateCustomConstantProductConfigParam - The parameters for the custom constant product config
      * @returns A new custom constant product config
      */
-    async createCustomConstantProductConfig(
-        createCustomConstantProductConfigParam: CreateCustomConstantProductConfigParam
+    async buildAndCreateCustomConstantProductConfig(
+        buildAndCreateCustomConstantProductConfigParam: BuildAndCreateCustomConstantProductConfigParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
 
@@ -137,14 +173,20 @@ export class PartnerService {
             payer,
             quoteMint,
             config,
-        } = createCustomConstantProductConfigParam
+        } = buildAndCreateCustomConstantProductConfigParam
 
         const eventAuthority = deriveEventAuthority()
 
         const customConstantProductCurveConfig: ConfigParameters =
-            designCustomConstantProductCurve({
+            buildCustomConstantProductCurve({
                 ...customConstantProductCurveParam,
             })
+
+        // error checks
+        validateConfigParameters({
+            ...customConstantProductCurveConfig,
+            leftoverReceiver,
+        })
 
         const accounts = {
             config,

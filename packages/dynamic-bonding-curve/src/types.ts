@@ -175,12 +175,6 @@ export enum MigrationFeeOption {
 }
 
 export enum TokenDecimal {
-    ZERO = 0,
-    ONE = 1,
-    TWO = 2,
-    THREE = 3,
-    FOUR = 4,
-    FIVE = 5,
     SIX = 6,
     SEVEN = 7,
     EIGHT = 8,
@@ -221,7 +215,7 @@ export type FeeSchedulerParameters = {
     feeSchedulerMode: FeeSchedulerMode
 }
 
-export type DesignConstantProductCurveParam = {
+export type BuildConstantProductCurveParam = {
     totalTokenSupply: number
     percentageSupplyOnMigration: number
     migrationQuoteThreshold: number
@@ -231,8 +225,8 @@ export type DesignConstantProductCurveParam = {
     lockedVesting: LockedVestingParameters
 }
 
-export type DesignCustomConstantProductCurveParam = {
-    constantProductCurveParam: DesignConstantProductCurveParam
+export type BuildCustomConstantProductCurveParam = {
+    constantProductCurveParam: BuildConstantProductCurveParam
     feeSchedulerParam: FeeSchedulerParameters
     baseFeeBps: number
     dynamicFeeEnabled: boolean
@@ -246,8 +240,8 @@ export type DesignCustomConstantProductCurveParam = {
     creatorLockedLpPercentage: number
 }
 
-export type CreateConstantProductConfigParam = {
-    constantProductCurveParam: DesignConstantProductCurveParam
+export type BuildAndCreateConstantProductConfigParam = {
+    constantProductCurveParam: BuildConstantProductCurveParam
     feeClaimer: PublicKey
     leftoverReceiver: PublicKey
     payer: PublicKey
@@ -255,8 +249,8 @@ export type CreateConstantProductConfigParam = {
     config: PublicKey
 }
 
-export type CreateCustomConstantProductConfigParam = {
-    customConstantProductCurveParam: DesignCustomConstantProductCurveParam
+export type BuildAndCreateCustomConstantProductConfigParam = {
+    customConstantProductCurveParam: BuildCustomConstantProductCurveParam
     feeClaimer: PublicKey
     leftoverReceiver: PublicKey
     payer: PublicKey
