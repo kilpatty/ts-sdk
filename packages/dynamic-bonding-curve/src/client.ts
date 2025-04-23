@@ -18,6 +18,7 @@ import BN from 'bn.js'
 import { PoolService } from './services/pool'
 import { MigrationService } from './services/migration'
 import { PartnerService } from './services/partner'
+import { COMMITMENT } from './constants'
 
 export class DynamicBondingCurveProgramClient {
     private program: Program<DynamicBondingCurveIDL>
@@ -89,7 +90,7 @@ export class DynamicBondingCurveProgramClient {
                 await this.program.provider.connection.getSignaturesForAddress(
                     config.publicKey,
                     { limit: 1 },
-                    'confirmed'
+                    COMMITMENT
                 )
             return signatures[0]?.blockTime
                 ? new Date(signatures[0].blockTime * 1000)

@@ -22,6 +22,7 @@ import {
 } from '@solana/spl-token'
 import { TokenType } from './types'
 import BN from 'bn.js'
+import { COMMITMENT } from './constants'
 
 export function getFirstKey(key1: PublicKey, key2: PublicKey) {
     const buf1 = key1.toBuffer()
@@ -50,7 +51,7 @@ export function getSecondKey(key1: PublicKey, key2: PublicKey) {
  */
 export function createProgram(connection: Connection) {
     const provider = new AnchorProvider(connection, null as unknown as Wallet, {
-        commitment: 'confirmed',
+        commitment: COMMITMENT,
     })
     const program = new Program<DynamicBondingCurve>(
         DynamicBondingCurveIDL,
@@ -69,7 +70,7 @@ export function createVaultProgram(
     connection: Connection
 ): Program<DynamicVault> {
     const provider = new AnchorProvider(connection, null as unknown as Wallet, {
-        commitment: 'confirmed',
+        commitment: COMMITMENT,
     })
 
     const program = new Program<DynamicVault>(DynamicVaultIDL, provider)
@@ -83,7 +84,7 @@ export function createVaultProgram(
  */
 export function createDammV1Program(connection: Connection): Program<DammV1> {
     const provider = new AnchorProvider(connection, null as unknown as Wallet, {
-        commitment: 'confirmed',
+        commitment: COMMITMENT,
     })
 
     const program = new Program<DammV1>(DammV1IDL, provider)

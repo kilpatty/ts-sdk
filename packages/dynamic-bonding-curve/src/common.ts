@@ -187,7 +187,7 @@ export function getBaseTokenForSwap(
         const lowerSqrtPrice = i == 0 ? sqrtStartPrice : curve[i - 1]?.sqrtPrice
         if (curve[i]?.sqrtPrice && curve[i]?.sqrtPrice.gt(sqrtMigrationPrice)) {
             const deltaAmount = getDeltaAmountBase(
-                lowerSqrtPrice ?? new BN(1),
+                lowerSqrtPrice ?? new BN(0),
                 sqrtMigrationPrice,
                 curve[i]?.liquidity ?? new BN(0)
             )
@@ -195,7 +195,7 @@ export function getBaseTokenForSwap(
             break
         } else {
             const deltaAmount = getDeltaAmountBase(
-                lowerSqrtPrice ?? new BN(1),
+                lowerSqrtPrice ?? new BN(0),
                 curve[i]?.sqrtPrice ?? new BN(0),
                 curve[i]?.liquidity ?? new BN(0)
             )
