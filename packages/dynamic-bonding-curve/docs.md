@@ -38,6 +38,7 @@
     - [getPartnerMetadata](#getPartnerMetadata)
     - [getDammV1MigrationMetadata](#getDammV1MigrationMetadata)
     - [getLockedLpTokenAmount](#getLockedLpTokenAmount)
+    - [getCurveProgress](#getCurveProgress)
 
 ---
 
