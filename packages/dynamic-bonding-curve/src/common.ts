@@ -15,6 +15,7 @@ import type { DynamicVault } from './idl/dynamic-vault/idl'
 import type { Program } from '@coral-xyz/anchor'
 import type { DammV1 } from './idl/damm-v1/idl'
 import {
+    MigrationOption,
     Rounding,
     type LiquidityDistributionParameters,
     type LockedVestingParameters,
@@ -184,20 +185,20 @@ export function getBaseTokenForSwap(
 ): BN {
     let totalAmount = new BN(0)
     for (let i = 0; i < curve.length; i++) {
-        const lowerSqrtPrice = i == 0 ? sqrtStartPrice : curve[i - 1]?.sqrtPrice
-        if (curve[i]?.sqrtPrice && curve[i]?.sqrtPrice.gt(sqrtMigrationPrice)) {
+        const lowerSqrtPrice = i == 0 ? sqrtStartPrice : curve[i - 1].sqrtPrice
+        if (curve[i].sqrtPrice && curve[i].sqrtPrice.gt(sqrtMigrationPrice)) {
             const deltaAmount = getDeltaAmountBase(
-                lowerSqrtPrice ?? new BN(0),
+                lowerSqrtPrice,
                 sqrtMigrationPrice,
-                curve[i]?.liquidity ?? new BN(0)
+                curve[i].liquidity
             )
             totalAmount = totalAmount.add(deltaAmount)
             break
         } else {
             const deltaAmount = getDeltaAmountBase(
-                lowerSqrtPrice ?? new BN(0),
-                curve[i]?.sqrtPrice ?? new BN(0),
-                curve[i]?.liquidity ?? new BN(0)
+                lowerSqrtPrice,
+                curve[i].sqrtPrice,
+                curve[i].liquidity
             )
             totalAmount = totalAmount.add(deltaAmount)
         }
@@ -228,30 +229,6 @@ export function getDeltaAmountBase(
 }
 
 /**
- * Adds a buffer to the liquidity to ensure large swaps don't fail
- * @param liquidity Original liquidity
- * @param migrationSqrtPrice The migration sqrt price
- * @param maxSqrtPrice The maximum sqrt price
- * @returns Liquidity with buffer
- */
-export function getLiquidityBuffer(
-    liquidity: BN,
-    migrationSqrtPrice: BN,
-    maxSqrtPrice: BN
-): BN {
-    // (max-min)
-    const priceDiff = maxSqrtPrice.sub(migrationSqrtPrice)
-
-    // (max*min)
-    const priceProduct = maxSqrtPrice.mul(migrationSqrtPrice)
-
-    // swap_buffer_amount = liquidity * (max-min) / (max*min)
-    const bufferSwapAmount = liquidity.mul(priceDiff).div(priceProduct)
-
-    return bufferSwapAmount
-}
-
-/**
  * Get the base token for migration
  * @param migrationQuoteThreshold - The migration quote threshold
  * @param sqrtMigrationPrice - The migration sqrt price
@@ -261,9 +238,9 @@ export function getLiquidityBuffer(
 export const getMigrationBaseToken = (
     migrationQuoteThreshold: BN,
     sqrtMigrationPrice: BN,
-    migrationOption: number
+    migrationOption: MigrationOption
 ): BN => {
-    if (migrationOption == 0) {
+    if (migrationOption == MigrationOption.MET_DAMM) {
         const price = sqrtMigrationPrice.mul(sqrtMigrationPrice)
         const quote = migrationQuoteThreshold.shln(128)
         const { div: baseDiv, mod } = quote.divmod(price)
@@ -272,7 +249,7 @@ export const getMigrationBaseToken = (
             div = div.add(new BN(1))
         }
         return div
-    } else if (migrationOption == 1) {
+    } else if (migrationOption == MigrationOption.MET_DAMM_V2) {
         const liquidity = getInitialLiquidityFromDeltaQuote(
             migrationQuoteThreshold,
             MIN_SQRT_PRICE,
@@ -379,7 +356,7 @@ export const getTotalSupplyFromCurve = (
     sqrtStartPrice: BN,
     curve: Array<LiquidityDistributionParameters>,
     lockedVesting: LockedVestingParameters,
-    migrationOption: number
+    migrationOption: MigrationOption
 ): BN => {
     const sqrtMigrationPrice = getMigrationThresholdPrice(
         migrationQuoteThreshold,
@@ -421,33 +398,38 @@ export const getMigrationThresholdPrice = (
     curve: Array<LiquidityDistributionParameters>
 ): BN => {
     let nextSqrtPrice = sqrtStartPrice
+
+    if (curve.length === 0) {
+        throw Error('Curve is empty')
+    }
+
     const totalAmount = getDeltaAmountQuoteUnsigned(
         nextSqrtPrice,
-        curve[0]?.sqrtPrice ?? new BN(0),
-        curve[0]?.liquidity ?? new BN(0),
+        curve[0].sqrtPrice,
+        curve[0].liquidity,
         Rounding.Up
     )
     if (totalAmount.gt(migrationThreshold)) {
         nextSqrtPrice = getNextSqrtPriceFromInput(
             nextSqrtPrice,
-            curve[0]?.liquidity ?? new BN(0),
+            curve[0].liquidity,
             migrationThreshold,
             false
         )
     } else {
         let amountLeft = migrationThreshold.sub(totalAmount)
-        nextSqrtPrice = curve[0]?.sqrtPrice ?? new BN(0)
+        nextSqrtPrice = curve[0].sqrtPrice
         for (let i = 1; i < curve.length; i++) {
             const maxAmount = getDeltaAmountQuoteUnsigned(
                 nextSqrtPrice,
-                curve[i]?.sqrtPrice ?? new BN(0),
-                curve[i]?.liquidity ?? new BN(0),
+                curve[i].sqrtPrice,
+                curve[i].liquidity,
                 Rounding.Up
             )
             if (maxAmount.gt(amountLeft)) {
                 nextSqrtPrice = getNextSqrtPriceFromInput(
                     nextSqrtPrice,
-                    curve[i]?.liquidity ?? new BN(0),
+                    curve[i].liquidity,
                     amountLeft,
                     false
                 )
@@ -455,7 +437,7 @@ export const getMigrationThresholdPrice = (
                 break
             } else {
                 amountLeft = amountLeft.sub(maxAmount)
-                nextSqrtPrice = curve[i]?.sqrtPrice ?? new BN(0)
+                nextSqrtPrice = curve[i].sqrtPrice
             }
         }
         if (!amountLeft.isZero()) {

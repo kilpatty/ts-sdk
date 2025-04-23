@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "strictNullChecks": false
   },
   "include": ["src/**/*.ts", "tests/utils/defaults.ts"],
   "exclude": ["node_modules", "dist"]

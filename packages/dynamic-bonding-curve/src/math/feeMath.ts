@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import { pow, SafeMath } from './safeMath'
-import { safeMulDivCastU64, mulDiv } from './utilsMath'
+import { mulDiv } from './utilsMath'
 import {
     BASIS_POINT_MAX,
     FEE_DENOMINATOR,
@@ -43,8 +43,7 @@ export function getFeeInPeriod(
         )
     }
 
-    // For higher periods, we need to calculate (1-reduction_factor/10_000)^period
-    // We'll implement a binary exponentiation algorithm similar to the Rust implementation
+    // For higher periods, calculate (1-reduction_factor/10_000)^period
     const basisPointMax = new BN(BASIS_POINT_MAX)
 
     // Calculate base = ONE_Q64 - (reductionFactor << RESOLUTION) / BASIS_POINT_MAX
@@ -165,7 +164,7 @@ export function getFeeOnAmount(
     }
 
     // Calculate trading fee
-    const tradingFee = safeMulDivCastU64(
+    const tradingFee = mulDiv(
         amount,
         totalFeeNumerator,
         new BN(FEE_DENOMINATOR),
@@ -176,7 +175,7 @@ export function getFeeOnAmount(
     const amountAfterFee = SafeMath.sub(amount, tradingFee)
 
     // Calculate protocol fee
-    const protocolFee = safeMulDivCastU64(
+    const protocolFee = mulDiv(
         tradingFee,
         new BN(poolFees.protocolFeePercent),
         new BN(100),
@@ -189,7 +188,7 @@ export function getFeeOnAmount(
     // Calculate referral fee
     let referralFee = new BN(0)
     if (isReferral) {
-        referralFee = safeMulDivCastU64(
+        referralFee = mulDiv(
             protocolFee,
             new BN(poolFees.referralFeePercent),
             new BN(100),

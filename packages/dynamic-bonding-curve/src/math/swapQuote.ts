@@ -143,33 +143,33 @@ export function getSwapAmountFromBaseToQuote(
     // Iterate through the curve points in reverse order
     for (let i = configState.curve.length - 1; i >= 0; i--) {
         if (
-            configState.curve[i]?.sqrtPrice.isZero() ||
-            configState.curve[i]?.liquidity.isZero()
+            configState.curve[i].sqrtPrice.isZero() ||
+            configState.curve[i].liquidity.isZero()
         ) {
             continue
         }
 
-        if (configState.curve[i]?.sqrtPrice.lt(sqrtPrice)) {
+        if (configState.curve[i].sqrtPrice.lt(sqrtPrice)) {
             // Get the current liquidity
             const currentLiquidity =
                 i + 1 < configState.curve.length
-                    ? configState.curve[i + 1]?.liquidity
-                    : configState.curve[i]?.liquidity
+                    ? configState.curve[i + 1].liquidity
+                    : configState.curve[i].liquidity
 
             // Skip if liquidity is zero
-            if (currentLiquidity?.isZero()) continue
+            if (currentLiquidity.isZero()) continue
 
             const maxAmountIn = getDeltaAmountBaseUnsigned(
-                configState.curve[i]?.sqrtPrice ?? new BN(0),
+                configState.curve[i].sqrtPrice,
                 sqrtPrice,
-                currentLiquidity ?? new BN(0),
+                currentLiquidity,
                 Rounding.Up
             )
 
             if (amountLeft.lt(maxAmountIn)) {
                 const nextSqrtPrice = getNextSqrtPriceFromInput(
                     sqrtPrice,
-                    currentLiquidity ?? new BN(0),
+                    currentLiquidity,
                     amountLeft,
                     true
                 )
@@ -177,7 +177,7 @@ export function getSwapAmountFromBaseToQuote(
                 const outputAmount = getDeltaAmountQuoteUnsigned(
                     nextSqrtPrice,
                     sqrtPrice,
-                    currentLiquidity ?? new BN(0),
+                    currentLiquidity,
                     Rounding.Down
                 )
 
@@ -190,12 +190,11 @@ export function getSwapAmountFromBaseToQuote(
                 amountLeft = new BN(0)
                 break
             } else {
-                const nextSqrtPrice =
-                    configState.curve[i]?.sqrtPrice ?? new BN(0)
+                const nextSqrtPrice = configState.curve[i].sqrtPrice
                 const outputAmount = getDeltaAmountQuoteUnsigned(
                     nextSqrtPrice,
                     sqrtPrice,
-                    currentLiquidity ?? new BN(0),
+                    currentLiquidity,
                     Rounding.Down
                 )
 
@@ -211,10 +210,10 @@ export function getSwapAmountFromBaseToQuote(
     }
 
     // Process remaining amount
-    if (!amountLeft.isZero() && !configState.curve[0]?.liquidity.isZero()) {
+    if (!amountLeft.isZero() && !configState.curve[0].liquidity.isZero()) {
         const nextSqrtPrice = getNextSqrtPriceFromInput(
             sqrtPrice,
-            configState.curve[0]?.liquidity ?? new BN(0),
+            configState.curve[0].liquidity,
             amountLeft,
             true
         )
@@ -222,7 +221,7 @@ export function getSwapAmountFromBaseToQuote(
         const outputAmount = getDeltaAmountQuoteUnsigned(
             nextSqrtPrice,
             sqrtPrice,
-            configState.curve[0]?.liquidity ?? new BN(0),
+            configState.curve[0].liquidity,
             Rounding.Down
         )
 
@@ -271,27 +270,27 @@ export function getSwapAmountFromQuoteToBase(
     // Iterate through the curve points
     for (let i = 0; i < configState.curve.length; i++) {
         if (
-            configState.curve[i]?.sqrtPrice.isZero() ||
-            configState.curve[i]?.liquidity.isZero()
+            configState.curve[i].sqrtPrice.isZero() ||
+            configState.curve[i].liquidity.isZero()
         ) {
             break
         }
 
         // Skip if liquidity is zero
-        if (configState.curve[i]?.liquidity.isZero()) continue
+        if (configState.curve[i].liquidity.isZero()) continue
 
-        if (configState.curve[i]?.sqrtPrice.gt(sqrtPrice)) {
+        if (configState.curve[i].sqrtPrice.gt(sqrtPrice)) {
             const maxAmountIn = getDeltaAmountQuoteUnsigned(
                 sqrtPrice,
-                configState.curve[i]?.sqrtPrice ?? new BN(0),
-                configState.curve[i]?.liquidity ?? new BN(0),
+                configState.curve[i].sqrtPrice,
+                configState.curve[i].liquidity,
                 Rounding.Up
             )
 
             if (amountLeft.lt(maxAmountIn)) {
                 const nextSqrtPrice = getNextSqrtPriceFromInput(
                     sqrtPrice,
-                    configState.curve[i]?.liquidity ?? new BN(0),
+                    configState.curve[i].liquidity,
                     amountLeft,
                     false
                 )
@@ -299,7 +298,7 @@ export function getSwapAmountFromQuoteToBase(
                 const outputAmount = getDeltaAmountBaseUnsigned(
                     sqrtPrice,
                     nextSqrtPrice,
-                    configState.curve[i]?.liquidity ?? new BN(0),
+                    configState.curve[i].liquidity,
                     Rounding.Down
                 )
 
@@ -312,12 +311,11 @@ export function getSwapAmountFromQuoteToBase(
                 amountLeft = new BN(0)
                 break
             } else {
-                const nextSqrtPrice =
-                    configState.curve[i]?.sqrtPrice ?? new BN(0)
+                const nextSqrtPrice = configState.curve[i].sqrtPrice
                 const outputAmount = getDeltaAmountBaseUnsigned(
                     sqrtPrice,
                     nextSqrtPrice,
-                    configState.curve[i]?.liquidity ?? new BN(0),
+                    configState.curve[i].liquidity,
                     Rounding.Down
                 )
 
