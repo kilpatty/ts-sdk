@@ -1,6 +1,7 @@
 import {
     PublicKey,
     SystemProgram,
+    TransactionInstruction,
     type Connection,
     type Transaction,
 } from '@solana/web3.js'
@@ -38,7 +39,7 @@ import {
     wrapSOLInstruction,
 } from '../utils'
 import { swapQuote } from '../math/swapQuote'
-import { validateBaseTokenType } from '../checks'
+import { validateBalance, validateBaseTokenType } from '../checks'
 
 export class PoolService {
     private connection: Connection
@@ -63,11 +64,13 @@ export class PoolService {
             name,
             symbol,
             uri,
-            creator,
+            payer,
+            poolCreator,
         } = createPoolParam
 
         const poolConfigState = await this.programClient.getPoolConfig(config)
 
+        // error checks
         validateBaseTokenType(baseTokenType, poolConfigState)
 
         const eventAuthority = deriveEventAuthority()
@@ -89,7 +92,8 @@ export class PoolService {
             const accounts: InitializeVirtualPoolWithSplTokenAccounts = {
                 pool,
                 config,
-                creator,
+                payer,
+                creator: poolCreator,
                 mintMetadata: baseMetadata,
                 program: program.programId,
                 tokenQuoteProgram:
@@ -97,7 +101,6 @@ export class PoolService {
                         ? TOKEN_PROGRAM_ID
                         : TOKEN_2022_PROGRAM_ID,
                 baseMint,
-                payer: creator,
                 poolAuthority,
                 baseVault,
                 quoteVault,
@@ -121,10 +124,10 @@ export class PoolService {
             const accounts: InitializeVirtualPoolWithToken2022Accounts = {
                 pool,
                 config,
-                creator,
+                payer,
+                creator: poolCreator,
                 program: program.programId,
                 baseMint,
-                payer: creator,
                 poolAuthority,
                 baseVault,
                 quoteVault,
@@ -192,8 +195,11 @@ export class PoolService {
      */
     async swap(pool: PublicKey, swapParam: SwapParam): Promise<Transaction> {
         const program = this.programClient.getProgram()
+        const eventAuthority = deriveEventAuthority()
+        const poolAuthority = derivePoolAuthority(program.programId)
 
         const virtualPoolState = await this.programClient.getPool(pool)
+
         if (!virtualPoolState) {
             throw new Error(`Pool not found: ${pool.toString()}`)
         }
@@ -212,8 +218,8 @@ export class PoolService {
                 poolConfigState
             )
 
-        const eventAuthority = deriveEventAuthority()
-        const poolAuthority = derivePoolAuthority(program.programId)
+        const isSOLInput = isNativeSol(inputMint)
+        const isSOLOutput = isNativeSol(outputMint)
 
         const inputTokenAccount = findAssociatedTokenAddress(
             owner,
@@ -227,50 +233,13 @@ export class PoolService {
             outputTokenProgram
         )
 
-        const isSOLInput = isNativeSol(inputMint)
-        const isSOLOutput = isNativeSol(outputMint)
-
-        const ixs = []
-        const cleanupIxs = []
-        if (isSOLInput) {
-            ixs.push(
-                createAssociatedTokenAccountIdempotentInstruction(
-                    owner,
-                    inputTokenAccount,
-                    owner,
-                    inputMint,
-                    inputTokenProgram
-                )
-            )
-            ixs.push(
-                ...wrapSOLInstruction(
-                    owner,
-                    inputTokenAccount,
-                    BigInt(amountIn.toString())
-                )
-            )
-            const unwrapIx = unwrapSOLInstruction(owner)
-            if (unwrapIx) {
-                cleanupIxs.push(unwrapIx)
-            }
-        }
-
-        ixs.push(
-            createAssociatedTokenAccountIdempotentInstruction(
-                owner,
-                outputTokenAccount,
-                owner,
-                outputMint,
-                outputTokenProgram
-            )
+        await validateBalance(
+            this.connection,
+            owner,
+            inputMint,
+            amountIn,
+            inputTokenAccount
         )
-
-        if (isSOLOutput) {
-            const unwrapIx = unwrapSOLInstruction(owner)
-            if (unwrapIx) {
-                cleanupIxs.push(unwrapIx)
-            }
-        }
 
         const accounts: SwapAccounts = {
             baseMint: virtualPoolState.baseMint,
@@ -294,23 +263,67 @@ export class PoolService {
             program: program.programId,
         }
 
-        const transaction = await program.methods
+        // Add preInstructions for ATA creation and SOL wrapping
+        const preInstructions: TransactionInstruction[] = []
+
+        // Check and create ATAs if needed
+        const inputTokenAccountInfo =
+            await this.connection.getAccountInfo(inputTokenAccount)
+        if (!inputTokenAccountInfo) {
+            preInstructions.push(
+                createAssociatedTokenAccountIdempotentInstruction(
+                    owner,
+                    inputTokenAccount,
+                    owner,
+                    inputMint,
+                    inputTokenProgram
+                )
+            )
+        }
+
+        const outputTokenAccountInfo =
+            await this.connection.getAccountInfo(outputTokenAccount)
+        if (!outputTokenAccountInfo) {
+            preInstructions.push(
+                createAssociatedTokenAccountIdempotentInstruction(
+                    owner,
+                    outputTokenAccount,
+                    owner,
+                    outputMint,
+                    outputTokenProgram
+                )
+            )
+        }
+
+        // Add SOL wrapping instructions if needed
+        if (isSOLInput) {
+            preInstructions.push(
+                ...wrapSOLInstruction(
+                    owner,
+                    inputTokenAccount,
+                    BigInt(amountIn.toString())
+                )
+            )
+        }
+
+        // Add postInstructions for SOL unwrapping
+        const postInstructions: TransactionInstruction[] = []
+        if (isSOLInput || isSOLOutput) {
+            const unwrapIx = unwrapSOLInstruction(owner)
+            if (unwrapIx) {
+                postInstructions.push(unwrapIx)
+            }
+        }
+
+        return program.methods
             .swap({
                 amountIn,
                 minimumAmountOut,
             })
             .accounts(accounts)
+            .preInstructions(preInstructions)
+            .postInstructions(postInstructions)
             .transaction()
-
-        if (ixs.length > 0) {
-            transaction.add(...ixs)
-        }
-
-        if (cleanupIxs.length > 0) {
-            transaction.add(...cleanupIxs)
-        }
-
-        return transaction
     }
 
     /**

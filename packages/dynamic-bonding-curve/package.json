@@ -1,6 +1,6 @@
 {
   "name": "@meteora-ag/dynamic-bonding-curve-sdk",
-  "version": "1.0.1",
+  "version": "1.1.1-rc.2",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "source": "src/index.ts",
@@ -41,6 +41,8 @@
     "@coral-xyz/anchor": "^0.31.0",
     "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.0",
+    "bn.js": "^5.2.1",
+    "decimal.js": "^10.5.0",
     "solana-bankrun": "^0.4.0"
   }
 }
