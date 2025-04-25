@@ -40,7 +40,7 @@ bun test
 - Mainnet-beta: dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN
 - Devnet: dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN
 
-### Config key for migration
+### Graduated DAMM Pool Config Keys
 
 #### DAMM V1:
 
