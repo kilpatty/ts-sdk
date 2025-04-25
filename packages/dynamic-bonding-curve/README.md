@@ -44,14 +44,18 @@ bun test
 
 #### DAMM V1:
 
-- migration_fee_option == 0: 8f848CEy8eY6PhJ3VcemtBDzPPSD4Vq7aJczLZ3o8MmX
-- migration_fee_option == 1: HBxB8Lf14Yj8pqeJ8C4qDb5ryHL7xwpuykz31BLNYr7S
-- migration_fee_option == 2: 7v5vBdUQHTNeqk1HnduiXcgbvCyVEZ612HLmYkQoAkik
-- migration_fee_option == 3: EkvP7d5yKxovj884d2DwmBQbrHUWRLGK6bympzrkXGja
+- MigrationFeeOption.FixedBps25 == 0: 8f848CEy8eY6PhJ3VcemtBDzPPSD4Vq7aJczLZ3o8MmX
+- MigrationFeeOption.FixedBps30 == 1: HBxB8Lf14Yj8pqeJ8C4qDb5ryHL7xwpuykz31BLNYr7S
+- MigrationFeeOption.FixedBps100 == 2: 7v5vBdUQHTNeqk1HnduiXcgbvCyVEZ612HLmYkQoAkik
+- MigrationFeeOption.FixedBps200 == 3: EkvP7d5yKxovj884d2DwmBQbrHUWRLGK6bympzrkXGja
+- MigrationFeeOption.FixedBps400 == 4: 9EZYAJrcqNWNQzP2trzZesP7XKMHA1jEomHzbRsdX8R2
+- MigrationFeeOption.FixedBps600 == 5: 8cdKo87jZU2R12KY1BUjjRPwyjgdNjLGqSGQyrDshhud
 
 #### DAMM V2:
 
-- migration_fee_option == 0: 7F6dnUcRuyM2TwR8myT1dYypFXpPSxqwKNSFNkxyNESd
-- migration_fee_option == 1: 2nHK1kju6XjphBLbNxpM5XRGFj7p9U8vvNzyZiha1z6k
-- migration_fee_option == 2: Hv8Lmzmnju6m7kcokVKvwqz7QPmdX9XfKjJsXz8RXcjp
-- migration_fee_option == 3: 2c4cYd4reUYVRAB9kUUkrq55VPyy2FNQ3FDL4o12JXmq
+- MigrationFeeOption.FixedBps25 == 0: 7F6dnUcRuyM2TwR8myT1dYypFXpPSxqwKNSFNkxyNESd
+- MigrationFeeOption.FixedBps30 == 1: 2nHK1kju6XjphBLbNxpM5XRGFj7p9U8vvNzyZiha1z6k
+- MigrationFeeOption.FixedBps100 == 2: Hv8Lmzmnju6m7kcokVKvwqz7QPmdX9XfKjJsXz8RXcjp
+- MigrationFeeOption.FixedBps200 == 3: 2c4cYd4reUYVRAB9kUUkrq55VPyy2FNQ3FDL4o12JXmq
+- MigrationFeeOption.FixedBps400 == 4: AkmQWebAwFvWk55wBoCr5D62C6VVDTzi84NJuD9H7cFD
+- MigrationFeeOption.FixedBps600 == 5: DbCRBj8McvPYHJG1ukj8RE15h2dCNUdTAESG49XpQ44u

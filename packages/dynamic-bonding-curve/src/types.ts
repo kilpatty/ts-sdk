@@ -172,6 +172,8 @@ export enum MigrationFeeOption {
     FixedBps30 = 1,
     FixedBps100 = 2,
     FixedBps200 = 3,
+    FixedBps400 = 4,
+    FixedBps600 = 5,
 }
 
 export enum TokenDecimal {
