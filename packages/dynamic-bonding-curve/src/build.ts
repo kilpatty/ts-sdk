@@ -2,8 +2,8 @@ import Decimal from 'decimal.js'
 import BN from 'bn.js'
 import {
     type ConfigParameters,
-    type BuildConstantProductCurveParam,
-    type BuildCustomConstantProductCurveParam,
+    type BuildCurveParam,
+    BuildCurveByMarketCapParam,
 } from './types'
 import { MAX_SQRT_PRICE } from './constants'
 import {
@@ -12,133 +12,17 @@ import {
     getTotalVestingAmount,
     getFirstCurve,
     getTotalSupplyFromCurve,
+    getPercentageSupplyOnMigration,
+    getMigrationQuoteThreshold,
 } from './common'
 import { getInitialLiquidityFromDeltaBase } from './math/curve'
-
-/**
- * Build a constant product curve
- * @param buildConstantProductCurveParam - The parameters for the constant product curve
- * @returns The build constant product curve
- */
-export function buildConstantProductCurve(
-    buildConstantProductCurveParam: BuildConstantProductCurveParam
-): ConfigParameters {
-    const {
-        totalTokenSupply,
-        percentageSupplyOnMigration,
-        migrationQuoteThreshold,
-        migrationOption,
-        tokenBaseDecimal,
-        tokenQuoteDecimal,
-        lockedVesting,
-    } = buildConstantProductCurveParam
-
-    const migrationBaseSupply = new BN(totalTokenSupply)
-        .mul(new BN(percentageSupplyOnMigration))
-        .div(new BN(100))
-
-    const totalSupply = new BN(totalTokenSupply).mul(
-        new BN(10).pow(new BN(tokenBaseDecimal))
-    )
-
-    const migrationQuoteThresholdWithDecimals = new BN(
-        migrationQuoteThreshold * 10 ** tokenQuoteDecimal
-    )
-
-    const migrationPrice = new Decimal(migrationQuoteThreshold.toString()).div(
-        new Decimal(migrationBaseSupply.toString())
-    )
-
-    const migrateSqrtPrice = getSqrtPriceFromPrice(
-        migrationPrice.toString(),
-        tokenBaseDecimal,
-        tokenQuoteDecimal
-    )
-
-    const migrationBaseAmount = getMigrationBaseToken(
-        new BN(migrationQuoteThresholdWithDecimals),
-        migrateSqrtPrice,
-        migrationOption
-    )
-
-    const totalVestingAmount = getTotalVestingAmount(lockedVesting)
-
-    const swapAmount = totalSupply
-        .sub(migrationBaseAmount)
-        .sub(totalVestingAmount)
-
-    const { sqrtStartPrice, curve } = getFirstCurve(
-        migrateSqrtPrice,
-        migrationBaseAmount,
-        swapAmount,
-        migrationQuoteThresholdWithDecimals
-    )
-
-    const totalDynamicSupply = getTotalSupplyFromCurve(
-        migrationQuoteThresholdWithDecimals,
-        sqrtStartPrice,
-        curve,
-        lockedVesting,
-        migrationOption
-    )
-
-    const remainingAmount = totalSupply.sub(totalDynamicSupply)
-
-    const lastLiquidity = getInitialLiquidityFromDeltaBase(
-        remainingAmount,
-        MAX_SQRT_PRICE,
-        migrateSqrtPrice
-    )
-
-    if (!lastLiquidity.isZero()) {
-        curve.push({
-            sqrtPrice: MAX_SQRT_PRICE,
-            liquidity: lastLiquidity,
-        })
-    }
-
-    const instructionParams: ConfigParameters = {
-        poolFees: {
-            baseFee: {
-                cliffFeeNumerator: new BN(2_500_000),
-                numberOfPeriod: 0,
-                reductionFactor: new BN(0),
-                periodFrequency: new BN(0),
-                feeSchedulerMode: 0,
-            },
-            dynamicFee: null,
-        },
-        activationType: 0,
-        collectFeeMode: 0,
-        migrationOption,
-        tokenType: 0, // spl_token
-        tokenDecimal: tokenBaseDecimal,
-        migrationQuoteThreshold: migrationQuoteThresholdWithDecimals,
-        partnerLpPercentage: 0,
-        creatorLpPercentage: 0,
-        partnerLockedLpPercentage: 100,
-        creatorLockedLpPercentage: 0,
-        sqrtStartPrice,
-        lockedVesting,
-        migrationFeeOption: 0,
-        tokenSupply: {
-            preMigrationTokenSupply: totalSupply,
-            postMigrationTokenSupply: totalSupply,
-        },
-        padding: [],
-        curve,
-    }
-    return instructionParams
-}
 
 /**
  * Build a custom constant product curve
  * @param buildCustomConstantProductCurveParam - The parameters for the custom constant product curve
  * @returns The build custom constant product curve
  */
-export function buildCustomConstantProductCurve(
-    buildCustomConstantProductCurveParam: BuildCustomConstantProductCurveParam
-): ConfigParameters {
+export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
     const {
         totalTokenSupply,
         percentageSupplyOnMigration,
@@ -147,16 +31,6 @@ export function buildCustomConstantProductCurve(
         tokenBaseDecimal,
         tokenQuoteDecimal,
         lockedVesting,
-    } = buildCustomConstantProductCurveParam.constantProductCurveParam
-
-    const {
-        numberOfPeriod,
-        reductionFactor,
-        periodFrequency,
-        feeSchedulerMode,
-    } = buildCustomConstantProductCurveParam.feeSchedulerParam
-
-    const {
         baseFeeBps,
         dynamicFeeEnabled,
         activationType,
@@ -167,7 +41,14 @@ export function buildCustomConstantProductCurve(
         creatorLpPercentage,
         partnerLockedLpPercentage,
         creatorLockedLpPercentage,
-    } = buildCustomConstantProductCurveParam
+    } = buildCurveParam
+
+    const {
+        numberOfPeriod,
+        reductionFactor,
+        periodFrequency,
+        feeSchedulerMode,
+    } = buildCurveParam.feeSchedulerParam
 
     const migrationBaseSupply = new BN(totalTokenSupply)
         .mul(new BN(percentageSupplyOnMigration))
@@ -275,4 +156,38 @@ export function buildCustomConstantProductCurve(
         curve,
     }
     return instructionParams
+}
+
+/**
+ * Build a custom constant product curve by market cap
+ * @param buildCurveByMarketCapParam - The parameters for the custom constant product curve by market cap
+ * @returns The build custom constant product curve by market cap
+ */
+export function buildCurveByMarketCap(
+    buildCurveByMarketCapParam: BuildCurveByMarketCapParam
+): ConfigParameters {
+    const {
+        initialMarketCap,
+        migrationMarketCap,
+        lockedVesting,
+        totalTokenSupply,
+    } = buildCurveByMarketCapParam
+
+    const percentageSupplyOnMigration = getPercentageSupplyOnMigration(
+        new BN(initialMarketCap),
+        new BN(migrationMarketCap),
+        lockedVesting,
+        new BN(totalTokenSupply)
+    )
+
+    const migrationQuoteThreshold = getMigrationQuoteThreshold(
+        new BN(migrationMarketCap),
+        percentageSupplyOnMigration
+    )
+
+    return buildCurve({
+        ...buildCurveByMarketCapParam,
+        percentageSupplyOnMigration,
+        migrationQuoteThreshold,
+    })
 }

@@ -471,3 +471,57 @@ export const getSwapAmountWithBuffer = (
     )
     return BN.min(swapAmountBuffer, maxBaseAmountOnCurve)
 }
+
+/**
+ * Calculate the percentage of supply that should be allocated to initial liquidity
+ * @param initialMarketCap - The initial market cap
+ * @param migrationMarketCap - The migration market cap
+ * @param lockedVesting - The locked vesting
+ * @param totalTokenSupply - The total token supply
+ * @returns The percentage of supply for initial liquidity
+ */
+export const getPercentageSupplyOnMigration = (
+    initialMarketCap: BN,
+    migrationMarketCap: BN,
+    lockedVesting: LockedVestingParameters,
+    totalTokenSupply: BN
+): number => {
+    const initialMarketCapDecimal = new Decimal(initialMarketCap.toString())
+    const migrationMarketCapDecimal = new Decimal(migrationMarketCap.toString())
+
+    // calculate percentage of locked vesting (z)
+    const totalVestingAmount = getTotalVestingAmount(lockedVesting)
+    const vestingPercentageDecimal = new Decimal(totalVestingAmount.toString())
+        .mul(new Decimal(100))
+        .div(new Decimal(totalTokenSupply.toString()))
+    const vestingPercentage = vestingPercentageDecimal.toNumber()
+
+    // x = (initialMC * (100-z)) / (initialMC + migrationMC)
+    const numerator = initialMarketCapDecimal.mul(
+        new Decimal(100 - vestingPercentage)
+    )
+    const denominator = initialMarketCapDecimal.add(migrationMarketCapDecimal)
+    return numerator.div(denominator).toNumber()
+}
+
+/**
+ * Get the migration quote threshold
+ * @param migrationMarketCap - The migration market cap
+ * @param percentageSupplyOnMigration - The percentage of supply on migration
+ * @returns The migration quote threshold
+ */
+export const getMigrationQuoteThreshold = (
+    migrationMarketCap: BN,
+    percentageSupplyOnMigration: number
+): number => {
+    const migrationMarketCapDecimal = new Decimal(migrationMarketCap.toString())
+    const percentageDecimal = new Decimal(
+        percentageSupplyOnMigration.toString()
+    )
+
+    // migrationMC * x / 100
+    return migrationMarketCapDecimal
+        .mul(percentageDecimal)
+        .div(new Decimal(100))
+        .toNumber()
+}

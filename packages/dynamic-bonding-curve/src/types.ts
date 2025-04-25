@@ -215,18 +215,12 @@ export type FeeSchedulerParameters = {
     feeSchedulerMode: FeeSchedulerMode
 }
 
-export type BuildConstantProductCurveParam = {
+export type BuildCurveBaseParam = {
     totalTokenSupply: number
-    percentageSupplyOnMigration: number
-    migrationQuoteThreshold: number
     migrationOption: MigrationOption
     tokenBaseDecimal: TokenDecimal
     tokenQuoteDecimal: TokenDecimal
     lockedVesting: LockedVestingParameters
-}
-
-export type BuildCustomConstantProductCurveParam = {
-    constantProductCurveParam: BuildConstantProductCurveParam
     feeSchedulerParam: FeeSchedulerParameters
     baseFeeBps: number
     dynamicFeeEnabled: boolean
@@ -240,8 +234,18 @@ export type BuildCustomConstantProductCurveParam = {
     creatorLockedLpPercentage: number
 }
 
-export type BuildAndCreateConstantProductConfigParam = {
-    constantProductCurveParam: BuildConstantProductCurveParam
+export type BuildCurveParam = BuildCurveBaseParam & {
+    percentageSupplyOnMigration: number
+    migrationQuoteThreshold: number
+}
+
+export type BuildCurveByMarketCapParam = BuildCurveBaseParam & {
+    initialMarketCap: number
+    migrationMarketCap: number
+}
+
+export type BuildCurveAndCreateConfigParam = {
+    buildCurveParam: BuildCurveParam
     feeClaimer: PublicKey
     leftoverReceiver: PublicKey
     payer: PublicKey
@@ -249,8 +253,8 @@ export type BuildAndCreateConstantProductConfigParam = {
     config: PublicKey
 }
 
-export type BuildAndCreateCustomConstantProductConfigParam = {
-    customConstantProductCurveParam: BuildCustomConstantProductCurveParam
+export type BuildCurveAndCreateConfigByMarketCapParam = {
+    buildCurveByMarketCapParam: BuildCurveByMarketCapParam
     feeClaimer: PublicKey
     leftoverReceiver: PublicKey
     payer: PublicKey
