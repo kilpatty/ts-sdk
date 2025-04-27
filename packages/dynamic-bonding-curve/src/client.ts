@@ -15,17 +15,21 @@ import {
 } from './utils'
 import type { Program, ProgramAccount } from '@coral-xyz/anchor'
 import type { DynamicBondingCurve as DynamicBondingCurveIDL } from './idl/dynamic-bonding-curve/idl'
-import BN from 'bn.js'
 import { PoolService } from './services/pool'
 import { MigrationService } from './services/migration'
 import { PartnerService } from './services/partner'
 import { COMMITMENT } from './constants'
-import { derivePool } from './derive'
+import {
+    deriveDammPoolAddress,
+    deriveDammV2PoolAddress,
+    derivePool,
+} from './derive'
 import {
     getMint,
     TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
+import BN from 'bn.js'
 
 export class DynamicBondingCurveProgramClient {
     private program: Program<DynamicBondingCurveIDL>
@@ -44,18 +48,48 @@ export class DynamicBondingCurveProgramClient {
     }
 
     /**
-     * Get the pool address
+     * Get the Dynamic Bonding Curve pool address
      * @param quoteMint - The quote mint
      * @param baseMint - The base mint
      * @param config - The config
      * @returns The pool address
      */
-    async getPoolAddress(
+    async getDBCPoolAddress(
         quoteMint: PublicKey,
         baseMint: PublicKey,
         config: PublicKey
     ): Promise<PublicKey> {
         return derivePool(quoteMint, baseMint, config, this.program.programId)
+    }
+
+    /**
+     * Get the DAMM V1 pool address
+     * @param quoteMint - The quote mint
+     * @param baseMint - The base mint
+     * @param config - The config
+     * @returns The pool address
+     */
+    async getDammV1PoolAddress(
+        quoteMint: PublicKey,
+        baseMint: PublicKey,
+        config: PublicKey
+    ): Promise<PublicKey> {
+        return deriveDammPoolAddress(quoteMint, baseMint, config)
+    }
+
+    /**
+     * Get the DAMM V2 pool address
+     * @param quoteMint - The quote mint
+     * @param baseMint - The base mint
+     * @param config - The config
+     * @returns The pool address
+     */
+    async getDammV2PoolAddress(
+        quoteMint: PublicKey,
+        baseMint: PublicKey,
+        config: PublicKey
+    ): Promise<PublicKey> {
+        return deriveDammV2PoolAddress(quoteMint, baseMint, config)
     }
 
     /**
