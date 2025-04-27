@@ -258,7 +258,111 @@ export class DynamicBondingCurveProgramClient {
         return mintInfo.decimals
     }
 
-    
+    /**
+     * Get fee metrics for a specific pool
+     * @param poolAddress - The address of the pool
+     * @returns Object containing current and total fee metrics
+     */
+    async getPoolFeeMetrics(poolAddress: PublicKey): Promise<{
+        current: {
+            tradingBaseFee: BN
+            tradingQuoteFee: BN
+            protocolBaseFee: BN
+            protocolQuoteFee: BN
+        }
+        total: {
+            totalTradingBaseFee: BN
+            totalTradingQuoteFee: BN
+            totalProtocolBaseFee: BN
+            totalProtocolQuoteFee: BN
+        }
+    }> {
+        const pool = await this.getPool(poolAddress)
+        if (!pool) {
+            throw new Error(`Pool not found: ${poolAddress.toString()}`)
+        }
+
+        return {
+            current: {
+                tradingBaseFee: pool.tradingBaseFee,
+                tradingQuoteFee: pool.tradingQuoteFee,
+                protocolBaseFee: pool.protocolBaseFee,
+                protocolQuoteFee: pool.protocolQuoteFee,
+            },
+            total: {
+                totalTradingBaseFee: pool.metrics.totalTradingBaseFee,
+                totalTradingQuoteFee: pool.metrics.totalTradingQuoteFee,
+                totalProtocolBaseFee: pool.metrics.totalProtocolBaseFee,
+                totalProtocolQuoteFee: pool.metrics.totalProtocolQuoteFee,
+            },
+        }
+    }
+
+    /**
+     * Get all quote fees for pools linked to a specific config key
+     * @param configAddress - The address of the pool config
+     * @returns Array of pools with their quote fees
+     */
+    async getPoolsQuoteFeesByConfig(configAddress: PublicKey): Promise<
+        Array<{
+            poolAddress: PublicKey
+            tradingQuoteFee: BN
+            protocolQuoteFee: BN
+            totalTradingQuoteFee: BN
+            totalProtocolQuoteFee: BN
+        }>
+    > {
+        const config =
+            configAddress instanceof PublicKey
+                ? configAddress
+                : new PublicKey(configAddress)
+
+        const pools = await this.getPools()
+        const filteredPools = pools.filter((pool) =>
+            pool.account.config.equals(config)
+        )
+
+        return filteredPools.map((pool) => ({
+            poolAddress: pool.publicKey,
+            tradingQuoteFee: pool.account.tradingQuoteFee,
+            protocolQuoteFee: pool.account.protocolQuoteFee,
+            totalTradingQuoteFee: pool.account.metrics.totalTradingQuoteFee,
+            totalProtocolQuoteFee: pool.account.metrics.totalProtocolQuoteFee,
+        }))
+    }
+
+    /**
+     * Get all base fees for pools linked to a specific config key
+     * @param configAddress - The address of the pool config
+     * @returns Array of pools with their base fees
+     */
+    async getPoolsBaseFeesByConfig(configAddress: PublicKey): Promise<
+        Array<{
+            poolAddress: PublicKey
+            tradingBaseFee: BN
+            protocolBaseFee: BN
+            totalTradingBaseFee: BN
+            totalProtocolBaseFee: BN
+        }>
+    > {
+        const config =
+            configAddress instanceof PublicKey
+                ? configAddress
+                : new PublicKey(configAddress)
+
+        const pools = await this.getPools()
+        const filteredPools = pools.filter((pool) =>
+            pool.account.config.equals(config)
+        )
+
+        return filteredPools.map((pool) => ({
+            poolAddress: pool.publicKey,
+            tradingBaseFee: pool.account.tradingBaseFee,
+            protocolBaseFee: pool.account.protocolBaseFee,
+            totalTradingBaseFee: pool.account.metrics.totalTradingBaseFee,
+            totalProtocolBaseFee: pool.account.metrics.totalProtocolBaseFee,
+        }))
+    }
 }
 
 /**
