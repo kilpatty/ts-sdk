@@ -19,7 +19,7 @@ import { getInitialLiquidityFromDeltaBase } from './math/curve'
 
 /**
  * Build a custom constant product curve
- * @param buildCustomConstantProductCurveParam - The parameters for the custom constant product curve
+ * @param buildCurveParam - The parameters for the custom constant product curve
  * @returns The build custom constant product curve
  */
 export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {

@@ -123,6 +123,8 @@ export type ClaimFeeOperator =
 export type Config = IdlAccounts<DynamicBondingCurve>['config']
 export type MeteoraDammMigrationMetadata =
     IdlAccounts<DynamicBondingCurve>['meteoraDammMigrationMetadata']
+export type MeteoraDammV2MigrationMetadata =
+    IdlAccounts<DynamicBondingCurve>['meteoraDammV2Metadata']
 export type LockEscrow = IdlAccounts<DynamicBondingCurve>['lockEscrow']
 export type VolatilityTracker =
     IdlTypes<DynamicBondingCurve>['volatilityTracker']
@@ -201,12 +203,14 @@ export type CreateConfigParam = Omit<
 > &
     ConfigParameters
 
-export type CreateDammMigrationMetadataParam = {
+export type CreateDammV1MigrationMetadataParam = {
     payer: PublicKey
     virtualPool: PublicKey
     config: PublicKey
-    migrateToDammV2: boolean
 }
+
+export type CreateDammV2MigrationMetadataParam =
+    CreateDammV1MigrationMetadataParam
 
 export type FeeSchedulerParameters = {
     numberOfPeriod: number
@@ -318,10 +322,12 @@ export type CreatePoolParam = {
 }
 
 export type SwapParam = {
+    pool: PublicKey
     owner: PublicKey
     amountIn: BN
     minimumAmountOut: BN
     swapBaseForQuote: boolean
+    referralTokenAccount: PublicKey | null
 }
 
 export type SwapQuoteParam = {

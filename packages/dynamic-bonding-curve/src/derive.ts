@@ -226,34 +226,35 @@ export function deriveVirtualPoolMetadata(pool: PublicKey): PublicKey {
 }
 
 /**
- * Derive the DAMM migration metadata address
+ * Derive the DAMM V1 migration metadata address
  * @param virtual_pool - The virtual pool
  * @param programId - The program ID
- * @param migrateToDammV2 - Whether to migrate to DAMM V2
- * @returns The DAMM migration metadata address
+ * @returns The DAMM V1 migration metadata address
  */
-export function deriveDammMigrationMetadataAddress(
+export function deriveDammV1MigrationMetadataAddress(
     virtual_pool: PublicKey,
-    programId: PublicKey,
-    migrateToDammV2: boolean
+    programId: PublicKey
 ): PublicKey {
-    if (migrateToDammV2) {
-        return PublicKey.findProgramAddressSync(
-            [
-                Buffer.from(SEED.DAMM_V2_MIGRATION_METADATA),
-                virtual_pool.toBuffer(),
-            ],
-            programId
-        )[0]
-    } else {
-        return PublicKey.findProgramAddressSync(
-            [
-                Buffer.from(SEED.DAMM_V1_MIGRATION_METADATA),
-                virtual_pool.toBuffer(),
-            ],
-            programId
-        )[0]
-    }
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.DAMM_V1_MIGRATION_METADATA), virtual_pool.toBuffer()],
+        programId
+    )[0]
+}
+
+/**
+ * Derive the DAMM V2 migration metadata address
+ * @param virtual_pool - The virtual pool
+ * @param programId - The program ID
+ * @returns The DAMM V2 migration metadata address
+ */
+export function deriveDammV2MigrationMetadataAddress(
+    virtual_pool: PublicKey,
+    programId: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.DAMM_V2_MIGRATION_METADATA), virtual_pool.toBuffer()],
+        programId
+    )[0]
 }
 
 /////////////////////
