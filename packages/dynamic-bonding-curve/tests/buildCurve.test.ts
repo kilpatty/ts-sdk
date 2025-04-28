@@ -12,7 +12,7 @@ import {
 } from '../src'
 import { convertBNToDecimal } from '../src/utils'
 
-describe('buildCurveByMarketCap', () => {
+describe('buildCurve tests', () => {
     const baseParams = {
         totalTokenSupply: 1000000000,
         migrationOption: MigrationOption.MET_DAMM,
