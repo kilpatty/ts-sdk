@@ -74,7 +74,7 @@ export class DynamicBondingCurveProgramClient {
         baseMint: PublicKey,
         config: PublicKey
     ): Promise<PublicKey> {
-        return deriveDammPoolAddress(quoteMint, baseMint, config)
+        return deriveDammPoolAddress(config, baseMint, quoteMint)
     }
 
     /**
