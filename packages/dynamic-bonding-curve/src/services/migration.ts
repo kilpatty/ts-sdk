@@ -17,14 +17,16 @@ import {
     findAssociatedTokenAddress,
 } from '../utils'
 import type { DammV1 } from '../idl/damm-v1/idl'
-import type {
-    CreateDammV1MigrationMetadataParam,
-    CreateDammV2MigrationMetadataParam,
-    CreateLockerParam,
-    DammLpTokenParam,
-    MigrateToDammV1Param,
-    MigrateToDammV2Param,
-    MigrateToDammV2Response,
+import {
+    TokenType,
+    type CreateDammV1MigrationMetadataParam,
+    type CreateDammV2MigrationMetadataParam,
+    type CreateLockerParam,
+    type DammLpTokenParam,
+    type MigrateToDammV1Param,
+    type MigrateToDammV2Param,
+    type MigrateToDammV2Response,
+    type WithdrawLeftoverParam,
 } from '../types'
 import {
     deriveBaseKeyForLocker,
@@ -164,6 +166,75 @@ export class MigrationService {
 
         return program.methods
             .createLocker()
+            .accountsPartial(accounts)
+            .preInstructions(preInstructions)
+            .transaction()
+    }
+
+    /**
+     * Withdraw leftover
+     * @param withdrawLeftoverParam - The parameters for the withdraw leftover
+     * @returns A withdraw leftover transaction
+     */
+    async withdrawLeftover(
+        withdrawLeftoverParam: WithdrawLeftoverParam
+    ): Promise<Transaction> {
+        const program = this.programClient.getProgram()
+        const poolAuthority = derivePoolAuthority(program.programId)
+
+        const virtualPoolState = await this.programClient.getPool(
+            withdrawLeftoverParam.virtualPool
+        )
+
+        if (!virtualPoolState) {
+            throw new Error(
+                `Pool not found: ${withdrawLeftoverParam.virtualPool.toString()}`
+            )
+        }
+
+        const poolConfigState = await this.programClient.getPoolConfig(
+            virtualPoolState.config
+        )
+
+        const tokenBaseProgram =
+            poolConfigState.tokenType === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
+
+        const tokenBaseAccount = findAssociatedTokenAddress(
+            poolConfigState.leftoverReceiver,
+            virtualPoolState.baseMint,
+            tokenBaseProgram
+        )
+
+        const preInstructions: TransactionInstruction[] = []
+
+        const createBaseTokenAccountIx =
+            createAssociatedTokenAccountIdempotentInstruction(
+                poolConfigState.leftoverReceiver,
+                tokenBaseAccount,
+                poolConfigState.leftoverReceiver,
+                virtualPoolState.baseMint,
+                tokenBaseProgram
+            )
+
+        if (createBaseTokenAccountIx) {
+            preInstructions.push(createBaseTokenAccountIx)
+        }
+
+        const accounts = {
+            poolAuthority,
+            config: virtualPoolState.config,
+            virtualPool: withdrawLeftoverParam.virtualPool,
+            tokenBaseAccount,
+            baseVault: virtualPoolState.baseVault,
+            baseMint: virtualPoolState.baseMint,
+            leftoverReceiver: poolConfigState.leftoverReceiver,
+            tokenBaseProgram,
+        }
+
+        return program.methods
+            .withdrawLeftover()
             .accountsPartial(accounts)
             .preInstructions(preInstructions)
             .transaction()

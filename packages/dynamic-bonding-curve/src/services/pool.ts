@@ -9,8 +9,6 @@ import type { DynamicBondingCurveClient } from '../client'
 import {
     TokenType,
     type CreatePoolParam,
-    type CreateVirtualPoolMetadataParam,
-    type CreateVirtualPoolMetadataParameters,
     type SwapParam,
     type SwapQuoteParam,
 } from '../types'
@@ -19,7 +17,6 @@ import {
     derivePool,
     derivePoolAuthority,
     deriveTokenVaultAddress,
-    deriveVirtualPoolMetadata,
 } from '../derive'
 import {
     createAssociatedTokenAccountIdempotentInstruction,
@@ -137,40 +134,6 @@ export class PoolService {
         }
 
         throw new Error('Invalid base token type')
-    }
-
-    /**
-     * Create virtual pool metadata
-     * @param createVirtualPoolMetadataParam - The parameters for the virtual pool metadata
-     * @returns A create virtual pool metadata transaction
-     */
-    async createPoolMetadata(
-        createVirtualPoolMetadataParam: CreateVirtualPoolMetadataParam
-    ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-        const virtualPoolMetadata = deriveVirtualPoolMetadata(
-            createVirtualPoolMetadataParam.virtualPool
-        )
-
-        const virtualPoolMetadataParam: CreateVirtualPoolMetadataParameters = {
-            padding: new Array(96).fill(0),
-            name: createVirtualPoolMetadataParam.name,
-            website: createVirtualPoolMetadataParam.website,
-            logo: createVirtualPoolMetadataParam.logo,
-        }
-
-        const accounts = {
-            virtualPool: createVirtualPoolMetadataParam.virtualPool,
-            virtualPoolMetadata,
-            creator: createVirtualPoolMetadataParam.creator,
-            payer: createVirtualPoolMetadataParam.payer,
-            systemProgram: SystemProgram.programId,
-        }
-
-        return program.methods
-            .createVirtualPoolMetadata(virtualPoolMetadataParam)
-            .accountsPartial(accounts)
-            .transaction()
     }
 
     /**

@@ -192,11 +192,11 @@ export class PartnerService {
     }
 
     /**
-     * Claim trading fee
+     * Claim partner trading fee
      * @param claimTradingFeeParam - The parameters for the claim trading fee
      * @returns A claim trading fee transaction
      */
-    async claimTradingFee(
+    async claimPartnerTradingFee(
         claimTradingFeeParam: ClaimTradingFeeParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
@@ -380,75 +380,6 @@ export class PartnerService {
             .accountsPartial(accounts)
             .preInstructions(preInstructions)
             .postInstructions(postInstructions)
-            .transaction()
-    }
-
-    /**
-     * Withdraw leftover
-     * @param withdrawLeftoverParam - The parameters for the withdraw leftover
-     * @returns A withdraw leftover transaction
-     */
-    async withdrawLeftover(
-        withdrawLeftoverParam: WithdrawLeftoverParam
-    ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-        const poolAuthority = derivePoolAuthority(program.programId)
-
-        const virtualPoolState = await this.programClient.getPool(
-            withdrawLeftoverParam.virtualPool
-        )
-
-        if (!virtualPoolState) {
-            throw new Error(
-                `Pool not found: ${withdrawLeftoverParam.virtualPool.toString()}`
-            )
-        }
-
-        const poolConfigState = await this.programClient.getPoolConfig(
-            virtualPoolState.config
-        )
-
-        const tokenBaseProgram =
-            poolConfigState.tokenType === TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
-
-        const tokenBaseAccount = findAssociatedTokenAddress(
-            poolConfigState.leftoverReceiver,
-            virtualPoolState.baseMint,
-            tokenBaseProgram
-        )
-
-        const preInstructions: TransactionInstruction[] = []
-
-        const createBaseTokenAccountIx =
-            createAssociatedTokenAccountIdempotentInstruction(
-                poolConfigState.leftoverReceiver,
-                tokenBaseAccount,
-                poolConfigState.leftoverReceiver,
-                virtualPoolState.baseMint,
-                tokenBaseProgram
-            )
-
-        if (createBaseTokenAccountIx) {
-            preInstructions.push(createBaseTokenAccountIx)
-        }
-
-        const accounts = {
-            poolAuthority,
-            config: virtualPoolState.config,
-            virtualPool: withdrawLeftoverParam.virtualPool,
-            tokenBaseAccount,
-            baseVault: virtualPoolState.baseVault,
-            baseMint: virtualPoolState.baseMint,
-            leftoverReceiver: poolConfigState.leftoverReceiver,
-            tokenBaseProgram,
-        }
-
-        return program.methods
-            .withdrawLeftover()
-            .accountsPartial(accounts)
-            .preInstructions(preInstructions)
             .transaction()
     }
 }

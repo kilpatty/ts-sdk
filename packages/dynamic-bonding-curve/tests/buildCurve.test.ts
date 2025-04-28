@@ -41,6 +41,7 @@ describe('buildCurve tests', () => {
         creatorLpPercentage: 0,
         partnerLockedLpPercentage: 100,
         creatorLockedLpPercentage: 0,
+        creatorTradingFeePercentage: 0,
     }
 
     test('build curve with percentage and threshold parameters', () => {

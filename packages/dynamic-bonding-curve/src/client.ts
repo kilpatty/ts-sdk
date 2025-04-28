@@ -36,19 +36,22 @@ import {
 } from '@solana/spl-token'
 import BN from 'bn.js'
 import { PartnerService } from './services/partner'
+import { CreatorService } from './services/creator'
 
 export class DynamicBondingCurveClient {
     private program: Program<DynamicBondingCurveIDL>
-    public pools: PoolService
-    public migrations: MigrationService
-    public partners: PartnerService
+    public pool: PoolService
+    public migration: MigrationService
+    public partner: PartnerService
+    public creator: CreatorService
 
     constructor(connection: Connection) {
         const { program } = createProgram(connection)
         this.program = program
-        this.pools = new PoolService(this)
-        this.migrations = new MigrationService(this)
-        this.partners = new PartnerService(this)
+        this.pool = new PoolService(this)
+        this.migration = new MigrationService(this)
+        this.partner = new PartnerService(this)
+        this.creator = new CreatorService(this)
     }
 
     /**
@@ -430,16 +433,14 @@ export class DynamicBondingCurveClient {
      */
     async getPoolFeeMetrics(poolAddress: PublicKey): Promise<{
         current: {
-            tradingBaseFee: BN
-            tradingQuoteFee: BN
-            protocolBaseFee: BN
-            protocolQuoteFee: BN
+            partnerBaseFee: BN
+            partnerQuoteFee: BN
+            creatorBaseFee: BN
+            creatorQuoteFee: BN
         }
         total: {
             totalTradingBaseFee: BN
             totalTradingQuoteFee: BN
-            totalProtocolBaseFee: BN
-            totalProtocolQuoteFee: BN
         }
     }> {
         const pool = await this.getPool(poolAddress)
@@ -449,17 +450,55 @@ export class DynamicBondingCurveClient {
 
         return {
             current: {
-                tradingBaseFee: pool.tradingBaseFee,
-                tradingQuoteFee: pool.tradingQuoteFee,
-                protocolBaseFee: pool.protocolBaseFee,
-                protocolQuoteFee: pool.protocolQuoteFee,
+                partnerBaseFee: pool.partnerBaseFee,
+                partnerQuoteFee: pool.partnerQuoteFee,
+                creatorBaseFee: pool.creatorBaseFee,
+                creatorQuoteFee: pool.creatorQuoteFee,
             },
             total: {
                 totalTradingBaseFee: pool.metrics.totalTradingBaseFee,
                 totalTradingQuoteFee: pool.metrics.totalTradingQuoteFee,
-                totalProtocolBaseFee: pool.metrics.totalProtocolBaseFee,
-                totalProtocolQuoteFee: pool.metrics.totalProtocolQuoteFee,
             },
+        }
+    }
+
+    /**
+     * Get fee metrics for a specific pool
+     * @param poolAddress - The address of the pool
+     * @returns Object containing current and total fee metrics
+     */
+    async getPoolCreatorFeeMetrics(poolAddress: PublicKey): Promise<{
+        creatorBaseFee: BN
+        creatorQuoteFee: BN
+    }> {
+        const pool = await this.getPool(poolAddress)
+        if (!pool) {
+            throw new Error(`Pool not found: ${poolAddress.toString()}`)
+        }
+
+        return {
+            creatorBaseFee: pool.creatorBaseFee,
+            creatorQuoteFee: pool.creatorQuoteFee,
+        }
+    }
+
+    /**
+     * Get fee metrics for a specific pool
+     * @param poolAddress - The address of the pool
+     * @returns Object containing current and total fee metrics
+     */
+    async getPoolPartnerFeeMetrics(poolAddress: PublicKey): Promise<{
+        partnerBaseFee: BN
+        partnerQuoteFee: BN
+    }> {
+        const pool = await this.getPool(poolAddress)
+        if (!pool) {
+            throw new Error(`Pool not found: ${poolAddress.toString()}`)
+        }
+
+        return {
+            partnerBaseFee: pool.partnerBaseFee,
+            partnerQuoteFee: pool.partnerQuoteFee,
         }
     }
 
@@ -471,10 +510,9 @@ export class DynamicBondingCurveClient {
     async getPoolsQuoteFeesByConfig(configAddress: PublicKey): Promise<
         Array<{
             poolAddress: PublicKey
-            tradingQuoteFee: BN
-            protocolQuoteFee: BN
+            partnerQuoteFee: BN
+            creatorQuoteFee: BN
             totalTradingQuoteFee: BN
-            totalProtocolQuoteFee: BN
         }>
     > {
         const config =
@@ -489,10 +527,9 @@ export class DynamicBondingCurveClient {
 
         return filteredPools.map((pool) => ({
             poolAddress: pool.publicKey,
-            tradingQuoteFee: pool.account.tradingQuoteFee,
-            protocolQuoteFee: pool.account.protocolQuoteFee,
+            partnerQuoteFee: pool.account.partnerQuoteFee,
+            creatorQuoteFee: pool.account.creatorQuoteFee,
             totalTradingQuoteFee: pool.account.metrics.totalTradingQuoteFee,
-            totalProtocolQuoteFee: pool.account.metrics.totalProtocolQuoteFee,
         }))
     }
 
@@ -504,10 +541,9 @@ export class DynamicBondingCurveClient {
     async getPoolsBaseFeesByConfig(configAddress: PublicKey): Promise<
         Array<{
             poolAddress: PublicKey
-            tradingBaseFee: BN
-            protocolBaseFee: BN
+            partnerBaseFee: BN
+            creatorBaseFee: BN
             totalTradingBaseFee: BN
-            totalProtocolBaseFee: BN
         }>
     > {
         const config =
@@ -522,10 +558,9 @@ export class DynamicBondingCurveClient {
 
         return filteredPools.map((pool) => ({
             poolAddress: pool.publicKey,
-            tradingBaseFee: pool.account.tradingBaseFee,
-            protocolBaseFee: pool.account.protocolBaseFee,
+            partnerBaseFee: pool.account.partnerBaseFee,
+            creatorBaseFee: pool.account.creatorBaseFee,
             totalTradingBaseFee: pool.account.metrics.totalTradingBaseFee,
-            totalProtocolBaseFee: pool.account.metrics.totalProtocolBaseFee,
         }))
     }
 }

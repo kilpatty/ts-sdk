@@ -15,77 +15,89 @@ export type DynamicBondingCurveProgram = Program<DynamicBondingCurve>
 // IX ACCOUNTS //
 /////////////////
 
-export type ClaimProtocolFeeAccounts = Accounts<
+export type ClaimCreatorTradingFeeAccounts = Accounts<
     DynamicBondingCurve['instructions']['0']
+>['claimCreatorTradingFee']
+
+export type ClaimProtocolFeeAccounts = Accounts<
+    DynamicBondingCurve['instructions']['1']
 >['claimProtocolFee']
 
 export type ClaimTradingFeeAccounts = Accounts<
-    DynamicBondingCurve['instructions']['1']
+    DynamicBondingCurve['instructions']['2']
 >['claimTradingFee']
 
 export type CloseClaimFeeOperatorAccounts = Accounts<
-    DynamicBondingCurve['instructions']['2']
+    DynamicBondingCurve['instructions']['3']
 >['closeClaimFeeOperator']
 
 export type CreateClaimFeeOperatorAccounts = Accounts<
-    DynamicBondingCurve['instructions']['3']
+    DynamicBondingCurve['instructions']['4']
 >['createClaimFeeOperator']
 
 export type CreateConfigAccounts = Accounts<
-    DynamicBondingCurve['instructions']['4']
+    DynamicBondingCurve['instructions']['5']
 >['createConfig']
 
 export type CreateLockerAccounts = Accounts<
-    DynamicBondingCurve['instructions']['5']
+    DynamicBondingCurve['instructions']['6']
 >['createLocker']
 
 export type CreatePartnerMetadata = Accounts<
-    DynamicBondingCurve['instructions']['6']
+    DynamicBondingCurve['instructions']['7']
 >['createPartnerMetadata']
 
 export type CreateVirtualPoolMetadata = Accounts<
-    DynamicBondingCurve['instructions']['7']
+    DynamicBondingCurve['instructions']['8']
 >['createVirtualPoolMetadata']
 
+export type CreatorWithdrawSurplusAccounts = Accounts<
+    DynamicBondingCurve['instructions']['9']
+>['creatorWithdrawSurplus']
+
 export type InitializeVirtualPoolWithSplTokenAccounts = Accounts<
-    DynamicBondingCurve['instructions']['8']
+    DynamicBondingCurve['instructions']['10']
 >['initializeVirtualPoolWithSplToken']
 
 export type InitializeVirtualPoolWithToken2022Accounts = Accounts<
-    DynamicBondingCurve['instructions']['9']
+    DynamicBondingCurve['instructions']['11']
 >['initializeVirtualPoolWithToken2022']
 
 export type MigrateMeteoraDammAccounts = Accounts<
-    DynamicBondingCurve['instructions']['10']
+    DynamicBondingCurve['instructions']['12']
 >['migrateMeteoraDamm']
 
 export type MigrateMeteoraDammClaimLpTokenAccounts = Accounts<
-    DynamicBondingCurve['instructions']['11']
+    DynamicBondingCurve['instructions']['13']
 >['migrateMeteoraDammClaimLpToken']
 
 export type MigrateMeteoraDammLockLpTokenAccounts = Accounts<
-    DynamicBondingCurve['instructions']['12']
+    DynamicBondingCurve['instructions']['14']
 >['migrateMeteoraDammLockLpToken']
 
 export type MigrationDammV2Accounts = Accounts<
-    DynamicBondingCurve['instructions']['13']
+    DynamicBondingCurve['instructions']['15']
 >['migrationDammV2']
 
 export type MigrationDammV2CreateMetadataAccounts = Accounts<
-    DynamicBondingCurve['instructions']['14']
+    DynamicBondingCurve['instructions']['16']
 >['migrationDammV2CreateMetadata']
 
 export type MigrationMeteoraDammCreateMetadataAccounts = Accounts<
-    DynamicBondingCurve['instructions']['15']
+    DynamicBondingCurve['instructions']['17']
 >['migrationMeteoraDammCreateMetadata']
 
 export type PartnerWithdrawSurplusAccounts = Accounts<
-    DynamicBondingCurve['instructions']['16']
+    DynamicBondingCurve['instructions']['18']
 >['partnerWithdrawSurplus']
 
 export type SwapAccounts = Accounts<
-    DynamicBondingCurve['instructions']['18']
+    DynamicBondingCurve['instructions']['20']
 >['swap']
+
+export type WithdrawLeftoverAccounts = Accounts<
+    DynamicBondingCurve['instructions']['21']
+>['withdrawLeftover']
 
 ///////////////
 // IDL Types //
@@ -236,6 +248,7 @@ export type BuildCurveBaseParam = {
     creatorLpPercentage: number
     partnerLockedLpPercentage: number
     creatorLockedLpPercentage: number
+    creatorTradingFeePercentage: number
 }
 
 export type BuildCurveParam = BuildCurveBaseParam & {
@@ -358,6 +371,18 @@ export type WithdrawLeftoverParam = {
 
 export type CreateLockerParam = {
     payer: PublicKey
+    virtualPool: PublicKey
+}
+
+export type ClaimCreatorTradingFeeParam = {
+    creator: PublicKey
+    pool: PublicKey
+    maxBaseAmount: BN
+    maxQuoteAmount: BN
+}
+
+export type CreatorWithdrawSurplusParam = {
+    creator: PublicKey
     virtualPool: PublicKey
 }
 

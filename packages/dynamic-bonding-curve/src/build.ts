@@ -41,6 +41,7 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         creatorLpPercentage,
         partnerLockedLpPercentage,
         creatorLockedLpPercentage,
+        creatorTradingFeePercentage,
     } = buildCurveParam
 
     const {
@@ -152,7 +153,9 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
             preMigrationTokenSupply: totalSupply,
             postMigrationTokenSupply: totalSupply,
         },
-        padding: [],
+        creatorTradingFeePercentage,
+        padding0: [],
+        padding1: [],
         curve,
     }
     return instructionParams
