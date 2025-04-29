@@ -1,19 +1,77 @@
-import { ComputeBudgetProgram, Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction, type Connection, type Transaction } from "@solana/web3.js"
-import type { DynamicBondingCurveProgramClient } from "../client"
-import type { DynamicVault } from "../idl/dynamic-vault/idl"
-import type { Program } from "@coral-xyz/anchor"
-import { createDammV1Program, createVaultProgram, findAssociatedTokenAddress } from "../utils"
-import type { DammV1 } from "../idl/damm-v1/idl"
-import type { CreateDammMigrationMetadataParam, CreateLockerParam, DammLpTokenParam, MigrateToDammV1Param, MigrateToDammV2Param, MigrateToDammV2Response } from "../types"
-import { deriveBaseKeyForLocker, deriveDammMigrationMetadataAddress, deriveDammPoolAddress, deriveDammV2EventAuthority, deriveDammV2PoolAddress, deriveEscrow, deriveLockerEventAuthority, deriveLockEscrowAddress, deriveLpMintAddress, deriveMetadata, derivePoolAuthority, derivePositionAddress, derivePositionNftAccount, deriveProtocolFeeAddress, deriveTokenVaultAddress, deriveVaultLPAddress, deriveVaultPdas } from "../derive"
-import { ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { DAMM_V1_PROGRAM_ID, DAMM_V2_PROGRAM_ID, DYNAMIC_BONDING_CURVE_PROGRAM_ID, LOCKER_PROGRAM_ID, METAPLEX_PROGRAM_ID, VAULT_PROGRAM_ID } from "../constants"
-import { createInitializePermissionlessDynamicVaultIx, createLockEscrowIx } from "../common"
+import {
+    ComputeBudgetProgram,
+    Keypair,
+    PublicKey,
+    SystemProgram,
+    SYSVAR_RENT_PUBKEY,
+    TransactionInstruction,
+    type Connection,
+    type Transaction,
+} from '@solana/web3.js'
+import type { DynamicBondingCurveClient } from '../client'
+import type { DynamicVault } from '../idl/dynamic-vault/idl'
+import type { Program } from '@coral-xyz/anchor'
+import {
+    createDammV1Program,
+    createVaultProgram,
+    findAssociatedTokenAddress,
+} from '../utils'
+import type { DammV1 } from '../idl/damm-v1/idl'
+import {
+    TokenType,
+    type CreateDammV1MigrationMetadataParam,
+    type CreateDammV2MigrationMetadataParam,
+    type CreateLockerParam,
+    type DammLpTokenParam,
+    type MigrateToDammV1Param,
+    type MigrateToDammV2Param,
+    type MigrateToDammV2Response,
+    type WithdrawLeftoverParam,
+} from '../types'
+import {
+    deriveBaseKeyForLocker,
+    deriveDammPoolAddress,
+    deriveDammV1MigrationMetadataAddress,
+    deriveDammV2EventAuthority,
+    deriveDammV2MigrationMetadataAddress,
+    deriveDammV2PoolAddress,
+    deriveEscrow,
+    deriveLockerEventAuthority,
+    deriveLockEscrowAddress,
+    deriveLpMintAddress,
+    deriveMetadata,
+    derivePoolAuthority,
+    derivePositionAddress,
+    derivePositionNftAccount,
+    deriveProtocolFeeAddress,
+    deriveTokenVaultAddress,
+    deriveVaultLPAddress,
+    deriveVaultPdas,
+} from '../derive'
+import {
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    createAssociatedTokenAccountIdempotentInstruction,
+    getAssociatedTokenAddressSync,
+    TOKEN_2022_PROGRAM_ID,
+    TOKEN_PROGRAM_ID,
+} from '@solana/spl-token'
+import {
+    DAMM_V1_PROGRAM_ID,
+    DAMM_V2_PROGRAM_ID,
+    DYNAMIC_BONDING_CURVE_PROGRAM_ID,
+    LOCKER_PROGRAM_ID,
+    METAPLEX_PROGRAM_ID,
+    VAULT_PROGRAM_ID,
+} from '../constants'
+import {
+    createInitializePermissionlessDynamicVaultIx,
+    createLockEscrowIx,
+} from '../common'
 
 export class MigrationService {
     private connection: Connection
 
-    constructor(private programClient: DynamicBondingCurveProgramClient) {
+    constructor(private programClient: DynamicBondingCurveClient) {
         this.connection = this.programClient.getProgram().provider.connection
     }
 
@@ -34,52 +92,17 @@ export class MigrationService {
     }
 
     /**
-     * Create metadata for the migration of Meteora DAMM V1 or DAMM V2
-     * @param createDammMigrationMetadataParam - The parameters for the migration
-     * @returns A migration transaction
-     */
-    async createDammMigrationMetadata(
-        createDammMigrationMetadataParam: CreateDammMigrationMetadataParam
-    ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-
-        const migrationMetadata = deriveDammMigrationMetadataAddress(
-            createDammMigrationMetadataParam.virtualPool,
-            program.programId,
-            createDammMigrationMetadataParam.migrateToDammV2
-        )
-
-        const accounts = {
-            virtualPool: createDammMigrationMetadataParam.virtualPool,
-            config: createDammMigrationMetadataParam.config,
-            migrationMetadata: migrationMetadata,
-            payer: createDammMigrationMetadataParam.payer,
-            systemProgram: SystemProgram.programId,
-        }
-
-        if (createDammMigrationMetadataParam.migrateToDammV2) {
-            return program.methods
-                .migrationDammV2CreateMetadata()
-                .accountsPartial(accounts)
-                .transaction()
-        } else {
-            return program.methods
-                .migrationMeteoraDammCreateMetadata()
-                .accountsPartial(accounts)
-                .transaction()
-        }
-    }
-
-    /**
-     * Create a locker
-     * @param createLockerParam - The parameters for the locker
-     * @returns A create locker transaction
+     * Create lock escrow
+     * @param createLockerParam - The parameters for the lock escrow
+     * @returns A create lock escrow transaction
      */
     async createLocker(
         createLockerParam: CreateLockerParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
-        const poolAuthority = derivePoolAuthority(program.programId)
+        const poolAuthority = derivePoolAuthority(
+            DYNAMIC_BONDING_CURVE_PROGRAM_ID
+        )
         const lockerEventAuthority = deriveLockerEventAuthority()
 
         const virtualPoolState = await this.programClient.getPool(
@@ -143,7 +166,76 @@ export class MigrationService {
 
         return program.methods
             .createLocker()
-            .accounts(accounts)
+            .accountsPartial(accounts)
+            .preInstructions(preInstructions)
+            .transaction()
+    }
+
+    /**
+     * Withdraw leftover
+     * @param withdrawLeftoverParam - The parameters for the withdraw leftover
+     * @returns A withdraw leftover transaction
+     */
+    async withdrawLeftover(
+        withdrawLeftoverParam: WithdrawLeftoverParam
+    ): Promise<Transaction> {
+        const program = this.programClient.getProgram()
+        const poolAuthority = derivePoolAuthority(program.programId)
+
+        const virtualPoolState = await this.programClient.getPool(
+            withdrawLeftoverParam.virtualPool
+        )
+
+        if (!virtualPoolState) {
+            throw new Error(
+                `Pool not found: ${withdrawLeftoverParam.virtualPool.toString()}`
+            )
+        }
+
+        const poolConfigState = await this.programClient.getPoolConfig(
+            virtualPoolState.config
+        )
+
+        const tokenBaseProgram =
+            poolConfigState.tokenType === TokenType.SPL
+                ? TOKEN_PROGRAM_ID
+                : TOKEN_2022_PROGRAM_ID
+
+        const tokenBaseAccount = findAssociatedTokenAddress(
+            poolConfigState.leftoverReceiver,
+            virtualPoolState.baseMint,
+            tokenBaseProgram
+        )
+
+        const preInstructions: TransactionInstruction[] = []
+
+        const createBaseTokenAccountIx =
+            createAssociatedTokenAccountIdempotentInstruction(
+                poolConfigState.leftoverReceiver,
+                tokenBaseAccount,
+                poolConfigState.leftoverReceiver,
+                virtualPoolState.baseMint,
+                tokenBaseProgram
+            )
+
+        if (createBaseTokenAccountIx) {
+            preInstructions.push(createBaseTokenAccountIx)
+        }
+
+        const accounts = {
+            poolAuthority,
+            config: virtualPoolState.config,
+            virtualPool: withdrawLeftoverParam.virtualPool,
+            tokenBaseAccount,
+            baseVault: virtualPoolState.baseVault,
+            baseMint: virtualPoolState.baseMint,
+            leftoverReceiver: poolConfigState.leftoverReceiver,
+            tokenBaseProgram,
+        }
+
+        return program.methods
+            .withdrawLeftover()
+            .accountsPartial(accounts)
             .preInstructions(preInstructions)
             .transaction()
     }
@@ -151,6 +243,34 @@ export class MigrationService {
     ///////////////////////
     // DAMM V1 FUNCTIONS //
     ///////////////////////
+
+    /**
+     * Create metadata for the migration of Meteora DAMM V1
+     * @param createDammV1MigrationMetadataParam - The parameters for the DAMM V1 migration
+     * @returns A DAMM V1 create migration metadata transaction
+     */
+    async createDammV1MigrationMetadata(
+        createDammV1MigrationMetadataParam: CreateDammV1MigrationMetadataParam
+    ): Promise<Transaction> {
+        const program = this.programClient.getProgram()
+
+        const migrationMetadata = deriveDammV1MigrationMetadataAddress(
+            createDammV1MigrationMetadataParam.virtualPool
+        )
+
+        const accounts = {
+            virtualPool: createDammV1MigrationMetadataParam.virtualPool,
+            config: createDammV1MigrationMetadataParam.config,
+            migrationMetadata: migrationMetadata,
+            payer: createDammV1MigrationMetadataParam.payer,
+            systemProgram: SystemProgram.programId,
+        }
+
+        return program.methods
+            .migrationMeteoraDammCreateMetadata()
+            .accountsPartial(accounts)
+            .transaction()
+    }
 
     /**
      * Migrate to DAMM V1
@@ -175,12 +295,12 @@ export class MigrationService {
             virtualPoolState.config
         )
 
-        const poolAuthority = derivePoolAuthority(program.programId)
+        const poolAuthority = derivePoolAuthority(
+            DYNAMIC_BONDING_CURVE_PROGRAM_ID
+        )
 
-        const migrationMetadata = deriveDammMigrationMetadataAddress(
-            migrateToDammV1Param.virtualPool,
-            program.programId,
-            false
+        const migrationMetadata = deriveDammV1MigrationMetadataAddress(
+            migrateToDammV1Param.virtualPool
         )
 
         const dammPool = deriveDammPoolAddress(
@@ -275,7 +395,7 @@ export class MigrationService {
 
         const transaction = await program.methods
             .migrateMeteoraDamm()
-            .accountsStrict({
+            .accountsPartial({
                 virtualPool: migrateToDammV1Param.virtualPool,
                 migrationMetadata,
                 config: virtualPoolState.config,
@@ -306,7 +426,6 @@ export class MigrationService {
                 vaultProgram: VAULT_PROGRAM_ID,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                systemProgram: SystemProgram.programId,
             })
             .preInstructions(preInstructions)
             .transaction()
@@ -329,7 +448,9 @@ export class MigrationService {
         lockDammV1LpTokenParam: DammLpTokenParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
-        const poolAuthority = derivePoolAuthority(program.programId)
+        const poolAuthority = derivePoolAuthority(
+            DYNAMIC_BONDING_CURVE_PROGRAM_ID
+        )
 
         const virtualPoolState = await this.programClient.getPool(
             lockDammV1LpTokenParam.virtualPool
@@ -351,10 +472,8 @@ export class MigrationService {
             poolConfigState.quoteMint
         )
 
-        const migrationMetadata = deriveDammMigrationMetadataAddress(
-            lockDammV1LpTokenParam.virtualPool,
-            DYNAMIC_BONDING_CURVE_PROGRAM_ID,
-            false
+        const migrationMetadata = deriveDammV1MigrationMetadataAddress(
+            lockDammV1LpTokenParam.virtualPool
         )
 
         const vaultProgram = this.getVaultProgram()
@@ -504,22 +623,19 @@ export class MigrationService {
             sender: lockDammV1LpTokenParam.payer,
             sourceTokens,
             escrowVault,
-            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-            systemProgram: SystemProgram.programId,
+            ammProgram: DAMM_V1_PROGRAM_ID,
             aVault,
             bVault,
             aVaultLp,
             bVaultLp,
             aVaultLpMint,
             bVaultLpMint,
-            ammProgram: DAMM_V1_PROGRAM_ID,
-            vaultProgram: VAULT_PROGRAM_ID,
             tokenProgram: TOKEN_PROGRAM_ID,
         }
 
         return program.methods
             .migrateMeteoraDammLockLpToken()
-            .accountsStrict(accounts)
+            .accountsPartial(accounts)
             .preInstructions(preInstructions)
             .transaction()
     }
@@ -533,7 +649,9 @@ export class MigrationService {
         claimDammV1LpTokenParam: DammLpTokenParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
-        const poolAuthority = derivePoolAuthority(program.programId)
+        const poolAuthority = derivePoolAuthority(
+            DYNAMIC_BONDING_CURVE_PROGRAM_ID
+        )
 
         const virtualPoolState = await this.programClient.getPool(
             claimDammV1LpTokenParam.virtualPool
@@ -555,10 +673,8 @@ export class MigrationService {
             poolConfigState.quoteMint
         )
 
-        const migrationMetadata = deriveDammMigrationMetadataAddress(
-            claimDammV1LpTokenParam.virtualPool,
-            DYNAMIC_BONDING_CURVE_PROGRAM_ID,
-            false
+        const migrationMetadata = deriveDammV1MigrationMetadataAddress(
+            claimDammV1LpTokenParam.virtualPool
         )
 
         const lpMint = deriveLpMintAddress(dammPool, DAMM_V1_PROGRAM_ID)
@@ -614,6 +730,34 @@ export class MigrationService {
     ///////////////////////
 
     /**
+     * Create metadata for the migration of Meteora DAMM V2
+     * @param createDammV2MigrationMetadataParam - The parameters for the DAMM V2 migration
+     * @returns A DAMM V2 create migration metadata transaction
+     */
+    async createDammV2MigrationMetadata(
+        createDammV2MigrationMetadataParam: CreateDammV2MigrationMetadataParam
+    ): Promise<Transaction> {
+        const program = this.programClient.getProgram()
+
+        const migrationMetadata = deriveDammV2MigrationMetadataAddress(
+            createDammV2MigrationMetadataParam.virtualPool
+        )
+
+        const accounts = {
+            virtualPool: createDammV2MigrationMetadataParam.virtualPool,
+            config: createDammV2MigrationMetadataParam.config,
+            migrationMetadata: migrationMetadata,
+            payer: createDammV2MigrationMetadataParam.payer,
+            systemProgram: SystemProgram.programId,
+        }
+
+        return program.methods
+            .migrationDammV2CreateMetadata()
+            .accountsPartial(accounts)
+            .transaction()
+    }
+
+    /**
      * Migrate to DAMM V2
      * @param migrateToDammV2Param - The parameters for the migration
      * @returns A migrate transaction
@@ -622,7 +766,9 @@ export class MigrationService {
         migrateToDammV2Param: MigrateToDammV2Param
     ): Promise<MigrateToDammV2Response> {
         const program = this.programClient.getProgram()
-        const poolAuthority = derivePoolAuthority(program.programId)
+        const poolAuthority = derivePoolAuthority(
+            DYNAMIC_BONDING_CURVE_PROGRAM_ID
+        )
         const dammPoolAuthority = derivePoolAuthority(DAMM_V2_PROGRAM_ID)
         const dammEventAuthority = deriveDammV2EventAuthority()
 
@@ -640,10 +786,8 @@ export class MigrationService {
             virtualPoolState.config
         )
 
-        const migrationMetadata = deriveDammMigrationMetadataAddress(
-            migrateToDammV2Param.virtualPool,
-            program.programId,
-            true
+        const migrationMetadata = deriveDammV2MigrationMetadataAddress(
+            migrateToDammV2Param.virtualPool
         )
 
         const dammPool = deriveDammV2PoolAddress(

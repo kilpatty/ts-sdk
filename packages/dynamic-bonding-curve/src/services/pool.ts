@@ -5,25 +5,18 @@ import {
     type Connection,
     type Transaction,
 } from '@solana/web3.js'
-import type { DynamicBondingCurveProgramClient } from '../client'
+import type { DynamicBondingCurveClient } from '../client'
 import {
     TokenType,
     type CreatePoolParam,
-    type CreateVirtualPoolMetadataParam,
-    type CreateVirtualPoolMetadataParameters,
-    type InitializeVirtualPoolWithSplTokenAccounts,
-    type InitializeVirtualPoolWithToken2022Accounts,
-    type SwapAccounts,
     type SwapParam,
     type SwapQuoteParam,
 } from '../types'
 import {
-    deriveEventAuthority,
     deriveMetadata,
     derivePool,
     derivePoolAuthority,
     deriveTokenVaultAddress,
-    deriveVirtualPoolMetadata,
 } from '../derive'
 import {
     createAssociatedTokenAccountIdempotentInstruction,
@@ -44,7 +37,7 @@ import { validateBalance, validateBaseTokenType } from '../checks'
 export class PoolService {
     private connection: Connection
 
-    constructor(private programClient: DynamicBondingCurveProgramClient) {
+    constructor(private programClient: DynamicBondingCurveClient) {
         this.connection = this.programClient.getProgram().provider.connection
     }
 
@@ -73,7 +66,6 @@ export class PoolService {
         // error checks
         validateBaseTokenType(baseTokenType, poolConfigState)
 
-        const eventAuthority = deriveEventAuthority()
         const poolAuthority = derivePoolAuthority(program.programId)
         const pool = derivePool(quoteMint, baseMint, config, program.programId)
         const baseVault = deriveTokenVaultAddress(
@@ -89,25 +81,22 @@ export class PoolService {
         const baseMetadata = deriveMetadata(baseMint)
 
         if (baseTokenType === TokenType.SPL) {
-            const accounts: InitializeVirtualPoolWithSplTokenAccounts = {
-                pool,
+            const accounts = {
                 config,
+                baseMint,
+                quoteMint,
+                pool,
                 payer,
                 creator: poolCreator,
+                poolAuthority,
+                baseVault,
+                quoteVault,
                 mintMetadata: baseMetadata,
-                program: program.programId,
+                metadataProgram: METAPLEX_PROGRAM_ID,
                 tokenQuoteProgram:
                     quoteTokenType === TokenType.SPL
                         ? TOKEN_PROGRAM_ID
                         : TOKEN_2022_PROGRAM_ID,
-                baseMint,
-                poolAuthority,
-                baseVault,
-                quoteVault,
-                quoteMint,
-                eventAuthority,
-                metadataProgram: METAPLEX_PROGRAM_ID,
-                systemProgram: SystemProgram.programId,
                 tokenProgram: TOKEN_PROGRAM_ID,
             }
             return program.methods
@@ -116,26 +105,23 @@ export class PoolService {
                     symbol,
                     uri,
                 })
-                .accounts(accounts)
+                .accountsPartial(accounts)
                 .transaction()
         }
 
         if (baseTokenType === TokenType.Token2022) {
-            const accounts: InitializeVirtualPoolWithToken2022Accounts = {
-                pool,
+            const accounts = {
                 config,
+                baseMint,
+                quoteMint,
+                pool,
                 payer,
                 creator: poolCreator,
-                program: program.programId,
-                baseMint,
                 poolAuthority,
                 baseVault,
                 quoteVault,
-                quoteMint,
-                eventAuthority,
                 tokenQuoteProgram: TOKEN_PROGRAM_ID,
                 tokenProgram: TOKEN_2022_PROGRAM_ID,
-                systemProgram: SystemProgram.programId,
             }
             return program.methods
                 .initializeVirtualPoolWithToken2022({
@@ -143,48 +129,11 @@ export class PoolService {
                     symbol,
                     uri,
                 })
-                .accounts(accounts)
+                .accountsPartial(accounts)
                 .transaction()
         }
 
         throw new Error('Invalid base token type')
-    }
-
-    /**
-     * Create virtual pool metadata
-     * @param createVirtualPoolMetadataParam - The parameters for the virtual pool metadata
-     * @returns A create virtual pool metadata transaction
-     */
-    async createPoolMetadata(
-        createVirtualPoolMetadataParam: CreateVirtualPoolMetadataParam
-    ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-        const eventAuthority = deriveEventAuthority()
-        const virtualPoolMetadata = deriveVirtualPoolMetadata(
-            createVirtualPoolMetadataParam.virtualPool
-        )
-
-        const virtualPoolMetadataParam: CreateVirtualPoolMetadataParameters = {
-            padding: new Array(96).fill(0),
-            name: createVirtualPoolMetadataParam.name,
-            website: createVirtualPoolMetadataParam.website,
-            logo: createVirtualPoolMetadataParam.logo,
-        }
-
-        const accounts = {
-            virtualPool: createVirtualPoolMetadataParam.virtualPool,
-            virtualPoolMetadata,
-            creator: createVirtualPoolMetadataParam.creator,
-            payer: createVirtualPoolMetadataParam.payer,
-            systemProgram: SystemProgram.programId,
-            eventAuthority,
-            program: program.programId,
-        }
-
-        return program.methods
-            .createVirtualPoolMetadata(virtualPoolMetadataParam)
-            .accounts(accounts)
-            .transaction()
     }
 
     /**
@@ -193,15 +142,16 @@ export class PoolService {
      * @param swapParam - The parameters for the swap
      * @returns A swap transaction
      */
-    async swap(pool: PublicKey, swapParam: SwapParam): Promise<Transaction> {
+    async swap(swapParam: SwapParam): Promise<Transaction> {
         const program = this.programClient.getProgram()
-        const eventAuthority = deriveEventAuthority()
         const poolAuthority = derivePoolAuthority(program.programId)
 
-        const virtualPoolState = await this.programClient.getPool(pool)
+        const virtualPoolState = await this.programClient.getPool(
+            swapParam.pool
+        )
 
         if (!virtualPoolState) {
-            throw new Error(`Pool not found: ${pool.toString()}`)
+            throw new Error(`Pool not found: ${swapParam.pool.toString()}`)
         }
 
         const poolConfigState = await this.programClient.getPoolConfig(
@@ -241,18 +191,16 @@ export class PoolService {
             inputTokenAccount
         )
 
-        const accounts: SwapAccounts = {
-            baseMint: virtualPoolState.baseMint,
-            quoteMint: poolConfigState.quoteMint,
-            pool: pool,
-            baseVault: virtualPoolState.baseVault,
-            quoteVault: virtualPoolState.quoteVault,
-            config: virtualPoolState.config,
-            eventAuthority,
+        const accounts = {
             poolAuthority,
-            referralTokenAccount: null,
+            config: virtualPoolState.config,
+            pool: swapParam.pool,
             inputTokenAccount,
             outputTokenAccount,
+            baseVault: virtualPoolState.baseVault,
+            quoteVault: virtualPoolState.quoteVault,
+            baseMint: virtualPoolState.baseMint,
+            quoteMint: poolConfigState.quoteMint,
             payer: owner,
             tokenBaseProgram: swapBaseForQuote
                 ? inputTokenProgram
@@ -260,7 +208,7 @@ export class PoolService {
             tokenQuoteProgram: swapBaseForQuote
                 ? outputTokenProgram
                 : inputTokenProgram,
-            program: program.programId,
+            referralTokenAccount: swapParam.referralTokenAccount,
         }
 
         // Add preInstructions for ATA creation and SOL wrapping
@@ -320,7 +268,7 @@ export class PoolService {
                 amountIn,
                 minimumAmountOut,
             })
-            .accounts(accounts)
+            .accountsPartial(accounts)
             .preInstructions(preInstructions)
             .postInstructions(postInstructions)
             .transaction()
