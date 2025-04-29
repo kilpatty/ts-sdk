@@ -194,39 +194,50 @@ const transaction = await client.partner.createConfig({
 ```
 
 #### Notes
+
 ## Validating Configuration Parameters
 
 When creating a new configuration for a dynamic bonding curve, several validations are performed to ensure the parameters are valid:
 
 ##### Pool Fees
+
 - Pool fees are required and must be valid
 - Base fee must have a positive cliff fee numerator
 
 ##### Fee Mode
+
 - Collect fee mode must be either `OnlyQuote` (0) or `Both` (1)
 
 ##### Migration and Token Type
+
 - For MeteoraDamm migration (option 0), token type must be SPL (0)
 
 ##### Activation Type
+
 - Must be either Slot (0) or Timestamp (1)
 
 ##### Migration Fee
+
 - Must be a valid option: FixedBps25 (0), FixedBps30 (1), FixedBps100 (2), FixedBps200 (3), etc.
 
-#####Token Decimals
+##### Token Decimals
+
 - Must be between 6 and 9
 
 ##### LP Percentages
+
 - The sum of partner LP, creator LP, partner locked LP, and creator locked LP percentages must equal 100
 
 ##### Migration Quote Threshold
+
 - Must be greater than 0
 
 ##### Price
+
 - Square root start price must be within valid range (MIN_SQRT_PRICE to MAX_SQRT_PRICE)
 
 ##### Curve
+
 - Must have at least one point and not exceed MAX_CURVE_POINT
 - First curve point must have sqrt price greater than start price and positive liquidity
 - Curve points must be in ascending order by sqrt price
@@ -234,9 +245,11 @@ When creating a new configuration for a dynamic bonding curve, several validatio
 - Last point's sqrt price must not exceed MAX_SQRT_PRICE
 
 ##### Locked Vesting
+
 - If not default (all zeros), must have valid frequency and total amount greater than 0
 
 ##### Token Supply
+
 - Must be valid in relation to swap base amount, migration base amount, and locked vesting
 - Post-migration supply must not exceed pre-migration supply
 - Total required tokens (swap + migration + vesting) must not exceed pre-migration supply
@@ -631,4 +644,937 @@ const quote = client.pool.swapQuote({
     hasReferral,
     currentPoint,
 })
+```
+
+## Migration Functions
+
+### createLocker
+
+Creates a new locker account.
+
+#### Function
+
+```typescript
+async createLocker(createLockerParam: CreateLockerParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface CreateLockerParam {
+    payer: PublicKey
+    locker: PublicKey
+    amount: BN
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.migration.createLocker({
+    payer: wallet.publicKey,
+    locker: locker.publicKey,
+    amount: new BN(1000000000),
+})
+```
+
+### withdrawLeftover
+
+Withdraws leftover tokens from a locker.
+
+#### Function
+
+```typescript
+async withdrawLeftover(withdrawLeftoverParam: WithdrawLeftoverParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface WithdrawLeftoverParam {
+    payer: PublicKey
+    locker: PublicKey
+    amount: BN
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.migration.withdrawLeftover({
+    payer: wallet.publicKey,
+    locker: locker.publicKey,
+    amount: new BN(1000000000),
+})
+```
+
+### createDammV1MigrationMetadata
+
+Creates a new DAMM V1 migration metadata account.
+
+#### Function
+
+```typescript
+async createDammV1MigrationMetadata(createDammV1MigrationMetadataParam: CreateDammV1MigrationMetadataParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface CreateDammV1MigrationMetadataParam {
+    payer: PublicKey
+    metadata: MeteoraDammMigrationMetadata
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.migration.createDammV1MigrationMetadata({
+    payer: wallet.publicKey,
+    metadata: {
+        // Populate metadata fields
+    },
+})
+```
+
+### migrateToDammV1
+
+Migrates to DAMM V1.
+
+#### Function
+
+```typescript
+async migrateToDammV1(migrateToDammV1Param: MigrateToDammV1Param): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface MigrateToDammV1Param {
+    payer: PublicKey
+    locker: PublicKey
+    amount: BN
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.migration.migrateToDammV1({
+    payer: wallet.publicKey,
+    locker: locker.publicKey,
+    amount: new BN(1000000000),
+})
+```
+
+### lockDammV1LpToken
+
+Locks a DAMM V1 LP token.
+
+#### Function
+
+```typescript
+async lockDammV1LpToken(lockDammV1LpTokenParam: LockDammV1LpTokenParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface LockDammV1LpTokenParam {
+    payer: PublicKey
+    locker: PublicKey
+    amount: BN
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.migration.lockDammV1LpToken({
+    payer: wallet.publicKey,
+    locker: locker.publicKey,
+    amount: new BN(1000000000),
+})
+```
+
+### claimDammV1LpToken
+
+Claims a DAMM V1 LP token.
+
+#### Function
+
+```typescript
+async claimDammV1LpToken(claimDammV1LpTokenParam: ClaimDammV1LpTokenParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface ClaimDammV1LpTokenParam {
+    payer: PublicKey
+    locker: PublicKey
+    amount: BN
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.migration.claimDammV1LpToken({
+    payer: wallet.publicKey,
+    locker: locker.publicKey,
+    amount: new BN(1000000000),
+})
+```
+
+### createDammV2MigrationMetadata
+
+Creates a new DAMM V2 migration metadata account.
+
+#### Function
+
+```typescript
+async createDammV2MigrationMetadata(createDammV2MigrationMetadataParam: CreateDammV2MigrationMetadataParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface CreateDammV2MigrationMetadataParam {
+    payer: PublicKey
+    metadata: MeteoraDammMigrationMetadata
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.migration.createDammV2MigrationMetadata({
+    payer: wallet.publicKey,
+    metadata: {
+        // Populate metadata fields
+    },
+})
+```
+
+### migrateToDammV2
+
+Migrates to DAMM V2.
+
+#### Function
+
+```typescript
+async migrateToDammV2(migrateToDammV2Param: MigrateToDammV2Param): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface MigrateToDammV2Param {
+    payer: PublicKey
+    locker: PublicKey
+    amount: BN
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.migration.migrateToDammV2({
+    payer: wallet.publicKey,
+    locker: locker.publicKey,
+    amount: new BN(1000000000),
+})
+```
+
+## Creator Functions
+
+### createPoolMetadata
+
+Creates a new pool metadata account.
+
+#### Function
+
+```typescript
+async createPoolMetadata(createPoolMetadataParam: CreatePoolMetadataParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface CreatePoolMetadataParam {
+    payer: PublicKey
+    metadata: PoolMetadata
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.creator.createPoolMetadata({
+    payer: wallet.publicKey,
+    metadata: {
+        // Populate metadata fields
+    },
+})
+```
+
+### claimCreatorTradingFee
+
+Claims a creator trading fee.
+
+#### Function
+
+```typescript
+async claimCreatorTradingFee(claimCreatorTradingFeeParam: ClaimCreatorTradingFeeParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface ClaimCreatorTradingFeeParam {
+    payer: PublicKey
+    amount: BN
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.creator.claimCreatorTradingFee({
+    payer: wallet.publicKey,
+    amount: new BN(1000000000),
+})
+```
+
+### creatorWithdrawSurplus
+
+Withdraws surplus tokens from a creator.
+
+#### Function
+
+```typescript
+async creatorWithdrawSurplus(creatorWithdrawSurplusParam: CreatorWithdrawSurplusParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface CreatorWithdrawSurplusParam {
+    payer: PublicKey
+    amount: BN
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.creator.creatorWithdrawSurplus({
+    payer: wallet.publicKey,
+    amount: new BN(1000000000),
+})
+```
+
+## Helper Functions
+
+### getPoolConfig
+
+Gets the configuration details for a specific pool.
+
+#### Function
+
+```typescript
+async getPoolConfig(configAddress: PublicKey | string): Promise<PoolConfig>
+```
+
+#### Parameters
+
+```typescript
+configAddress: PublicKey | string // The address of the config key
+```
+
+#### Returns
+
+A `PoolConfig` object containing the pool's configuration details.
+
+#### Example
+
+```typescript
+const config = await client.getPoolConfig(configAddress)
+```
+
+### getPoolConfigs
+
+Retrieves all pool configurations.
+
+#### Function
+
+```typescript
+async getPoolConfigs(): Promise<(ProgramAccount<PoolConfig> & { createdAt?: Date })[]>
+```
+
+#### Returns
+
+An array of pool configurations with their creation dates.
+
+#### Example
+
+```typescript
+const configs = await client.getPoolConfigs()
+```
+
+### getPoolConfigsByOwner
+
+Retrieves all pool configurations owned by a specific wallet.
+
+#### Function
+
+```typescript
+async getPoolConfigsByOwner(owner?: PublicKey | string): Promise<(ProgramAccount<PoolConfig> & { createdAt?: Date })[]>
+```
+
+#### Parameters
+
+```typescript
+owner?: PublicKey | string    // The owner's wallet address (optional)
+```
+
+#### Returns
+
+An array of pool configurations owned by the specified wallet.
+
+#### Example
+
+```typescript
+const configs = await client.getPoolConfigsByOwner(wallet.publicKey)
+```
+
+### getPool
+
+Gets the details of a specific pool.
+
+#### Function
+
+```typescript
+async getPool(poolAddress: PublicKey | string): Promise<VirtualPool | null>
+```
+
+#### Parameters
+
+```typescript
+poolAddress: PublicKey | string // The address of the pool
+```
+
+#### Returns
+
+A `VirtualPool` object containing the pool's details, or null if not found.
+
+#### Example
+
+```typescript
+const pool = await client.getPool(poolAddress)
+```
+
+### getPools
+
+Retrieves all pools.
+
+#### Function
+
+```typescript
+async getPools(): Promise<(ProgramAccount<VirtualPool> & { createdAt?: Date })[]>
+```
+
+#### Returns
+
+An array of all pools with their creation dates.
+
+#### Example
+
+```typescript
+const pools = await client.getPools()
+```
+
+### getPoolMigrationQuoteThreshold
+
+Gets the migration quote threshold for a specific pool.
+
+#### Function
+
+```typescript
+async getPoolMigrationQuoteThreshold(poolAddress: PublicKey | string): Promise<BN>
+```
+
+#### Parameters
+
+```typescript
+poolAddress: PublicKey | string // The address of the pool
+```
+
+#### Returns
+
+A `BN` object representing the migration quote threshold.
+
+#### Example
+
+```typescript
+const threshold = await client.getPoolMigrationQuoteThreshold(poolAddress)
+```
+
+### getPoolMetadata
+
+Gets the metadata for a specific pool.
+
+#### Function
+
+```typescript
+async getPoolMetadata(poolAddress: PublicKey | string): Promise<VirtualPoolMetadata[]>
+```
+
+#### Parameters
+
+```typescript
+poolAddress: PublicKey | string // The address of the pool
+```
+
+#### Returns
+
+An array of `VirtualPoolMetadata` objects containing the pool's metadata.
+
+#### Example
+
+```typescript
+const metadata = await client.getPoolMetadata(poolAddress)
+```
+
+### getPartnerMetadata
+
+Gets the metadata for a specific partner.
+
+#### Function
+
+```typescript
+async getPartnerMetadata(walletAddress: PublicKey | string): Promise<PartnerMetadata[]>
+```
+
+#### Parameters
+
+```typescript
+walletAddress: PublicKey | string // The partner's wallet address
+```
+
+#### Returns
+
+An array of `PartnerMetadata` objects containing the partner's metadata.
+
+#### Example
+
+```typescript
+const metadata = await client.getPartnerMetadata(wallet.publicKey)
+```
+
+### getDammV1MigrationMetadata
+
+Gets the migration metadata for a DAMM V1 pool.
+
+#### Function
+
+```typescript
+async getDammV1MigrationMetadata(poolAddress: PublicKey | string): Promise<MeteoraDammMigrationMetadata>
+```
+
+#### Parameters
+
+```typescript
+poolAddress: PublicKey | string // The address of the DAMM V1 pool
+```
+
+#### Returns
+
+A `MeteoraDammMigrationMetadata` object containing the migration metadata.
+
+#### Example
+
+```typescript
+const metadata = await client.getDammV1MigrationMetadata(poolAddress)
+```
+
+### getDammV1LockEscrow
+
+Gets the lock escrow details for a DAMM V1 pool.
+
+#### Function
+
+```typescript
+async getDammV1LockEscrow(lockEscrowAddress: PublicKey | string): Promise<LockEscrow>
+```
+
+#### Parameters
+
+```typescript
+lockEscrowAddress: PublicKey | string // The address of the lock escrow
+```
+
+#### Returns
+
+A `LockEscrow` object containing the lock escrow details.
+
+#### Example
+
+```typescript
+const escrow = await client.getDammV1LockEscrow(escrowAddress)
+```
+
+### getPoolFeeMetrics
+
+Gets the fee metrics for a specific pool.
+
+#### Function
+
+```typescript
+async getPoolFeeMetrics(poolAddress: PublicKey): Promise<{
+    current: {
+        partnerBaseFee: BN
+        partnerQuoteFee: BN
+        creatorBaseFee: BN
+        creatorQuoteFee: BN
+    }
+    total: {
+        totalTradingBaseFee: BN
+        totalTradingQuoteFee: BN
+    }
+}>
+```
+
+#### Parameters
+
+```typescript
+poolAddress: PublicKey // The address of the pool
+```
+
+#### Returns
+
+An object containing current and total fee metrics for the pool.
+
+#### Example
+
+```typescript
+const metrics = await client.getPoolFeeMetrics(poolAddress)
+```
+
+### getPoolCreatorFeeMetrics
+
+Gets the creator fee metrics for a specific pool.
+
+#### Function
+
+```typescript
+async getPoolCreatorFeeMetrics(poolAddress: PublicKey): Promise<{
+    creatorBaseFee: BN
+    creatorQuoteFee: BN
+}>
+```
+
+#### Parameters
+
+```typescript
+poolAddress: PublicKey // The address of the pool
+```
+
+#### Returns
+
+An object containing the creator's fee metrics.
+
+#### Example
+
+```typescript
+const metrics = await client.getPoolCreatorFeeMetrics(poolAddress)
+```
+
+### getPoolPartnerFeeMetrics
+
+Gets the partner fee metrics for a specific pool.
+
+#### Function
+
+```typescript
+async getPoolPartnerFeeMetrics(poolAddress: PublicKey): Promise<{
+    partnerBaseFee: BN
+    partnerQuoteFee: BN
+}>
+```
+
+#### Parameters
+
+```typescript
+poolAddress: PublicKey // The address of the pool
+```
+
+#### Returns
+
+An object containing the partner's fee metrics.
+
+#### Example
+
+```typescript
+const metrics = await client.getPoolPartnerFeeMetrics(poolAddress)
+```
+
+### getPoolsQuoteFeesByConfig
+
+Gets all quote fees for pools linked to a specific config key.
+
+#### Function
+
+```typescript
+async getPoolsQuoteFeesByConfig(configAddress: PublicKey): Promise<Array<{
+    poolAddress: PublicKey
+    partnerQuoteFee: BN
+    creatorQuoteFee: BN
+    totalTradingQuoteFee: BN
+}>>
+```
+
+#### Parameters
+
+```typescript
+configAddress: PublicKey // The address of the pool config
+```
+
+#### Returns
+
+An array of objects containing quote fee metrics for each pool.
+
+#### Example
+
+```typescript
+const fees = await client.getPoolsQuoteFeesByConfig(configAddress)
+```
+
+### getPoolsBaseFeesByConfig
+
+Gets all base fees for pools linked to a specific config key.
+
+#### Function
+
+```typescript
+async getPoolsBaseFeesByConfig(configAddress: PublicKey): Promise<Array<{
+    poolAddress: PublicKey
+    partnerBaseFee: BN
+    creatorBaseFee: BN
+    totalTradingBaseFee: BN
+}>>
+```
+
+#### Parameters
+
+```typescript
+configAddress: PublicKey // The address of the pool config
+```
+
+#### Returns
+
+An array of objects containing base fee metrics for each pool.
+
+#### Example
+
+```typescript
+const fees = await client.getPoolsBaseFeesByConfig(configAddress)
+```
+
+### getPoolCurveProgress
+
+Gets the progress of the curve by comparing current quote reserve to migration threshold.
+
+#### Function
+
+```typescript
+async getPoolCurveProgress(poolAddress: PublicKey | string): Promise<number>
+```
+
+#### Parameters
+
+```typescript
+poolAddress: PublicKey | string // The address of the pool
+```
+
+#### Returns
+
+A number between 0 and 1 representing the curve progress.
+
+#### Example
+
+```typescript
+const progress = await client.getPoolCurveProgress(poolAddress)
+```
+
+### getDbcPoolAddress
+
+Gets the Dynamic Bonding Curve pool address.
+
+#### Function
+
+```typescript
+async getDbcPoolAddress(
+    quoteMint: PublicKey,
+    baseMint: PublicKey,
+    config: PublicKey
+): Promise<PublicKey>
+```
+
+#### Parameters
+
+```typescript
+quoteMint: PublicKey // The quote mint address
+baseMint: PublicKey // The base mint address
+config: PublicKey // The config address
+```
+
+#### Returns
+
+The pool address.
+
+#### Example
+
+```typescript
+const address = await client.getDbcPoolAddress(quoteMint, baseMint, config)
+```
+
+### getDammV1PoolAddress
+
+Gets the DAMM V1 pool address.
+
+#### Function
+
+```typescript
+async getDammV1PoolAddress(
+    quoteMint: PublicKey,
+    baseMint: PublicKey,
+    config: PublicKey
+): Promise<PublicKey>
+```
+
+#### Parameters
+
+```typescript
+quoteMint: PublicKey // The quote mint address
+baseMint: PublicKey // The base mint address
+config: PublicKey // The config address
+```
+
+#### Returns
+
+The DAMM V1 pool address.
+
+#### Example
+
+```typescript
+const address = await client.getDammV1PoolAddress(quoteMint, baseMint, config)
+```
+
+### getDammV2PoolAddress
+
+Gets the DAMM V2 pool address.
+
+#### Function
+
+```typescript
+async getDammV2PoolAddress(
+    quoteMint: PublicKey,
+    baseMint: PublicKey,
+    config: PublicKey
+): Promise<PublicKey>
+```
+
+#### Parameters
+
+```typescript
+quoteMint: PublicKey // The quote mint address
+baseMint: PublicKey // The base mint address
+config: PublicKey // The config address
+```
+
+#### Returns
+
+The DAMM V2 pool address.
+
+#### Example
+
+```typescript
+const address = await client.getDammV2PoolAddress(quoteMint, baseMint, config)
+```
+
+### getTokenDecimals
+
+Gets the number of decimals for a specific token.
+
+#### Function
+
+```typescript
+async getTokenDecimals(
+    mintAddress: PublicKey | string,
+    tokenType: TokenType
+): Promise<number>
+```
+
+#### Parameters
+
+```typescript
+mintAddress: PublicKey | string // The mint address
+tokenType: TokenType // The token type (SPL = 0 or Token2022 = 1)
+```
+
+#### Returns
+
+The number of decimals for the token.
+
+#### Example
+
+```typescript
+const decimals = await client.getTokenDecimals(mintAddress, TokenType.SPL)
 ```
