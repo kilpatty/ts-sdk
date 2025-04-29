@@ -570,6 +570,8 @@ interface SwapParam {
     amountIn: BN
     minimumAmountOut: BN
     swapBaseForQuote: boolean
+    poolAddress: PublicKey
+    referralTokenAccount: PublicKey | null
 }
 ```
 
@@ -580,11 +582,13 @@ A transaction that can be signed and sent to the network.
 #### Example
 
 ```typescript
-const transaction = await client.pool.swap(poolAddress, {
+const transaction = await client.pool.swap({
     owner: wallet.publicKey,
     amountIn: new BN(1000000000),
     minimumAmountOut: new BN(0),
     swapBaseForQuote: false,
+    poolAddress: poolAddress,
+    referralTokenAccount: null,
 })
 ```
 
