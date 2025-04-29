@@ -634,13 +634,13 @@ A transaction that requires signatures from the payer, the baseMint keypair, and
 ```typescript
 const transaction = await client.pool.createPool({
     quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
-    baseMint: new PublicKey('JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN'),
+    baseMint: new PublicKey('0987654321zyxwvutsrqponmlkjihgfedcba'),
     config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
     baseTokenType: 0,
     quoteTokenType: 0,
-    name: 'Jupiter',
-    symbol: 'JUP',
-    uri: 'https://jup.ag',
+    name: 'Meteora',
+    website: 'https://launch.meteora.ag',
+    logo: 'https://launch.meteora.ag/icons/logo.svg',
     payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     poolCreator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
 })
@@ -815,8 +815,8 @@ async withdrawLeftover(withdrawLeftoverParam: WithdrawLeftoverParam): Promise<Tr
 
 ```typescript
 interface WithdrawLeftoverParam {
-    payer: PublicKey
-    virtualPool: PublicKey
+    payer: PublicKey                            // The payer of the transaction
+    virtualPool: PublicKey                      // The virtual pool address
 }
 ```
 
@@ -854,8 +854,9 @@ async createDammV1MigrationMetadata(createDammV1MigrationMetadataParam: CreateDa
 
 ```typescript
 interface CreateDammV1MigrationMetadataParam {
-    payer: PublicKey
-    metadata: MeteoraDammMigrationMetadata
+    payer: PublicKey                            // The payer of the transaction
+    virtualPool: PublicKey                      // The virtual pool address
+    config: PublicKey                           // The config address
 }
 ```
 
@@ -867,16 +868,21 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.migration.createDammV1MigrationMetadata({
-    payer: wallet.publicKey,
-    metadata: {
-        // Populate metadata fields
-    },
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
 })
 ```
 
+#### Notes
+
+- When migrating to DAMM V1, the `createDammV1MigrationMetadata` function must be the first function called.
+
+---
+
 ### migrateToDammV1
 
-Migrates to DAMM V1.
+Migrates the Dynamic Bonding Curve pool to DAMM V1.
 
 #### Function
 
@@ -888,9 +894,9 @@ async migrateToDammV1(migrateToDammV1Param: MigrateToDammV1Param): Promise<Trans
 
 ```typescript
 interface MigrateToDammV1Param {
-    payer: PublicKey
-    locker: PublicKey
-    amount: BN
+    payer: PublicKey                            // The payer of the transaction
+    virtualPool: PublicKey                      // The virtual pool address
+    dammConfig: PublicKey                       // The damm graduation fee config address
 }
 ```
 
@@ -902,29 +908,56 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.migration.migrateToDammV1({
-    payer: wallet.publicKey,
-    locker: locker.publicKey,
-    amount: new BN(1000000000),
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    dammConfig: new PublicKey('8f848CEy8eY6PhJ3VcemtBDzPPSD4Vq7aJczLZ3o8MmX'),
 })
 ```
 
+#### Notes
+
+- When migrating to DAMM V1, the flow would be the following:
+    1. `createDammV1MigrationMetadata`
+    2. `createLocker` (if the token has locked vesting)
+    3. `migrateToDammV1`
+    4. `lockDammV1LpToken` (if creatorLp or partnerLp is >0)
+    5. `claimDammV1LpToken` (if creatorLp or partnerLp is >0)
+- Ensure that when attempting to migrate the virtual pool, all these validation checks pass:
+    1. The `MigrationFeeOption` must be a valid enum value with a valid base fee in basis points
+    2. The pool's config account must have:
+       - pool_creator_authority matching the pool_authority key
+       - activation_duration set to 0
+       - partner_fee_numerator set to 0
+       - vault_config_key set to the default Pubkey (all zeros)
+    3. The virtual pool's migration progress must be in the LockedVesting state
+    4. The pool must be "complete" based on the migration_quote_threshold (checked via is_curve_complete)
+    5. The migration option must be valid and specifically set to MeteoraDamm
+    6. The account relationships must be valid:
+       - virtual_pool must have matching base_vault and quote_vault
+       - virtual_pool must have a matching config
+       - migration_metadata must have a matching virtual_pool
+- You can get the dammConfig key from the [README.md](./README.md)
+
+---
+
 ### lockDammV1LpToken
 
-Locks a DAMM V1 LP token.
+Locks a DAMM V1 LP token for a partner or creator.
 
 #### Function
 
 ```typescript
-async lockDammV1LpToken(lockDammV1LpTokenParam: LockDammV1LpTokenParam): Promise<Transaction>
+async lockDammV1LpToken(lockDammV1LpTokenParam: DammLpTokenParam): Promise<Transaction>
 ```
 
 #### Parameters
 
 ```typescript
-interface LockDammV1LpTokenParam {
-    payer: PublicKey
-    locker: PublicKey
-    amount: BN
+interface DammLpTokenParam {
+    payer: PublicKey                            // The payer of the transaction
+    virtualPool: PublicKey                      // The virtual pool address
+    dammConfig: PublicKey                       // The damm graduation fee config address
+    isPartner: boolean                          // Whether the LP token is a partner
 }
 ```
 
@@ -936,29 +969,37 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.migration.lockDammV1LpToken({
-    payer: wallet.publicKey,
-    locker: locker.publicKey,
-    amount: new BN(1000000000),
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    dammConfig: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
+    isPartner: true,
 })
 ```
 
+#### Notes
+
+- This function is called when the creator or partner would like to lock their LP tokens.
+
+---
+
 ### claimDammV1LpToken
 
-Claims a DAMM V1 LP token.
+Claims a DAMM V1 LP token for a partner or creator.
 
 #### Function
 
 ```typescript
-async claimDammV1LpToken(claimDammV1LpTokenParam: ClaimDammV1LpTokenParam): Promise<Transaction>
+async claimDammV1LpToken(claimDammV1LpTokenParam: DammLpTokenParam): Promise<Transaction>
 ```
 
 #### Parameters
 
 ```typescript
-interface ClaimDammV1LpTokenParam {
-    payer: PublicKey
-    locker: PublicKey
-    amount: BN
+interface DammLpTokenParam {
+    payer: PublicKey                            // The payer of the transaction
+    virtualPool: PublicKey                      // The virtual pool address
+    dammConfig: PublicKey                       // The damm graduation fee config address
+    isPartner: boolean                          // Whether the LP token is a partner
 }
 ```
 
@@ -970,11 +1011,18 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.migration.claimDammV1LpToken({
-    payer: wallet.publicKey,
-    locker: locker.publicKey,
-    amount: new BN(1000000000),
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    dammConfig: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
+    isPartner: true,
 })
 ```
+
+#### Notes
+
+- This function is called when the creator or partner would like to claim their LP tokens.
+
+---
 
 ### createDammV2MigrationMetadata
 
@@ -990,8 +1038,9 @@ async createDammV2MigrationMetadata(createDammV2MigrationMetadataParam: CreateDa
 
 ```typescript
 interface CreateDammV2MigrationMetadataParam {
-    payer: PublicKey
-    metadata: MeteoraDammMigrationMetadata
+    payer: PublicKey                            // The payer of the transaction
+    virtualPool: PublicKey                      // The virtual pool address
+    config: PublicKey                           // The config address
 }
 ```
 
@@ -1003,16 +1052,21 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.migration.createDammV2MigrationMetadata({
-    payer: wallet.publicKey,
-    metadata: {
-        // Populate metadata fields
-    },
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
 })
 ```
 
+#### Notes
+
+- When migrating to DAMM V2, the `createDammV2MigrationMetadata` function must be the first function called.
+
+---
+
 ### migrateToDammV2
 
-Migrates to DAMM V2.
+Migrates the Dynamic Bonding Curve pool to DAMM V2.
 
 #### Function
 
@@ -1024,9 +1078,9 @@ async migrateToDammV2(migrateToDammV2Param: MigrateToDammV2Param): Promise<Trans
 
 ```typescript
 interface MigrateToDammV2Param {
-    payer: PublicKey
-    locker: PublicKey
-    amount: BN
+    payer: PublicKey                            // The payer of the transaction
+    virtualPool: PublicKey                      // The virtual pool address
+    dammConfig: PublicKey                       // The damm graduation fee config address
 }
 ```
 
@@ -1038,11 +1092,39 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.migration.migrateToDammV2({
-    payer: wallet.publicKey,
-    locker: locker.publicKey,
-    amount: new BN(1000000000),
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    dammConfig: new PublicKey('7F6dnUcRuyM2TwR8myT1dYypFXpPSxqwKNSFNkxyNESd'),
 })
 ```
+
+#### Notes
+
+- When migrating to DAMM V2, the flow would be the following:
+    1. `createDammV2MigrationMetadata`
+    2. `createLocker` (if the token has locked vesting)
+    3. `migrateToDammV2`
+- Ensure that when attempting to migrate the virtual pool, all these validation checks pass:
+    1. The `MigrationFeeOption` must be a valid enum value with a valid base fee in basis points
+       - For fixed BPS fee options (25, 30, 100, 200, 400, 600), the pool_fees.base_fee.period_frequency must be 0
+    2. The pool's config account must have:
+       - pool_creator_authority matching the pool_authority key
+       - partner_fee_percent set to 0
+       - sqrt_min_price equal to MIN_SQRT_PRICE
+       - sqrt_max_price equal to MAX_SQRT_PRICE
+       - vault_config_key set to the default Pubkey (all zeros)
+    3. The virtual pool's migration progress must be in the LockedVesting state
+    4. The pool must be "complete" based on the migration_quote_threshold (checked via is_curve_complete)
+    5. The migration option must be valid and specifically set to DammV2
+    6. The account relationships must be valid:
+       - virtual_pool must have matching base_vault and quote_vault
+       - virtual_pool must have a matching config
+       - migration_metadata must have a matching virtual_pool
+       - first_position_nft_mint must not equal second_position_nft_mint
+    7. Exactly one remaining account must be provided (for the DAMM V2 config)
+- You can get the dammConfig key from the [README.md](./README.md)
+
+---
 
 ## Creator Functions
 
@@ -1053,15 +1135,19 @@ Creates a new pool metadata account.
 #### Function
 
 ```typescript
-async createPoolMetadata(createPoolMetadataParam: CreatePoolMetadataParam): Promise<Transaction>
+async createPoolMetadata(createVirtualPoolMetadataParam: CreateVirtualPoolMetadataParam): Promise<Transaction>
 ```
 
 #### Parameters
 
 ```typescript
 interface CreatePoolMetadataParam {
-    payer: PublicKey
-    metadata: PoolMetadata
+    virtualPool: PublicKey                      // The virtual pool address
+    name: string                                // The name of the pool
+    website: string                             // The website of the pool
+    logo: string                                // The logo of the pool
+    creator: PublicKey                          // The creator of the pool
+    payer: PublicKey                            // The payer of the transaction
 }
 ```
 
@@ -1073,10 +1159,13 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.creator.createPoolMetadata({
-    payer: wallet.publicKey,
-    metadata: {
-        // Populate metadata fields
-    },
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    creator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    name: 'Meteora',
+    website: 'https://launch.meteora.ag',
+    logo: 'https://launch.meteora.ag/icons/logo.svg',
+    feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz')
 })
 ```
 
@@ -1094,8 +1183,10 @@ async claimCreatorTradingFee(claimCreatorTradingFeeParam: ClaimCreatorTradingFee
 
 ```typescript
 interface ClaimCreatorTradingFeeParam {
-    payer: PublicKey
-    amount: BN
+    creator: PublicKey                          // The creator of the pool
+    pool: PublicKey                             // The pool address
+    maxBaseAmount: BN                           // The maximum amount of base tokens to claim
+    maxQuoteAmount: BN                          // The maximum amount of quote tokens to claim
 }
 ```
 
@@ -1107,14 +1198,23 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.creator.claimCreatorTradingFee({
-    payer: wallet.publicKey,
-    amount: new BN(1000000000),
+    creator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    pool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    maxBaseAmount: new BN(1000000000),
+    maxQuoteAmount: new BN(1000000000),
 })
 ```
 
+#### Notes
+
+- The creator of the pool must be the same as the creator in the `ClaimTradingFeeParam` params.
+- You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
+
+---
+
 ### creatorWithdrawSurplus
 
-Withdraws surplus tokens from a creator.
+Withdraws surplus tokens from the pool.
 
 #### Function
 
@@ -1126,8 +1226,8 @@ async creatorWithdrawSurplus(creatorWithdrawSurplusParam: CreatorWithdrawSurplus
 
 ```typescript
 interface CreatorWithdrawSurplusParam {
-    payer: PublicKey
-    amount: BN
+    creator: PublicKey                          // The creator of the pool
+    virtualPool: PublicKey                      // The virtual pool address
 }
 ```
 
@@ -1139,10 +1239,16 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.creator.creatorWithdrawSurplus({
-    payer: wallet.publicKey,
-    amount: new BN(1000000000),
+    creator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
 })
 ```
+
+#### Notes
+
+- The creator of the pool must be the same as the creator in the `CreatorWithdrawSurplusParam` params.
+
+---
 
 ## Helper Functions
 
@@ -1159,7 +1265,7 @@ async getPoolConfig(configAddress: PublicKey | string): Promise<PoolConfig>
 #### Parameters
 
 ```typescript
-configAddress: PublicKey | string // The address of the config key
+configAddress: PublicKey | string 
 ```
 
 #### Returns
