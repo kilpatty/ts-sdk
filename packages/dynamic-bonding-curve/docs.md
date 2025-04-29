@@ -536,7 +536,7 @@ A transaction that requires signatures from both the creator's wallet and the ba
 #### Example
 
 ```typescript
-const transaction = await client.pools.createPool({
+const transaction = await client.pool.createPool({
     quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
     baseMint: new PublicKey('JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN'),
     config: config.publicKey,
@@ -580,7 +580,7 @@ A transaction that can be signed and sent to the network.
 #### Example
 
 ```typescript
-const transaction = await client.pools.swap(poolAddress, {
+const transaction = await client.pool.swap(poolAddress, {
     owner: wallet.publicKey,
     amountIn: new BN(1000000000),
     minimumAmountOut: new BN(0),
@@ -620,7 +620,7 @@ The quote result of the swap.
 #### Example
 
 ```typescript
-const quote = client.pools.swapQuote({
+const quote = client.pool.swapQuote({
     virtualPool,
     swapBaseForQuote,
     amountIn,
