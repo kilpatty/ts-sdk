@@ -8,7 +8,7 @@
     - [buildCurveAndCreateConfig](#buildCurveAndCreateConfig)
     - [buildCurveAndCreateConfigByMarketCap](#buildCurveAndCreateConfigByMarketCap)
     - [createPartnerMetadata](#createPartnerMetadata)
-    - [claimTradingFee](#claimTradingFee)
+    - [claimPartnerTradingFee](#claimPartnerTradingFee)
     - [partnerWithdrawSurplus](#partnerWithdrawSurplus)
 
 - [Pool Functions](#pool-functions)
@@ -125,16 +125,16 @@ interface CreateConfigParam {
 
 #### Returns
 
-A transaction that can be partially signed and sent to the network.
+A transaction that can be signed and sent to the network.
 
 #### Example
 
 ```typescript
 const transaction = await client.partner.createConfig({
-    payer: wallet.publicKey,
-    config: config.publicKey,
-    feeClaimer: wallet.publicKey,
-    leftoverReceiver: wallet.publicKey,
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
+    feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    leftoverReceiver: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
     poolFees: {
         baseFee: {
@@ -195,8 +195,6 @@ const transaction = await client.partner.createConfig({
 
 #### Notes
 
-## Validating Configuration Parameters
-
 When creating a new configuration for a dynamic bonding curve, several validations are performed to ensure the parameters are valid:
 
 ##### Pool Fees
@@ -210,7 +208,7 @@ When creating a new configuration for a dynamic bonding curve, several validatio
 
 ##### Migration and Token Type
 
-- For MeteoraDamm migration (option 0), token type must be SPL (0)
+- For migration to DAMM v1 (MigrationOption: 0), token type must be type SPL (TokenType: 0)
 
 ##### Activation Type
 
@@ -218,7 +216,7 @@ When creating a new configuration for a dynamic bonding curve, several validatio
 
 ##### Migration Fee
 
-- Must be a valid option: FixedBps25 (0), FixedBps30 (1), FixedBps100 (2), FixedBps200 (3), etc.
+- Must be a valid option: FixedBps25 (0), FixedBps30 (1), FixedBps100 (2), FixedBps200 (3), FixedBps400 (4), FixedBps600 (5)
 
 ##### Token Decimals
 
@@ -313,7 +311,7 @@ interface BuildCurveAndCreateConfigParam {
 
 #### Returns
 
-A transaction that can be partially signed and sent to the network.
+A transaction that can be signed and sent to the network.
 
 #### Example
 
@@ -351,17 +349,19 @@ const transaction = await client.partner.buildCurveAndCreateConfig({
         creatorLockedLpPercentage: 25,
         creatorTradingFeePercentage: 0,
     },
-    feeClaimer: wallet.publicKey,
-    leftoverReceiver: wallet.publicKey,
-    payer: wallet.publicKey,
+    feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    leftoverReceiver: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
-    config: config.publicKey,
+    config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
 })
 ```
 
 #### Notes
 
-Same validation checks as [createConfig](#createConfig)
+- Same validation checks as [createConfig](#createConfig)
+- Use `createConfig` when you understand the bonding curve math and want more customization to the curve structure
+- Use `buildCurveAndCreateConfig` when you want to create a curve structure based on percentage of supply on migration and migration quote threshold. We handle the math for you.
 
 ---
 
@@ -421,7 +421,7 @@ interface BuildCurveAndCreateConfigByMarketCapParam {
 
 #### Returns
 
-A transaction that can be partially signed and sent to the network.
+A transaction that can be signed and sent to the network.
 
 #### Example
 
@@ -459,23 +459,25 @@ const transaction = await client.partner.buildCurveAndCreateConfigByMarketCap({
         creatorLockedLpPercentage: 25,
         creatorTradingFeePercentage: 0,
     },
-    feeClaimer: wallet.publicKey,
-    leftoverReceiver: wallet.publicKey,
-    payer: wallet.publicKey,
+    feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    leftoverReceiver: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
-    config: config.publicKey,
+    config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
 })
 ```
 
 #### Notes
 
-Same validation checks as [createConfig](#createConfig)
+- Same validation checks as [createConfig](#createConfig)
+- Use `createConfig` when you understand the bonding curve math and want more customization to the curve structure
+- Use `buildCurveAndCreateConfigByMarketCap` when you want to create a curve structure based on market cap. We handle the math for you.
 
 ---
 
 ### createPartnerMetadata
 
-Creates a new partner metadata account.
+Creates a new partner metadata account. This partner metadata will be tagged to a wallet address that holds the config keys.
 
 #### Function
 
@@ -497,7 +499,7 @@ interface CreatePartnerMetadataParam {
 
 #### Returns
 
-A transaction that can be partially signed and sent to the network.
+A transaction that can be signed and sent to the network.
 
 #### Example
 
@@ -510,6 +512,87 @@ const transaction = await client.partner.createPartnerMetadata({
     payer: wallet.publicKey,
 })
 ```
+
+---
+
+### claimPartnerTradingFee
+
+Claims the trading fee for the partner.
+
+#### Function
+
+```typescript
+async claimPartnerTradingFee(claimTradingFeeParam: ClaimTradingFeeParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface ClaimTradingFeeParam {
+    pool: PublicKey                             // The pool address
+    feeClaimer: PublicKey                       // The wallet that will claim the fee
+    maxBaseAmount: BN                           // The maximum base amount to claim (use 0 to not claim base tokens)
+    maxQuoteAmount: BN                          // The maximum quote amount to claim (use 0 to not claim quote tokens)
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.partner.claimPartnerTradingFee({
+    pool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    maxBaseAmount: new BN(1000000),
+    maxQuoteAmount: new BN(1000000),
+})
+```
+
+#### Notes
+
+- The feeClaimer of the pool must be the same as the feeClaimer in the `ClaimTradingFeeParam` params.
+- You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
+
+---
+
+### partnerWithdrawSurplus
+
+Withdraws the partner's surplus from the pool.
+
+#### Function
+
+```typescript
+async partnerWithdrawSurplus(partnerWithdrawSurplusParam: PartnerWithdrawSurplusParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface PartnerWithdrawSurplusParam {
+    feeClaimer: PublicKey                       // The wallet that will claim the fee
+    virtualPool: PublicKey                      // The virtual pool address
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.partner.partnerWithdrawSurplus({
+    feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+})
+```
+
+#### Notes
+
+- The feeClaimer of the pool must be the same as the feeClaimer in the `PartnerWithdrawSurplusParam` params.
 
 ---
 
@@ -529,22 +612,22 @@ async createPool(createPoolParam: CreatePoolParam): Promise<Transaction>
 
 ```typescript
 interface CreatePoolParam {
-    quoteMint: PublicKey
-    baseMint: PublicKey
-    config: PublicKey
-    baseTokenType: number
-    quoteTokenType: number
-    name: string
-    symbol: string
-    uri: string
-    payer: PublicKey
-    poolCreator: PublicKey
+    quoteMint: PublicKey                        // The quote mint address
+    baseMint: PublicKey                         // The base mint address (generated by you)
+    config: PublicKey                           // The config account address
+    baseTokenType: number                       // The base token type
+    quoteTokenType: number                      // The quote token type
+    name: string                                // The name of the pool
+    symbol: string                              // The symbol of the pool
+    uri: string                                 // The uri of the pool
+    payer: PublicKey                            // The payer of the transaction
+    poolCreator: PublicKey                      // The pool creator of the transaction
 }
 ```
 
 #### Returns
 
-A transaction that requires signatures from both the creator's wallet and the baseMint keypair before being submitted to the network.
+A transaction that requires signatures from the payer, the baseMint keypair, and the poolCreator before being submitted to the network.
 
 #### Example
 
@@ -552,22 +635,29 @@ A transaction that requires signatures from both the creator's wallet and the ba
 const transaction = await client.pool.createPool({
     quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
     baseMint: new PublicKey('JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN'),
-    config: config.publicKey,
+    config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
     baseTokenType: 0,
     quoteTokenType: 0,
     name: 'Jupiter',
     symbol: 'JUP',
     uri: 'https://jup.ag',
-    payer: wallet.publicKey,
-    poolCreator: poolCreator.publicKey,
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    poolCreator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
 })
 ```
+
+#### Notes
+
+- The payer must be the same as the payer in the `CreatePoolParam` params.
+- The poolCreator is required to sign when creating the pool.
+- The baseMint token type must be the same as the config key's token type.
+- The quoteMint must be the same as the config key's quoteMint.
 
 ---
 
 ### swap
 
-Swaps between base and quote or quote and base.
+Swaps between base and quote or quote and base on the Dynamic Bonding Curve.
 
 #### Function
 
@@ -579,12 +669,12 @@ async swap(pool: PublicKey, swapParam: SwapParam): Promise<Transaction>
 
 ```typescript
 interface SwapParam {
-    owner: PublicKey
-    amountIn: BN
-    minimumAmountOut: BN
-    swapBaseForQuote: boolean
-    poolAddress: PublicKey
-    referralTokenAccount: PublicKey | null
+    owner: PublicKey                            // The person swapping the tokens
+    amountIn: BN                                // The amount of quote or base tokens to swap
+    minimumAmountOut: BN                        // The minimum amount of quote or base tokens to receive
+    swapBaseForQuote: boolean                   // Whether to swap base for quote. true = swap base for quote, false = swap quote for base
+    poolAddress: PublicKey                      // The pool address
+    referralTokenAccount: PublicKey | null      // The referral token account (optional)
 }
 ```
 
@@ -596,20 +686,30 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.pool.swap({
-    owner: wallet.publicKey,
+    owner: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     amountIn: new BN(1000000000),
     minimumAmountOut: new BN(0),
     swapBaseForQuote: false,
-    poolAddress: poolAddress,
+    poolAddress: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
     referralTokenAccount: null,
 })
 ```
+
+#### Notes
+
+- The owner must have sufficient balance for the swap.
+- For SOL swaps, the owner needs additional SOL for transaction fees (approximately 0.01 SOL).
+- When swapping quote for base (buying tokens), set `swapBaseForQuote` to `false`.
+- When swapping base for quote (selling tokens), set `swapBaseForQuote` to `true`.
+- The `minimumAmountOut` parameter protects against slippage. Set it to a value slightly lower than the expected output.
+- If the transaction fails with "insufficient balance", check that you have enough tokens plus fees for the transaction.
+- The pool address can be derived using `client.getDbcPoolAddress(quoteMint, baseMint, config)`.
 
 ---
 
 ### swapQuote
 
-Swaps between base and quote or quote and base.
+Gets the swap quotation between base and quote swaps or quote and base swaps.
 
 #### Function
 
@@ -637,20 +737,35 @@ The quote result of the swap.
 #### Example
 
 ```typescript
-const quote = client.pool.swapQuote({
-    virtualPool,
-    swapBaseForQuote,
-    amountIn,
-    hasReferral,
-    currentPoint,
+const virtualPoolState = await client.getPool(poolAddress)
+const poolConfigState = await client.getPoolConfig(virtualPoolState.config)
+
+const quote = await client.pool.swapQuote({
+    virtualPool: virtualPoolState,              // The virtual pool state
+    config: poolConfigState,                    // The pool config state
+    swapBaseForQuote: false,                    // Whether to swap base for quote
+    amountIn: new BN(100000000),                // The amount of tokens to swap
+    hasReferral: false,                         // Whether to include a referral fee
+    currentPoint: new BN(0),                    // The current point
 })
 ```
+
+#### Notes
+
+- The `swapBaseForQuote` parameter determines the direction of the swap:
+  - `true`: Swap base tokens for quote tokens
+  - `false`: Swap quote tokens for base tokens
+- The `amountIn` is the amount of tokens you want to swap, denominated in the smallest unit and token decimals. (e.g., lamports for SOL).
+- The `hasReferral` parameter indicates whether a referral fee should be included in the calculation.
+- The `currentPoint` parameter is typically used in cases where the config has applied a fee scheduler. If activationType == 0, then it is current slot. If activationType == 1, then it is the current block timestamp. You can fill in accordingly based on slot or timestamp.
+
+---
 
 ## Migration Functions
 
 ### createLocker
 
-Creates a new locker account.
+Creates a new locker account when migrating from Dynamic Bonding Curve to DAMM V1 or DAMM V2. 
 
 #### Function
 
@@ -662,9 +777,8 @@ async createLocker(createLockerParam: CreateLockerParam): Promise<Transaction>
 
 ```typescript
 interface CreateLockerParam {
-    payer: PublicKey
-    locker: PublicKey
-    amount: BN
+    payer: PublicKey                            // The payer of the transaction
+    virtualPool: PublicKey                      // The virtual pool address
 }
 ```
 
@@ -676,15 +790,20 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.migration.createLocker({
-    payer: wallet.publicKey,
-    locker: locker.publicKey,
-    amount: new BN(1000000000),
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
 })
 ```
 
+#### Notes
+
+- This function is called when lockedVesting is enabled in the config key.
+
+---
+
 ### withdrawLeftover
 
-Withdraws leftover tokens from a locker.
+Withdraws leftover tokens from the Dynamic Bonding Curve pool.
 
 #### Function
 
@@ -697,8 +816,7 @@ async withdrawLeftover(withdrawLeftoverParam: WithdrawLeftoverParam): Promise<Tr
 ```typescript
 interface WithdrawLeftoverParam {
     payer: PublicKey
-    locker: PublicKey
-    amount: BN
+    virtualPool: PublicKey
 }
 ```
 
@@ -710,11 +828,17 @@ A transaction that can be signed and sent to the network.
 
 ```typescript
 const transaction = await client.migration.withdrawLeftover({
-    payer: wallet.publicKey,
-    locker: locker.publicKey,
-    amount: new BN(1000000000),
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
 })
 ```
+
+#### Notes
+
+- This function is called when there are leftover tokens in the Dynamic Bonding Curve pool.
+- The leftover tokens will be sent to the `leftoverReceiver` that was specified in the config key.
+
+---
 
 ### createDammV1MigrationMetadata
 

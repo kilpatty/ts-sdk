@@ -7,6 +7,7 @@ import {
 } from '@solana/web3.js'
 import type { DynamicBondingCurveClient } from '../client'
 import {
+    QuoteResult,
     TokenType,
     type CreatePoolParam,
     type SwapParam,
@@ -284,7 +285,7 @@ export class PoolService {
      * @param currentPoint - The current point
      * @returns The swap quote result
      */
-    swapQuote(swapQuoteParam: SwapQuoteParam) {
+    swapQuote(swapQuoteParam: SwapQuoteParam): Promise<QuoteResult> {
         const {
             virtualPool,
             config,
