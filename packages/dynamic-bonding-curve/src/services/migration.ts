@@ -255,8 +255,7 @@ export class MigrationService {
         const program = this.programClient.getProgram()
 
         const migrationMetadata = deriveDammV1MigrationMetadataAddress(
-            createDammV1MigrationMetadataParam.virtualPool,
-            DYNAMIC_BONDING_CURVE_PROGRAM_ID
+            createDammV1MigrationMetadataParam.virtualPool
         )
 
         const accounts = {
@@ -301,8 +300,7 @@ export class MigrationService {
         )
 
         const migrationMetadata = deriveDammV1MigrationMetadataAddress(
-            migrateToDammV1Param.virtualPool,
-            DYNAMIC_BONDING_CURVE_PROGRAM_ID
+            migrateToDammV1Param.virtualPool
         )
 
         const dammPool = deriveDammPoolAddress(
@@ -475,8 +473,7 @@ export class MigrationService {
         )
 
         const migrationMetadata = deriveDammV1MigrationMetadataAddress(
-            lockDammV1LpTokenParam.virtualPool,
-            DYNAMIC_BONDING_CURVE_PROGRAM_ID
+            lockDammV1LpTokenParam.virtualPool
         )
 
         const vaultProgram = this.getVaultProgram()
@@ -677,8 +674,7 @@ export class MigrationService {
         )
 
         const migrationMetadata = deriveDammV1MigrationMetadataAddress(
-            claimDammV1LpTokenParam.virtualPool,
-            DYNAMIC_BONDING_CURVE_PROGRAM_ID
+            claimDammV1LpTokenParam.virtualPool
         )
 
         const lpMint = deriveLpMintAddress(dammPool, DAMM_V1_PROGRAM_ID)
@@ -744,8 +740,7 @@ export class MigrationService {
         const program = this.programClient.getProgram()
 
         const migrationMetadata = deriveDammV2MigrationMetadataAddress(
-            createDammV2MigrationMetadataParam.virtualPool,
-            program.programId
+            createDammV2MigrationMetadataParam.virtualPool
         )
 
         const accounts = {
@@ -792,8 +787,7 @@ export class MigrationService {
         )
 
         const migrationMetadata = deriveDammV2MigrationMetadataAddress(
-            migrateToDammV2Param.virtualPool,
-            DYNAMIC_BONDING_CURVE_PROGRAM_ID
+            migrateToDammV2Param.virtualPool
         )
 
         const dammPool = deriveDammV2PoolAddress(

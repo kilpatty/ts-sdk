@@ -232,12 +232,11 @@ export function deriveVirtualPoolMetadata(pool: PublicKey): PublicKey {
  * @returns The DAMM V1 migration metadata address
  */
 export function deriveDammV1MigrationMetadataAddress(
-    virtual_pool: PublicKey,
-    programId: PublicKey
+    virtual_pool: PublicKey
 ): PublicKey {
     return PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.DAMM_V1_MIGRATION_METADATA), virtual_pool.toBuffer()],
-        programId
+        DYNAMIC_BONDING_CURVE_PROGRAM_ID
     )[0]
 }
 
@@ -248,12 +247,11 @@ export function deriveDammV1MigrationMetadataAddress(
  * @returns The DAMM V2 migration metadata address
  */
 export function deriveDammV2MigrationMetadataAddress(
-    virtual_pool: PublicKey,
-    programId: PublicKey
+    virtual_pool: PublicKey
 ): PublicKey {
     return PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.DAMM_V2_MIGRATION_METADATA), virtual_pool.toBuffer()],
-        programId
+        DYNAMIC_BONDING_CURVE_PROGRAM_ID
     )[0]
 }
 
