@@ -157,6 +157,8 @@ export function validateMigrationFeeOption(
         MigrationFeeOption.FixedBps30,
         MigrationFeeOption.FixedBps100,
         MigrationFeeOption.FixedBps200,
+        MigrationFeeOption.FixedBps400,
+        MigrationFeeOption.FixedBps600
     ].includes(migrationFeeOption)
 }
 
