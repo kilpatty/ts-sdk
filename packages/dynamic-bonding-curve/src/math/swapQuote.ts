@@ -385,7 +385,7 @@ export async function swapQuote(
     config: PoolConfig,
     swapBaseForQuote: boolean,
     amountIn: BN,
-    hasReferral: boolean = false,
+    hasReferral: boolean,
     currentPoint: BN
 ): Promise<QuoteResult> {
     if (virtualPool.quoteReserve.gte(config.migrationQuoteThreshold)) {

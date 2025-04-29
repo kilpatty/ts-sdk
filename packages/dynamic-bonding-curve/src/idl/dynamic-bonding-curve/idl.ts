@@ -14,6 +14,106 @@ export type DynamicBondingCurve = {
     }
     instructions: [
         {
+            name: 'claimCreatorTradingFee'
+            discriminator: [82, 220, 250, 189, 3, 85, 107, 45]
+            accounts: [
+                {
+                    name: 'poolAuthority'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
+                },
+                {
+                    name: 'pool'
+                    writable: true
+                },
+                {
+                    name: 'tokenAAccount'
+                    docs: ['The treasury token a account']
+                    writable: true
+                },
+                {
+                    name: 'tokenBAccount'
+                    docs: ['The treasury token b account']
+                    writable: true
+                },
+                {
+                    name: 'baseVault'
+                    docs: ['The vault token account for input token']
+                    writable: true
+                    relations: ['pool']
+                },
+                {
+                    name: 'quoteVault'
+                    docs: ['The vault token account for output token']
+                    writable: true
+                    relations: ['pool']
+                },
+                {
+                    name: 'baseMint'
+                    docs: ['The mint of token a']
+                    relations: ['pool']
+                },
+                {
+                    name: 'quoteMint'
+                    docs: ['The mint of token b']
+                },
+                {
+                    name: 'creator'
+                    signer: true
+                    relations: ['pool']
+                },
+                {
+                    name: 'tokenBaseProgram'
+                    docs: ['Token a program']
+                },
+                {
+                    name: 'tokenQuoteProgram'
+                    docs: ['Token b program']
+                },
+                {
+                    name: 'eventAuthority'
+                    pda: {
+                        seeds: [
+                            {
+                                kind: 'const'
+                                value: [
+                                    95,
+                                    95,
+                                    101,
+                                    118,
+                                    101,
+                                    110,
+                                    116,
+                                    95,
+                                    97,
+                                    117,
+                                    116,
+                                    104,
+                                    111,
+                                    114,
+                                    105,
+                                    116,
+                                    121,
+                                ]
+                            },
+                        ]
+                    }
+                },
+                {
+                    name: 'program'
+                },
+            ]
+            args: [
+                {
+                    name: 'maxBaseAmount'
+                    type: 'u64'
+                },
+                {
+                    name: 'maxQuoteAmount'
+                    type: 'u64'
+                },
+            ]
+        },
+        {
             name: 'claimProtocolFee'
             discriminator: [165, 228, 133, 48, 99, 249, 255, 33]
             accounts: [
@@ -892,6 +992,82 @@ export type DynamicBondingCurve = {
                     }
                 },
             ]
+        },
+        {
+            name: 'creatorWithdrawSurplus'
+            discriminator: [165, 3, 137, 7, 28, 134, 76, 80]
+            accounts: [
+                {
+                    name: 'poolAuthority'
+                    address: 'FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM'
+                },
+                {
+                    name: 'config'
+                    relations: ['virtualPool']
+                },
+                {
+                    name: 'virtualPool'
+                    writable: true
+                },
+                {
+                    name: 'tokenQuoteAccount'
+                    docs: ['The receiver token account']
+                    writable: true
+                },
+                {
+                    name: 'quoteVault'
+                    docs: ['The vault token account for output token']
+                    writable: true
+                    relations: ['virtualPool']
+                },
+                {
+                    name: 'quoteMint'
+                    docs: ['The mint of quote token']
+                    relations: ['config']
+                },
+                {
+                    name: 'creator'
+                    signer: true
+                    relations: ['virtualPool']
+                },
+                {
+                    name: 'tokenQuoteProgram'
+                    docs: ['Token b program']
+                },
+                {
+                    name: 'eventAuthority'
+                    pda: {
+                        seeds: [
+                            {
+                                kind: 'const'
+                                value: [
+                                    95,
+                                    95,
+                                    101,
+                                    118,
+                                    101,
+                                    110,
+                                    116,
+                                    95,
+                                    97,
+                                    117,
+                                    116,
+                                    104,
+                                    111,
+                                    114,
+                                    105,
+                                    116,
+                                    121,
+                                ]
+                            },
+                        ]
+                    }
+                },
+                {
+                    name: 'program'
+                },
+            ]
+            args: []
         },
         {
             name: 'initializeVirtualPoolWithSplToken'
@@ -2499,6 +2675,10 @@ export type DynamicBondingCurve = {
     ]
     events: [
         {
+            name: 'evtClaimCreatorTradingFee'
+            discriminator: [154, 228, 215, 202, 133, 155, 214, 138]
+        },
+        {
             name: 'evtClaimProtocolFee'
             discriminator: [186, 244, 75, 251, 188, 13, 25, 33]
         },
@@ -2525,6 +2705,10 @@ export type DynamicBondingCurve = {
         {
             name: 'evtCreateMeteoraMigrationMetadata'
             discriminator: [99, 167, 133, 63, 214, 143, 175, 139]
+        },
+        {
+            name: 'evtCreatorWithdrawSurplus'
+            discriminator: [152, 73, 21, 15, 66, 87, 53, 157]
         },
         {
             name: 'evtCurveComplete'
@@ -2734,6 +2918,11 @@ export type DynamicBondingCurve = {
             code: 6034
             name: 'invalidFeeScheduler'
             msg: 'Invalid fee scheduler'
+        },
+        {
+            code: 6035
+            name: 'invalidCreatorTradingFeePercentage'
+            msg: 'Invalid creator trading fee percentage'
         },
     ]
     types: [
@@ -2950,10 +3139,20 @@ export type DynamicBondingCurve = {
                         }
                     },
                     {
-                        name: 'padding'
+                        name: 'creatorTradingFeePercentage'
+                        type: 'u8'
+                    },
+                    {
+                        name: 'padding0'
+                        type: {
+                            array: ['u8', 7]
+                        }
+                    },
+                    {
+                        name: 'padding1'
                         docs: ['padding for future use']
                         type: {
-                            array: ['u64', 8]
+                            array: ['u64', 7]
                         }
                     },
                     {
@@ -3109,6 +3308,26 @@ export type DynamicBondingCurve = {
                     {
                         name: 'variableFeeControl'
                         type: 'u32'
+                    },
+                ]
+            }
+        },
+        {
+            name: 'evtClaimCreatorTradingFee'
+            type: {
+                kind: 'struct'
+                fields: [
+                    {
+                        name: 'pool'
+                        type: 'pubkey'
+                    },
+                    {
+                        name: 'tokenBaseAmount'
+                        type: 'u64'
+                    },
+                    {
+                        name: 'tokenQuoteAmount'
+                        type: 'u64'
                     },
                 ]
             }
@@ -3322,6 +3541,22 @@ export type DynamicBondingCurve = {
                     {
                         name: 'virtualPool'
                         type: 'pubkey'
+                    },
+                ]
+            }
+        },
+        {
+            name: 'evtCreatorWithdrawSurplus'
+            type: {
+                kind: 'struct'
+                fields: [
+                    {
+                        name: 'pool'
+                        type: 'pubkey'
+                    },
+                    {
+                        name: 'surplusAmount'
+                        type: 'u64'
                     },
                 ]
             }
@@ -3942,10 +4177,15 @@ export type DynamicBondingCurve = {
                         type: 'u8'
                     },
                     {
+                        name: 'creatorTradingFeePercentage'
+                        docs: ['creator trading fee percentage']
+                        type: 'u8'
+                    },
+                    {
                         name: 'padding0'
                         docs: ['padding 0']
                         type: {
-                            array: ['u8', 3]
+                            array: ['u8', 2]
                         }
                     },
                     {
@@ -4286,12 +4526,12 @@ export type DynamicBondingCurve = {
                         type: 'u64'
                     },
                     {
-                        name: 'tradingBaseFee'
-                        docs: ['trading base fee']
+                        name: 'partnerBaseFee'
+                        docs: ['partner base fee']
                         type: 'u64'
                     },
                     {
-                        name: 'tradingQuoteFee'
+                        name: 'partnerQuoteFee'
                         docs: ['trading quote fee']
                         type: 'u64'
                     },
@@ -4321,7 +4561,7 @@ export type DynamicBondingCurve = {
                         type: 'u8'
                     },
                     {
-                        name: 'isProcotolWithdrawSurplus'
+                        name: 'isProtocolWithdrawSurplus'
                         docs: ['is protocol withdraw surplus']
                         type: 'u8'
                     },
@@ -4336,10 +4576,15 @@ export type DynamicBondingCurve = {
                         type: 'u8'
                     },
                     {
+                        name: 'isCreatorWithdrawSurplus'
+                        docs: ['is creator withdraw surplus']
+                        type: 'u8'
+                    },
+                    {
                         name: 'padding0'
                         docs: ['padding']
                         type: {
-                            array: ['u8', 2]
+                            array: ['u8', 1]
                         }
                     },
                     {
@@ -4357,10 +4602,20 @@ export type DynamicBondingCurve = {
                         type: 'u64'
                     },
                     {
+                        name: 'creatorBaseFee'
+                        docs: ['creator base fee']
+                        type: 'u64'
+                    },
+                    {
+                        name: 'creatorQuoteFee'
+                        docs: ['creator quote fee']
+                        type: 'u64'
+                    },
+                    {
                         name: 'padding1'
                         docs: ['Padding for further use']
                         type: {
-                            array: ['u64', 9]
+                            array: ['u64', 7]
                         }
                     },
                 ]

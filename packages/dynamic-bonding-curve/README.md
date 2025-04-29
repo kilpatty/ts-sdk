@@ -9,6 +9,8 @@ This SDK provides a set of tools and methods to interact with the [Meteora Dynam
 ## Installation
 
 ```bash
+npm install @meteora-ag/dynamic-bonding-curve-sdk
+# or
 pnpm install @meteora-ag/dynamic-bonding-curve-sdk
 # or
 yarn add @meteora-ag/dynamic-bonding-curve-sdk

@@ -4,7 +4,7 @@ import {
     type Connection,
     type Transaction,
 } from '@solana/web3.js'
-import type { DynamicBondingCurveProgramClient } from '../client'
+import type { DynamicBondingCurveClient } from '../client'
 import {
     TokenType,
     type ClaimTradingFeeParam,
@@ -17,11 +17,7 @@ import {
     BuildCurveAndCreateConfigByMarketCapParam,
     BuildCurveAndCreateConfigParam,
 } from '../types'
-import {
-    deriveEventAuthority,
-    derivePartnerMetadata,
-    derivePoolAuthority,
-} from '../derive'
+import { derivePartnerMetadata, derivePoolAuthority } from '../derive'
 import {
     createAssociatedTokenAccountIdempotentInstruction,
     NATIVE_MINT,
@@ -35,7 +31,7 @@ import { buildCurve, buildCurveByMarketCap } from '../build'
 export class PartnerService {
     private connection: Connection
 
-    constructor(private programClient: DynamicBondingCurveProgramClient) {
+    constructor(private programClient: DynamicBondingCurveClient) {
         this.connection = this.programClient.getProgram().provider.connection
     }
 
@@ -58,8 +54,6 @@ export class PartnerService {
             ...configParam
         } = createConfigParam
 
-        const eventAuthority = deriveEventAuthority()
-
         // error checks
         validateConfigParameters({ ...configParam, leftoverReceiver })
 
@@ -69,13 +63,11 @@ export class PartnerService {
             leftoverReceiver,
             quoteMint,
             payer,
-            eventAuthority,
-            program: program.programId,
         }
 
         return program.methods
             .createConfig(configParam)
-            .accounts(accounts)
+            .accountsPartial(accounts)
             .transaction()
     }
 
@@ -98,8 +90,6 @@ export class PartnerService {
             config,
         } = buildCurveAndCreateConfigParam
 
-        const eventAuthority = deriveEventAuthority()
-
         const curveConfig: ConfigParameters = buildCurve({
             ...buildCurveParam,
         })
@@ -116,13 +106,11 @@ export class PartnerService {
             leftoverReceiver,
             quoteMint,
             payer,
-            eventAuthority,
-            program: program.programId,
         }
 
         return program.methods
             .createConfig(curveConfig)
-            .accounts(accounts)
+            .accountsPartial(accounts)
             .transaction()
     }
 
@@ -145,8 +133,6 @@ export class PartnerService {
             config,
         } = buildCurveAndCreateConfigByMarketCapParam
 
-        const eventAuthority = deriveEventAuthority()
-
         const curveConfig: ConfigParameters = buildCurveByMarketCap({
             ...buildCurveByMarketCapParam,
         })
@@ -163,13 +149,11 @@ export class PartnerService {
             leftoverReceiver,
             quoteMint,
             payer,
-            eventAuthority,
-            program: program.programId,
         }
 
         return program.methods
             .createConfig(curveConfig)
-            .accounts(accounts)
+            .accountsPartial(accounts)
             .transaction()
     }
 
@@ -182,7 +166,6 @@ export class PartnerService {
         createPartnerMetadataParam: CreatePartnerMetadataParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
-        const eventAuthority = deriveEventAuthority()
         const partnerMetadata = derivePartnerMetadata(
             createPartnerMetadataParam.feeClaimer,
             program.programId
@@ -200,27 +183,24 @@ export class PartnerService {
             payer: createPartnerMetadataParam.payer,
             feeClaimer: createPartnerMetadataParam.feeClaimer,
             systemProgram: SystemProgram.programId,
-            eventAuthority,
-            program: program.programId,
         }
 
         return program.methods
             .createPartnerMetadata(partnerMetadataParam)
-            .accounts(accounts)
+            .accountsPartial(accounts)
             .transaction()
     }
 
     /**
-     * Claim trading fee
+     * Claim partner trading fee
      * @param claimTradingFeeParam - The parameters for the claim trading fee
      * @returns A claim trading fee transaction
      */
-    async claimTradingFee(
+    async claimPartnerTradingFee(
         claimTradingFeeParam: ClaimTradingFeeParam
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
         const poolAuthority = derivePoolAuthority(program.programId)
-        const eventAuthority = deriveEventAuthority()
 
         const virtualPoolState = await this.programClient.getPool(
             claimTradingFeeParam.pool
@@ -310,8 +290,6 @@ export class PartnerService {
             feeClaimer: claimTradingFeeParam.feeClaimer,
             tokenBaseProgram,
             tokenQuoteProgram,
-            eventAuthority,
-            program: program.programId,
         }
 
         return program.methods
@@ -319,7 +297,7 @@ export class PartnerService {
                 claimTradingFeeParam.maxBaseAmount,
                 claimTradingFeeParam.maxQuoteAmount
             )
-            .accounts(accounts)
+            .accountsPartial(accounts)
             .preInstructions(preInstructions)
             .postInstructions(postInstructions)
             .transaction()
@@ -335,7 +313,6 @@ export class PartnerService {
     ): Promise<Transaction> {
         const program = this.programClient.getProgram()
         const poolAuthority = derivePoolAuthority(program.programId)
-        const eventAuthority = deriveEventAuthority()
 
         const virtualPoolState = await this.programClient.getPool(
             partnerWithdrawSurplusParam.virtualPool
@@ -396,87 +373,13 @@ export class PartnerService {
             quoteMint: poolConfigState.quoteMint,
             feeClaimer: partnerWithdrawSurplusParam.feeClaimer,
             tokenQuoteProgram,
-            eventAuthority,
-            program: program.programId,
         }
 
         return program.methods
             .partnerWithdrawSurplus()
-            .accounts(accounts)
+            .accountsPartial(accounts)
             .preInstructions(preInstructions)
             .postInstructions(postInstructions)
-            .transaction()
-    }
-
-    /**
-     * Withdraw leftover
-     * @param withdrawLeftoverParam - The parameters for the withdraw leftover
-     * @returns A withdraw leftover transaction
-     */
-    async withdrawLeftover(
-        withdrawLeftoverParam: WithdrawLeftoverParam
-    ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-        const poolAuthority = derivePoolAuthority(program.programId)
-        const eventAuthority = deriveEventAuthority()
-
-        const virtualPoolState = await this.programClient.getPool(
-            withdrawLeftoverParam.virtualPool
-        )
-
-        if (!virtualPoolState) {
-            throw new Error(
-                `Pool not found: ${withdrawLeftoverParam.virtualPool.toString()}`
-            )
-        }
-
-        const poolConfigState = await this.programClient.getPoolConfig(
-            virtualPoolState.config
-        )
-
-        const tokenBaseProgram =
-            poolConfigState.tokenType === TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
-
-        const tokenBaseAccount = findAssociatedTokenAddress(
-            poolConfigState.leftoverReceiver,
-            virtualPoolState.baseMint,
-            tokenBaseProgram
-        )
-
-        const preInstructions: TransactionInstruction[] = []
-
-        const createBaseTokenAccountIx =
-            createAssociatedTokenAccountIdempotentInstruction(
-                poolConfigState.leftoverReceiver,
-                tokenBaseAccount,
-                poolConfigState.leftoverReceiver,
-                virtualPoolState.baseMint,
-                tokenBaseProgram
-            )
-
-        if (createBaseTokenAccountIx) {
-            preInstructions.push(createBaseTokenAccountIx)
-        }
-
-        const accounts = {
-            poolAuthority,
-            config: virtualPoolState.config,
-            virtualPool: withdrawLeftoverParam.virtualPool,
-            tokenBaseAccount,
-            baseVault: virtualPoolState.baseVault,
-            baseMint: virtualPoolState.baseMint,
-            leftoverReceiver: poolConfigState.leftoverReceiver,
-            tokenBaseProgram,
-            eventAuthority,
-            program: program.programId,
-        }
-
-        return program.methods
-            .withdrawLeftover()
-            .accounts(accounts)
-            .preInstructions(preInstructions)
             .transaction()
     }
 }

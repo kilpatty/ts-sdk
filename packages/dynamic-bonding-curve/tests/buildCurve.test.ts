@@ -12,7 +12,7 @@ import {
 } from '../src'
 import { convertBNToDecimal } from '../src/utils'
 
-describe('buildCurveByMarketCap', () => {
+describe('buildCurve tests', () => {
     const baseParams = {
         totalTokenSupply: 1000000000,
         migrationOption: MigrationOption.MET_DAMM,
@@ -41,6 +41,7 @@ describe('buildCurveByMarketCap', () => {
         creatorLpPercentage: 0,
         partnerLockedLpPercentage: 100,
         creatorLockedLpPercentage: 0,
+        creatorTradingFeePercentage: 0,
     }
 
     test('build curve with percentage and threshold parameters', () => {

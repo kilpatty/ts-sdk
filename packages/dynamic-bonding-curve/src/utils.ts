@@ -13,6 +13,8 @@ import type { DynamicVault } from './idl/dynamic-vault/idl'
 import DynamicVaultIDL from './idl/dynamic-vault/idl.json'
 import type { DammV1 } from './idl/damm-v1/idl'
 import DammV1IDL from './idl/damm-v1/idl.json'
+import type { DammV2 } from './idl/damm-v2/idl'
+import DammV2IDL from './idl/damm-v2/idl.json'
 import {
     ASSOCIATED_TOKEN_PROGRAM_ID,
     createCloseAccountInstruction,
@@ -100,6 +102,20 @@ export function createDammV1Program(connection: Connection): Program<DammV1> {
     })
 
     const program = new Program<DammV1>(DammV1IDL, provider)
+    return program
+}
+
+/**
+ * Create a DAMM V1 program instance
+ * @param connection - The connection to the network
+ * @returns The DAMM V1 program instance
+ */
+export function createDammV2Program(connection: Connection): Program<DammV2> {
+    const provider = new AnchorProvider(connection, null as unknown as Wallet, {
+        commitment: COMMITMENT,
+    })
+
+    const program = new Program<DammV2>(DammV2IDL, provider)
     return program
 }
 

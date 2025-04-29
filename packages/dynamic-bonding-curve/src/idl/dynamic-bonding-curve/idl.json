@@ -8,6 +8,139 @@
   },
   "instructions": [
     {
+      "name": "claim_creator_trading_fee",
+      "discriminator": [
+        82,
+        220,
+        250,
+        189,
+        3,
+        85,
+        107,
+        45
+      ],
+      "accounts": [
+        {
+          "name": "pool_authority",
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "token_a_account",
+          "docs": [
+            "The treasury token a account"
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_b_account",
+          "docs": [
+            "The treasury token b account"
+          ],
+          "writable": true
+        },
+        {
+          "name": "base_vault",
+          "docs": [
+            "The vault token account for input token"
+          ],
+          "writable": true,
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "quote_vault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true,
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "base_mint",
+          "docs": [
+            "The mint of token a"
+          ],
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "quote_mint",
+          "docs": [
+            "The mint of token b"
+          ]
+        },
+        {
+          "name": "creator",
+          "signer": true,
+          "relations": [
+            "pool"
+          ]
+        },
+        {
+          "name": "token_base_program",
+          "docs": [
+            "Token a program"
+          ]
+        },
+        {
+          "name": "token_quote_program",
+          "docs": [
+            "Token b program"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "max_base_amount",
+          "type": "u64"
+        },
+        {
+          "name": "max_quote_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "claim_protocol_fee",
       "discriminator": [
         165,
@@ -1057,6 +1190,107 @@
           }
         }
       ]
+    },
+    {
+      "name": "creator_withdraw_surplus",
+      "discriminator": [
+        165,
+        3,
+        137,
+        7,
+        28,
+        134,
+        76,
+        80
+      ],
+      "accounts": [
+        {
+          "name": "pool_authority",
+          "address": "FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"
+        },
+        {
+          "name": "config",
+          "relations": [
+            "virtual_pool"
+          ]
+        },
+        {
+          "name": "virtual_pool",
+          "writable": true
+        },
+        {
+          "name": "token_quote_account",
+          "docs": [
+            "The receiver token account"
+          ],
+          "writable": true
+        },
+        {
+          "name": "quote_vault",
+          "docs": [
+            "The vault token account for output token"
+          ],
+          "writable": true,
+          "relations": [
+            "virtual_pool"
+          ]
+        },
+        {
+          "name": "quote_mint",
+          "docs": [
+            "The mint of quote token"
+          ],
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "creator",
+          "signer": true,
+          "relations": [
+            "virtual_pool"
+          ]
+        },
+        {
+          "name": "token_quote_program",
+          "docs": [
+            "Token b program"
+          ]
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
     },
     {
       "name": "initialize_virtual_pool_with_spl_token",
@@ -3037,6 +3271,19 @@
   ],
   "events": [
     {
+      "name": "EvtClaimCreatorTradingFee",
+      "discriminator": [
+        154,
+        228,
+        215,
+        202,
+        133,
+        155,
+        214,
+        138
+      ]
+    },
+    {
       "name": "EvtClaimProtocolFee",
       "discriminator": [
         186,
@@ -3125,6 +3372,19 @@
         143,
         175,
         139
+      ]
+    },
+    {
+      "name": "EvtCreatorWithdrawSurplus",
+      "discriminator": [
+        152,
+        73,
+        21,
+        15,
+        66,
+        87,
+        53,
+        157
       ]
     },
     {
@@ -3407,6 +3667,11 @@
       "code": 6034,
       "name": "InvalidFeeScheduler",
       "msg": "Invalid fee scheduler"
+    },
+    {
+      "code": 6035,
+      "name": "InvalidCreatorTradingFeePercentage",
+      "msg": "Invalid creator trading fee percentage"
     }
   ],
   "types": [
@@ -3638,14 +3903,27 @@
             }
           },
           {
-            "name": "padding",
+            "name": "creator_trading_fee_percentage",
+            "type": "u8"
+          },
+          {
+            "name": "padding_0",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "padding_1",
             "docs": [
               "padding for future use"
             ],
             "type": {
               "array": [
                 "u64",
-                8
+                7
               ]
             }
           },
@@ -3814,6 +4092,26 @@
           {
             "name": "variable_fee_control",
             "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EvtClaimCreatorTradingFee",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_base_amount",
+            "type": "u64"
+          },
+          {
+            "name": "token_quote_amount",
+            "type": "u64"
           }
         ]
       }
@@ -4033,6 +4331,22 @@
           {
             "name": "virtual_pool",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EvtCreatorWithdrawSurplus",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "surplus_amount",
+            "type": "u64"
           }
         ]
       }
@@ -4742,6 +5056,13 @@
             "type": "u8"
           },
           {
+            "name": "creator_trading_fee_percentage",
+            "docs": [
+              "creator trading fee percentage"
+            ],
+            "type": "u8"
+          },
+          {
             "name": "_padding_0",
             "docs": [
               "padding 0"
@@ -4749,7 +5070,7 @@
             "type": {
               "array": [
                 "u8",
-                3
+                2
               ]
             }
           },
@@ -5157,14 +5478,14 @@
             "type": "u64"
           },
           {
-            "name": "trading_base_fee",
+            "name": "partner_base_fee",
             "docs": [
-              "trading base fee"
+              "partner base fee"
             ],
             "type": "u64"
           },
           {
-            "name": "trading_quote_fee",
+            "name": "partner_quote_fee",
             "docs": [
               "trading quote fee"
             ],
@@ -5206,7 +5527,7 @@
             "type": "u8"
           },
           {
-            "name": "is_procotol_withdraw_surplus",
+            "name": "is_protocol_withdraw_surplus",
             "docs": [
               "is protocol withdraw surplus"
             ],
@@ -5227,6 +5548,13 @@
             "type": "u8"
           },
           {
+            "name": "is_creator_withdraw_surplus",
+            "docs": [
+              "is creator withdraw surplus"
+            ],
+            "type": "u8"
+          },
+          {
             "name": "_padding_0",
             "docs": [
               "padding"
@@ -5234,7 +5562,7 @@
             "type": {
               "array": [
                 "u8",
-                2
+                1
               ]
             }
           },
@@ -5257,6 +5585,20 @@
             "type": "u64"
           },
           {
+            "name": "creator_base_fee",
+            "docs": [
+              "creator base fee"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "creator_quote_fee",
+            "docs": [
+              "creator quote fee"
+            ],
+            "type": "u64"
+          },
+          {
             "name": "_padding_1",
             "docs": [
               "Padding for further use"
@@ -5264,7 +5606,7 @@
             "type": {
               "array": [
                 "u64",
-                9
+                7
               ]
             }
           }
