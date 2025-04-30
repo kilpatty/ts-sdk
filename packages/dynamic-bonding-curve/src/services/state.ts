@@ -40,45 +40,6 @@ export class StateService extends DynamicBondingCurveProgram {
     }
 
     /**
-     * Get virtual pool data
-     * @param poolAddress - The address of the pool
-     * @returns A virtual pool or null if not found
-     */
-    async getPool(poolAddress: PublicKey | string): Promise<VirtualPool> {
-        return getAccountData<VirtualPool>(
-            poolAddress,
-            'virtualPool',
-            this.program
-        )
-    }
-
-    /**
-     * Get token decimals for a particular mint
-     * @param mintAddress - The mint address to get decimals for
-     * @param tokenType - The token type (SPL = 0 or Token2022 = 1)
-     * @returns The number of decimals for the token
-     */
-    async getTokenDecimals(
-        mintAddress: PublicKey | string,
-        tokenType: TokenType
-    ): Promise<number> {
-        const mint =
-            mintAddress instanceof PublicKey
-                ? mintAddress
-                : new PublicKey(mintAddress)
-
-        const mintInfo = await getMint(
-            this.program.provider.connection,
-            mint,
-            this.commitment,
-            tokenType === TokenType.Token2022
-                ? TOKEN_2022_PROGRAM_ID
-                : TOKEN_PROGRAM_ID
-        )
-        return mintInfo.decimals
-    }
-
-    /**
      * Get all config keys
      * @returns An array of config key accounts
      */
@@ -112,7 +73,7 @@ export class StateService extends DynamicBondingCurveProgram {
      * @returns An array of config key accounts
      */
     async getPoolConfigsByOwner(
-        owner?: PublicKey | string
+        owner: PublicKey | string
     ): Promise<(ProgramAccount<PoolConfig> & { createdAt?: Date })[]> {
         const filters = owner ? createProgramAccountFilter(owner, 72) : []
         const poolConfigs = await this.program.account.poolConfig.all(filters)
@@ -134,6 +95,19 @@ export class StateService extends DynamicBondingCurveProgram {
             ...config,
             createdAt: timestamps[index],
         }))
+    }
+
+    /**
+     * Get virtual pool data
+     * @param poolAddress - The address of the pool
+     * @returns A virtual pool or null if not found
+     */
+    async getPool(poolAddress: PublicKey | string): Promise<VirtualPool> {
+        return getAccountData<VirtualPool>(
+            poolAddress,
+            'virtualPool',
+            this.program
+        )
     }
 
     /**
@@ -451,5 +425,31 @@ export class StateService extends DynamicBondingCurveProgram {
             creatorBaseFee: pool.account.creatorBaseFee,
             totalTradingBaseFee: pool.account.metrics.totalTradingBaseFee,
         }))
+    }
+
+    /**
+     * Get token decimals for a particular mint
+     * @param mintAddress - The mint address to get decimals for
+     * @param tokenType - The token type (SPL = 0 or Token2022 = 1)
+     * @returns The number of decimals for the token
+     */
+    async getTokenDecimals(
+        mintAddress: PublicKey | string,
+        tokenType: TokenType
+    ): Promise<number> {
+        const mint =
+            mintAddress instanceof PublicKey
+                ? mintAddress
+                : new PublicKey(mintAddress)
+
+        const mintInfo = await getMint(
+            this.program.provider.connection,
+            mint,
+            this.commitment,
+            tokenType === TokenType.Token2022
+                ? TOKEN_2022_PROGRAM_ID
+                : TOKEN_PROGRAM_ID
+        )
+        return mintInfo.decimals
     }
 }

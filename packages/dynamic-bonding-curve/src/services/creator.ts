@@ -18,7 +18,12 @@ import {
     TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 import { DynamicBondingCurveProgram } from './program'
-import { deriveDbcPoolMetadata, findAssociatedTokenAddress, isNativeSol, unwrapSOLInstruction } from '../helpers'
+import {
+    deriveDbcPoolMetadata,
+    findAssociatedTokenAddress,
+    isNativeSol,
+    unwrapSOLInstruction,
+} from '../helpers'
 import { StateService } from './state'
 
 export class CreatorService extends DynamicBondingCurveProgram {
@@ -40,25 +45,20 @@ export class CreatorService extends DynamicBondingCurveProgram {
         const virtualPoolMetadata = deriveDbcPoolMetadata(
             createVirtualPoolMetadataParam.virtualPool
         )
-
-        const virtualPoolMetadataParam: CreateVirtualPoolMetadataParameters = {
-            padding: new Array(96).fill(0),
-            name: createVirtualPoolMetadataParam.name,
-            website: createVirtualPoolMetadataParam.website,
-            logo: createVirtualPoolMetadataParam.logo,
-        }
-
-        const accounts = {
-            virtualPool: createVirtualPoolMetadataParam.virtualPool,
-            virtualPoolMetadata,
-            creator: createVirtualPoolMetadataParam.creator,
-            payer: createVirtualPoolMetadataParam.payer,
-            systemProgram: SystemProgram.programId,
-        }
-
         return this.program.methods
-            .createVirtualPoolMetadata(virtualPoolMetadataParam)
-            .accountsPartial(accounts)
+            .createVirtualPoolMetadata({
+                padding: new Array(96).fill(0),
+                name: createVirtualPoolMetadataParam.name,
+                website: createVirtualPoolMetadataParam.website,
+                logo: createVirtualPoolMetadataParam.logo,
+            })
+            .accountsPartial({
+                virtualPool: createVirtualPoolMetadataParam.virtualPool,
+                virtualPoolMetadata,
+                creator: createVirtualPoolMetadataParam.creator,
+                payer: createVirtualPoolMetadataParam.payer,
+                systemProgram: SystemProgram.programId,
+            })
             .transaction()
     }
 

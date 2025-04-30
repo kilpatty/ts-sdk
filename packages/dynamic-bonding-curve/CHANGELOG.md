@@ -30,11 +30,7 @@
 
 #### Feature Changes
 
-- feat: added 4% and 6% graduation fee options
-- feat: creatorWithdrawSurplus and claimCreatorTradingFee functions
-- feat: added new getter functions
-- fix: updated the way the services are called
-- fix: updated the way the getters are called
+- feat: refactor SDK to be more modular and optimise RPC calls
 
 #### Breaking Changes
 

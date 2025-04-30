@@ -197,34 +197,6 @@ export class PoolService extends DynamicBondingCurveProgram {
     }
 
     /**
-     * Create virtual pool metadata
-     * @param createVirtualPoolMetadataParam - The parameters for the virtual pool metadata
-     * @returns A create virtual pool metadata transaction
-     */
-    async createPoolMetadata(
-        createVirtualPoolMetadataParam: CreateVirtualPoolMetadataParam
-    ): Promise<Transaction> {
-        const virtualPoolMetadata = deriveDbcPoolMetadata(
-            createVirtualPoolMetadataParam.virtualPool
-        )
-        return this.program.methods
-            .createVirtualPoolMetadata({
-                padding: new Array(96).fill(0),
-                name: createVirtualPoolMetadataParam.name,
-                website: createVirtualPoolMetadataParam.website,
-                logo: createVirtualPoolMetadataParam.logo,
-            })
-            .accountsPartial({
-                virtualPool: createVirtualPoolMetadataParam.virtualPool,
-                virtualPoolMetadata,
-                creator: createVirtualPoolMetadataParam.creator,
-                payer: createVirtualPoolMetadataParam.payer,
-                systemProgram: SystemProgram.programId,
-            })
-            .transaction()
-    }
-
-    /**
      * Swap between base and quote
      * @param pool - The pool address
      * @param swapParam - The parameters for the swap

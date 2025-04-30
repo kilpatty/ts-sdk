@@ -34,13 +34,11 @@
     - [claimCreatorTradingFee](#claimCreatorTradingFee)
     - [creatorWithdrawSurplus](#creatorWithdrawSurplus)
 
-- [Helper Functions](#helper-functions)
+- [State Functions](#state-functions)
 
     - [getPoolConfig](#getPoolConfig)
     - [getPoolConfigs](#getPoolConfigs)
     - [getPoolConfigsByOwner](#getPoolConfigsByOwner)
-    - [getDammV1PoolAddress](#getDammV1PoolAddress)
-    - [getDammV2PoolAddress](#getDammV2PoolAddress)
     - [getPool](#getPool)
     - [getPools](#getPools)
     - [getPoolsByConfig](#getPoolsByConfig)
@@ -48,7 +46,6 @@
     - [getPoolCurveProgress](#getPoolCurveProgress)
     - [getPoolMetadata](#getPoolMetadata)
     - [getPartnerMetadata](#getPartnerMetadata)
-    - [getLockEscrowAddress](#getLockEscrowAddress)
     - [getDammV1LockEscrow](#getDammV1LockEscrow)
     - [getDammV1MigrationMetadata](#getDammV1MigrationMetadata)
     - [getDammV2MigrationMetadata](#getDammV2MigrationMetadata)
@@ -57,6 +54,13 @@
     - [getPoolPartnerFeeMetrics](#getPoolPartnerFeeMetrics)
     - [getPoolsQuoteFeesByConfig](#getPoolsQuoteFeesByConfig)
     - [getPoolsBaseFeesByConfig](#getPoolsBaseFeesByConfig)
+    - [getTokenDecimals](#getTokenDecimals)
+
+- [Helper Functions](#helper-functions)
+
+    - [deriveDbcPoolAddress](#deriveDbcPoolAddress)
+    - [deriveDammV1PoolAddress](#deriveDammV1PoolAddress)
+    - [deriveDammV2PoolAddress](#deriveDammV2PoolAddress)
 
 ---
 
@@ -1268,7 +1272,7 @@ const transaction = await client.creator.creatorWithdrawSurplus({
 
 ---
 
-## Helper Functions
+## State Functions
 
 ### getPoolConfig
 
@@ -1293,7 +1297,7 @@ A `PoolConfig` object containing the config key details.
 #### Example
 
 ```typescript
-const config = await client.getPoolConfig(configAddress)
+const config = await client.state.getPoolConfig(configAddress)
 ```
 
 ---
@@ -1315,7 +1319,7 @@ An array of config keys with their creation dates.
 #### Example
 
 ```typescript
-const configs = await client.getPoolConfigs()
+const configs = await client.state.getPoolConfigs()
 ```
 
 ---
@@ -1327,13 +1331,13 @@ Retrieves all config keys owned by a specific wallet.
 #### Function
 
 ```typescript
-async getPoolConfigsByOwner(owner?: PublicKey | string): Promise<(ProgramAccount<PoolConfig> & { createdAt?: Date })[]>
+async getPoolConfigsByOwner(owner: PublicKey | string): Promise<(ProgramAccount<PoolConfig> & { createdAt?: Date })[]>
 ```
 
 #### Parameters
 
 ```typescript
-owner?: PublicKey | string                      // The owner's wallet address (optional)
+owner: PublicKey | string // The owner's wallet address
 ```
 
 #### Returns
@@ -1343,141 +1347,7 @@ An array of config keys owned by the specified wallet.
 #### Example
 
 ```typescript
-const configs = await client.getPoolConfigsByOwner(wallet.publicKey)
-```
-
----
-
-### getTokenDecimals
-
-Gets the number of decimals for a specific token.
-
-#### Function
-
-```typescript
-async getTokenDecimals(
-    mintAddress: PublicKey | string,
-    tokenType: TokenType
-): Promise<number>
-```
-
-#### Parameters
-
-```typescript
-mintAddress: PublicKey | string // The mint address
-tokenType: TokenType // The token type (SPL = 0 or Token2022 = 1)
-```
-
-#### Returns
-
-The number of decimals for the token.
-
-#### Example
-
-```typescript
-const decimals = await client.getTokenDecimals(mintAddress, TokenType.SPL)
-```
-
----
-
-### getDbcPoolAddress
-
-Gets the Dynamic Bonding Curve pool address.
-
-#### Function
-
-```typescript
-async getDbcPoolAddress(
-    quoteMint: PublicKey,
-    baseMint: PublicKey,
-    config: PublicKey
-): Promise<PublicKey>
-```
-
-#### Parameters
-
-```typescript
-quoteMint: PublicKey // The quote mint address
-baseMint: PublicKey // The base mint address
-config: PublicKey // The config address
-```
-
-#### Returns
-
-The Dynamic Bonding Curve pool address.
-
-#### Example
-
-```typescript
-const address = await client.getDbcPoolAddress(quoteMint, baseMint, config)
-```
-
----
-
-### getDammV1PoolAddress
-
-Gets the DAMM V1 pool address.
-
-#### Function
-
-```typescript
-async getDammV1PoolAddress(
-    quoteMint: PublicKey,
-    baseMint: PublicKey,
-    config: PublicKey
-): Promise<PublicKey>
-```
-
-#### Parameters
-
-```typescript
-quoteMint: PublicKey // The quote mint address
-baseMint: PublicKey // The base mint address
-config: PublicKey // The config address
-```
-
-#### Returns
-
-The DAMM V1 pool address.
-
-#### Example
-
-```typescript
-const address = await client.getDammV1PoolAddress(quoteMint, baseMint, config)
-```
-
----
-
-### getDammV2PoolAddress
-
-Gets the DAMM V2 pool address.
-
-#### Function
-
-```typescript
-async getDammV2PoolAddress(
-    quoteMint: PublicKey,
-    baseMint: PublicKey,
-    config: PublicKey
-): Promise<PublicKey>
-```
-
-#### Parameters
-
-```typescript
-quoteMint: PublicKey // The quote mint address
-baseMint: PublicKey // The base mint address
-config: PublicKey // The config address
-```
-
-#### Returns
-
-The DAMM V2 pool address.
-
-#### Example
-
-```typescript
-const address = await client.getDammV2PoolAddress(quoteMint, baseMint, config)
+const configs = await client.state.getPoolConfigsByOwner(wallet.publicKey)
 ```
 
 ---
@@ -1505,7 +1375,7 @@ A `VirtualPool` object containing the pool's details, or null if not found.
 #### Example
 
 ```typescript
-const pool = await client.getPool(poolAddress)
+const pool = await client.state.getPool(poolAddress)
 ```
 
 ---
@@ -1527,7 +1397,7 @@ An array of all pools with their creation dates.
 #### Example
 
 ```typescript
-const pools = await client.getPools()
+const pools = await client.state.getPools()
 ```
 
 ---
@@ -1555,7 +1425,7 @@ An array of pools with their creation dates.
 #### Example
 
 ```typescript
-const pools = await client.getPoolsByConfig(configAddress)
+const pools = await client.state.getPoolsByConfig(configAddress)
 ```
 
 ---
@@ -1583,7 +1453,7 @@ A `BN` object representing the migration quote threshold.
 #### Example
 
 ```typescript
-const threshold = await client.getPoolMigrationQuoteThreshold(poolAddress)
+const threshold = await client.state.getPoolMigrationQuoteThreshold(poolAddress)
 ```
 
 ---
@@ -1611,7 +1481,7 @@ A number between 0 and 1 representing the curve progress.
 #### Example
 
 ```typescript
-const progress = await client.getPoolCurveProgress(poolAddress)
+const progress = await client.state.getPoolCurveProgress(poolAddress)
 ```
 
 ---
@@ -1639,7 +1509,7 @@ An array of `VirtualPoolMetadata` objects containing the pool's metadata.
 #### Example
 
 ```typescript
-const metadata = await client.getPoolMetadata(poolAddress)
+const metadata = await client.state.getPoolMetadata(poolAddress)
 ```
 
 ---
@@ -1667,39 +1537,7 @@ An array of `PartnerMetadata` objects containing the partner's metadata.
 #### Example
 
 ```typescript
-const metadata = await client.getPartnerMetadata(wallet.publicKey)
-```
-
----
-
-### getLockEscrowAddress
-
-Gets the lock escrow address for a DAMM V1 pool.
-
-#### Function
-
-```typescript
-async getLockEscrowAddress(
-    dammPool: PublicKey,
-    walletAddress: PublicKey
-): Promise<PublicKey>
-```
-
-#### Parameters
-
-```typescript
-dammPool: PublicKey // The address of the DAMM V1 pool
-walletAddress: PublicKey // The wallet address of the creator / partner
-```
-
-#### Returns
-
-The lock escrow address.
-
-#### Example
-
-```typescript
-const address = await client.getLockEscrowAddress(dammPool, walletAddress)
+const metadata = await client.state.getPartnerMetadata(wallet.publicKey)
 ```
 
 ---
@@ -1727,7 +1565,7 @@ A `LockEscrow` object containing the lock escrow details.
 #### Example
 
 ```typescript
-const escrow = await client.getDammV1LockEscrow(escrowAddress)
+const escrow = await client.state.getDammV1LockEscrow(escrowAddress)
 ```
 
 ---
@@ -1755,7 +1593,7 @@ A `MeteoraDammMigrationMetadata` object containing the migration metadata.
 #### Example
 
 ```typescript
-const metadata = await client.getDammV1MigrationMetadata(poolAddress)
+const metadata = await client.state.getDammV1MigrationMetadata(poolAddress)
 ```
 
 ---
@@ -1783,7 +1621,7 @@ A `MeteoraDammV2MigrationMetadata` object containing the migration metadata.
 #### Example
 
 ```typescript
-const metadata = await client.getDammV2MigrationMetadata(poolAddress)
+const metadata = await client.state.getDammV2MigrationMetadata(poolAddress)
 ```
 
 ---
@@ -1822,7 +1660,7 @@ An object containing current and total fee metrics for the pool.
 #### Example
 
 ```typescript
-const metrics = await client.getPoolFeeMetrics(poolAddress)
+const metrics = await client.state.getPoolFeeMetrics(poolAddress)
 ```
 
 ---
@@ -1853,7 +1691,7 @@ An object containing the creator's fee metrics.
 #### Example
 
 ```typescript
-const metrics = await client.getPoolCreatorFeeMetrics(poolAddress)
+const metrics = await client.state.getPoolCreatorFeeMetrics(poolAddress)
 ```
 
 ---
@@ -1884,7 +1722,7 @@ An object containing the partner's fee metrics.
 #### Example
 
 ```typescript
-const metrics = await client.getPoolPartnerFeeMetrics(poolAddress)
+const metrics = await client.state.getPoolPartnerFeeMetrics(poolAddress)
 ```
 
 ---
@@ -1917,7 +1755,7 @@ An array of objects containing quote fee metrics for each pool.
 #### Example
 
 ```typescript
-const fees = await client.getPoolsQuoteFeesByConfig(configAddress)
+const fees = await client.state.getPoolsQuoteFeesByConfig(configAddress)
 ```
 
 ---
@@ -1950,7 +1788,153 @@ An array of objects containing base fee metrics for each pool.
 #### Example
 
 ```typescript
-const fees = await client.getPoolsBaseFeesByConfig(configAddress)
+const fees = await client.state.getPoolsBaseFeesByConfig(configAddress)
 ```
 
 ---
+
+### getTokenDecimals
+
+Gets the number of decimals for a specific token.
+
+#### Function
+
+```typescript
+async getTokenDecimals(
+    mintAddress: PublicKey | string,
+    tokenType: TokenType
+): Promise<number>
+```
+
+#### Parameters
+
+```typescript
+mintAddress: PublicKey | string // The mint address
+tokenType: TokenType // The token type (SPL = 0 or Token2022 = 1)
+```
+
+#### Returns
+
+The number of decimals for the token.
+
+#### Example
+
+```typescript
+const decimals = await client.state.getTokenDecimals(mintAddress, TokenType.SPL)
+```
+
+---
+
+## Helper Functions
+
+### deriveDbcPoolAddress
+
+Derives the address of a Dynamic Bonding Curve pool.
+
+#### Function
+
+```typescript
+function deriveDbcPoolAddress(
+    quoteMint: PublicKey,
+    baseMint: PublicKey,
+    config: PublicKey
+): PublicKey
+```
+
+#### Parameters
+
+```typescript
+quoteMint: PublicKey // The quote mint
+baseMint: PublicKey // The base mint
+config: PublicKey // The config
+```
+
+#### Returns
+
+The address of the Dynamic Bonding Curve pool.
+
+#### Example
+
+```typescript
+const dbcPoolAddress = deriveDbcPoolAddress(
+    quoteMint: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    baseMint: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
+    config: new PublicKey('config1234567890abcdefghijklmnopqrstuvwxyz')
+)
+```
+
+---
+
+### deriveDammV1PoolAddress
+
+Derives the address of a DAMM V1 pool.
+
+#### Function
+
+```typescript
+function deriveDammV1PoolAddress(
+    dammConfig: PublicKey,
+    tokenAMint: PublicKey,
+    tokenBMint: PublicKey
+): PublicKey
+```
+
+#### Parameters
+
+```typescript
+dammConfig: PublicKey // The DAMM V1 graduation config key (retrievable from the README.md)
+tokenAMint: PublicKey // The A token mint
+tokenBMint: PublicKey // The B token mint
+```
+
+#### Returns
+
+The address of the DAMM V1 pool.
+
+#### Example
+
+```typescript
+const dammV1PoolAddress = deriveDammV1PoolAddress(
+    dammConfig: new PublicKey('8f848CEy8eY6PhJ3VcemtBDzPPSD4Vq7aJczLZ3o8MmX'),
+    tokenAMint: new PublicKey('tokenA1234567890abcdefghijklmnopqrstuvwxyz'),
+    tokenBMint: new PublicKey('tokenB1234567890abcdefghijklmnopqrstuvwxyz')
+)
+```
+
+---
+
+### deriveDammV2PoolAddress
+
+Derives the address of a DAMM V2 pool.
+
+#### Function
+
+```typescript
+function deriveDammV2PoolAddress(
+    dammConfig: PublicKey,
+    tokenAMint: PublicKey,
+    tokenBMint: PublicKey
+): PublicKey
+```
+
+#### Parameters
+
+```typescript
+dammConfig: PublicKey // The DAMM V2 graduation config key (retrievable from the README.md)
+tokenAMint: PublicKey // The A token mint
+tokenBMint: PublicKey // The B token mint
+```
+
+#### Returns
+
+The address of the DAMM V2 pool.
+
+#### Example
+
+```typescript
+const dammV2PoolAddress = deriveDammV2PoolAddress(
+    dammConfig: new PublicKey('7F6dnUcRuyM2TwR8myT1dYypFXpPSxqwKNSFNkxyNESd'),
+    tokenAMint: new PublicKey('tokenA1234567890abcdefghijklmnopqrstuvwxyz'),
+    tokenBMint: new PublicKey('tokenB1234567890abcdefghijklmnopqrstuvwxyz')
+)
+```
