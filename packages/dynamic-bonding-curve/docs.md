@@ -808,6 +808,7 @@ interface SwapQuoteParam {
     config: PoolConfig
     swapBaseForQuote: boolean
     amountIn: BN
+    slippageBps?: number
     hasReferral: boolean
     currentPoint: BN
 }
@@ -828,6 +829,7 @@ const quote = await client.pool.swapQuote({
     config: poolConfigState, // The pool config state
     swapBaseForQuote: false, // Whether to swap base for quote
     amountIn: new BN(100000000), // The amount of tokens to swap
+    slippageBps: 100, // The slippage in basis points (optional)
     hasReferral: false, // Whether to include a referral fee
     currentPoint: new BN(0), // The current point
 })
@@ -839,6 +841,7 @@ const quote = await client.pool.swapQuote({
     - `true`: Swap base tokens for quote tokens
     - `false`: Swap quote tokens for base tokens
 - The `amountIn` is the amount of tokens you want to swap, denominated in the smallest unit and token decimals. (e.g., lamports for SOL).
+- The `slippageBps` parameter is the slippage in basis points (optional). This will calculate the minimum amount out based on the slippage.
 - The `hasReferral` parameter indicates whether a referral fee should be included in the calculation.
 - The `currentPoint` parameter is typically used in cases where the config has applied a fee scheduler. If activationType == 0, then it is current slot. If activationType == 1, then it is the current block timestamp. You can fill in accordingly based on slot or timestamp.
 
