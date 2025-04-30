@@ -18,12 +18,12 @@ yarn add @meteora-ag/dynamic-bonding-curve-sdk
 
 ## Initialization
 
-```bash
-import { Connection } from "@solana/web3.js";
-import { DynamicBondingCurveClient } from "@meteora-ag/dynamic-bonding-curve-sdk";
+```typescript
+import { Connection } from '@solana/web3.js'
+import { DynamicBondingCurveClient } from '@meteora-ag/dynamic-bonding-curve-sdk'
 
 const connection = new Connection('https://api.mainnet-beta.solana.com')
-const client = new DynamicBondingCurveClient(connection)
+const client = new DynamicBondingCurveClient(connection, 'confirmed')
 ```
 
 ## Usage

@@ -1,5 +1,5 @@
 import { expect, test, describe } from 'bun:test'
-import { buildCurve, buildCurveByMarketCap } from '../src/build'
+import { buildCurve, buildCurveByMarketCap } from '../src/helpers'
 import BN from 'bn.js'
 import {
     ActivationType,

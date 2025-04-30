@@ -5,14 +5,14 @@ import {
     getSwapAmountFromBaseToQuote,
     getSwapAmountFromQuoteToBase,
 } from '../../src/math/swapQuote'
-import { TradeDirection, CollectFeeMode } from '../../src/types'
+import { TradeDirection, GetFeeMode } from '../../src/types'
 import { Q } from '../utils/test-helpers'
 
 // Test getFeeMode function
 test('getFeeMode with QuoteToken mode', () => {
     // Test base to quote direction
     const feeMode1 = getFeeMode(
-        CollectFeeMode.QuoteToken,
+        GetFeeMode.QuoteToken,
         TradeDirection.BaseToQuote,
         false
     )
@@ -22,7 +22,7 @@ test('getFeeMode with QuoteToken mode', () => {
 
     // Test quote to base direction
     const feeMode2 = getFeeMode(
-        CollectFeeMode.QuoteToken,
+        GetFeeMode.QuoteToken,
         TradeDirection.QuoteToBase,
         true
     )
@@ -34,7 +34,7 @@ test('getFeeMode with QuoteToken mode', () => {
 test('getFeeMode with OutputToken mode', () => {
     // Test base to quote direction
     const feeMode1 = getFeeMode(
-        CollectFeeMode.OutputToken,
+        GetFeeMode.OutputToken,
         TradeDirection.BaseToQuote,
         false
     )
@@ -44,23 +44,13 @@ test('getFeeMode with OutputToken mode', () => {
 
     // Test quote to base direction
     const feeMode2 = getFeeMode(
-        CollectFeeMode.OutputToken,
+        GetFeeMode.OutputToken,
         TradeDirection.QuoteToBase,
         true
     )
     expect(feeMode2.feesOnInput).toBe(false)
     expect(feeMode2.feesOnBaseToken).toBe(true)
     expect(feeMode2.hasReferral).toBe(true)
-})
-
-test('getFeeMode with invalid mode', () => {
-    expect(() =>
-        getFeeMode(
-            2, // Invalid mode
-            TradeDirection.BaseToQuote,
-            false
-        )
-    ).toThrow('Invalid collect fee mode')
 })
 
 // Test getSwapAmountFromBaseToQuote function

@@ -1,5 +1,5 @@
 import BN from 'bn.js'
-import { MAX_CURVE_POINT, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from './constants'
+import { MAX_CURVE_POINT, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '../constants'
 import {
     ActivationType,
     CollectFeeMode,
@@ -9,7 +9,7 @@ import {
     TokenType,
     type CreateConfigParam,
     type PoolConfig,
-} from './types'
+} from '../types'
 import { Connection, PublicKey } from '@solana/web3.js'
 import {
     getBaseTokenForSwap,
@@ -17,28 +17,11 @@ import {
     getMigrationThresholdPrice,
     getSwapAmountWithBuffer,
 } from './common'
-import { isNativeSol } from './utils'
-
-/**
- * Check if the locked vesting is the default
- * @param lockedVesting - The locked vesting parameters
- * @returns true if the locked vesting is the default, false otherwise
- */
-export function isDefaultLockedVesting(lockedVesting: {
-    amountPerPeriod: BN
-    cliffDurationFromMigrationTime: BN
-    frequency: BN
-    numberOfPeriod: BN
-    cliffUnlockAmount: BN
-}): boolean {
-    return (
-        lockedVesting.amountPerPeriod.eqn(0) &&
-        lockedVesting.cliffDurationFromMigrationTime.eqn(0) &&
-        lockedVesting.frequency.eqn(0) &&
-        lockedVesting.numberOfPeriod.eqn(0) &&
-        lockedVesting.cliffUnlockAmount.eqn(0)
-    )
-}
+import {
+    getTotalTokenSupply,
+    isDefaultLockedVesting,
+    isNativeSol,
+} from './utils'
 
 /**
  * Validate the pool fees
@@ -56,50 +39,6 @@ export function validatePoolFees(poolFees: any): boolean {
     }
 
     return true
-}
-
-/**
- * Get the total token supply
- * @param swapBaseAmount - The swap base amount
- * @param migrationBaseThreshold - The migration base threshold
- * @param lockedVestingParams - The locked vesting parameters
- * @returns The total token supply
- */
-export function getTotalTokenSupply(
-    swapBaseAmount: BN,
-    migrationBaseThreshold: BN,
-    lockedVestingParams: {
-        amountPerPeriod: BN
-        numberOfPeriod: BN
-        cliffUnlockAmount: BN
-    }
-): BN {
-    try {
-        // calculate total circulating amount
-        const totalCirculatingAmount = swapBaseAmount.add(
-            migrationBaseThreshold
-        )
-
-        // calculate total locked vesting amount
-        const totalLockedVestingAmount =
-            lockedVestingParams.cliffUnlockAmount.add(
-                lockedVestingParams.amountPerPeriod.mul(
-                    lockedVestingParams.numberOfPeriod
-                )
-            )
-
-        // calculate total amount
-        const totalAmount = totalCirculatingAmount.add(totalLockedVestingAmount)
-
-        // check for overflow
-        if (totalAmount.isNeg() || totalAmount.bitLength() > 64) {
-            throw new Error('Math overflow')
-        }
-
-        return totalAmount
-    } catch (error) {
-        throw new Error('Math overflow')
-    }
 }
 
 /**
@@ -158,7 +97,7 @@ export function validateMigrationFeeOption(
         MigrationFeeOption.FixedBps100,
         MigrationFeeOption.FixedBps200,
         MigrationFeeOption.FixedBps400,
-        MigrationFeeOption.FixedBps600
+        MigrationFeeOption.FixedBps600,
     ].includes(migrationFeeOption)
 }
 
@@ -447,6 +386,13 @@ export function validateBaseTokenType(
     return baseTokenType === poolConfig.tokenType
 }
 
+/**
+ * Validate that the user has sufficient balance for the swap
+ * @param balance - The current balance in lamports
+ * @param amountIn - The input amount for the swap
+ * @param isSOLInput - Whether the input token is SOL
+ * @returns true if the balance is sufficient, throws error if insufficient
+ */
 /**
  * Validate that the user has sufficient balance for the swap
  * @param connection - The Solana connection

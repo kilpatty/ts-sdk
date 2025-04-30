@@ -7,6 +7,8 @@ import {
 } from './curve'
 import { getFeeOnAmount } from './feeMath'
 import {
+    CollectFeeMode,
+    GetFeeMode,
     Rounding,
     TradeDirection,
     type FeeMode,
@@ -342,32 +344,15 @@ export function getSwapAmountFromQuoteToBase(
  * @returns Fee mode
  */
 export function getFeeMode(
-    collectFeeMode: number,
+    collectFeeMode: GetFeeMode,
     tradeDirection: TradeDirection,
     hasReferral: boolean
 ): FeeMode {
-    let feesOnInput: boolean
-    let feesOnBaseToken: boolean
-
-    if (collectFeeMode === 0) {
-        if (tradeDirection === TradeDirection.BaseToQuote) {
-            feesOnInput = false
-            feesOnBaseToken = false
-        } else {
-            feesOnInput = true
-            feesOnBaseToken = false
-        }
-    } else if (collectFeeMode === 1) {
-        if (tradeDirection === TradeDirection.BaseToQuote) {
-            feesOnInput = false
-            feesOnBaseToken = false
-        } else {
-            feesOnInput = false
-            feesOnBaseToken = true
-        }
-    } else {
-        throw new Error('Invalid collect fee mode')
-    }
+    const quoteToBase = tradeDirection === TradeDirection.QuoteToBase
+    const feesOnInput =
+        quoteToBase && collectFeeMode === GetFeeMode.QuoteToken
+    const feesOnBaseToken =
+        quoteToBase && collectFeeMode === GetFeeMode.OutputToken
 
     return {
         feesOnInput,

@@ -1,10 +1,10 @@
 import {
+    Commitment,
     SystemProgram,
     Transaction,
     TransactionInstruction,
     type Connection,
 } from '@solana/web3.js'
-import type { DynamicBondingCurveClient } from '../client'
 import {
     ClaimCreatorTradingFeeParam,
     CreateVirtualPoolMetadataParam,
@@ -12,8 +12,6 @@ import {
     CreatorWithdrawSurplusParam,
     TokenType,
 } from '../types'
-import { derivePoolAuthority, deriveVirtualPoolMetadata } from '../derive'
-import { DYNAMIC_BONDING_CURVE_PROGRAM_ID } from '../constants'
 import {
     createAssociatedTokenAccountIdempotentInstruction,
     TOKEN_2022_PROGRAM_ID,
@@ -24,12 +22,16 @@ import {
     isNativeSol,
     unwrapSOLInstruction,
 } from '../utils'
+import { DynamicBondingCurveProgram } from './program'
+import { deriveDbcPoolMetadata } from '../helpers'
+import { StateService } from './state'
 
-export class CreatorService {
-    private connection: Connection
+export class CreatorService extends DynamicBondingCurveProgram {
+    private state: StateService
 
-    constructor(private programClient: DynamicBondingCurveClient) {
-        this.connection = this.programClient.getProgram().provider.connection
+    constructor(connection: Connection, commitment: Commitment) {
+        super(connection, commitment)
+        this.state = new StateService(connection, commitment)
     }
 
     /**
@@ -40,8 +42,7 @@ export class CreatorService {
     async createPoolMetadata(
         createVirtualPoolMetadataParam: CreateVirtualPoolMetadataParam
     ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-        const virtualPoolMetadata = deriveVirtualPoolMetadata(
+        const virtualPoolMetadata = deriveDbcPoolMetadata(
             createVirtualPoolMetadataParam.virtualPool
         )
 
@@ -60,7 +61,7 @@ export class CreatorService {
             systemProgram: SystemProgram.programId,
         }
 
-        return program.methods
+        return this.program.methods
             .createVirtualPoolMetadata(virtualPoolMetadataParam)
             .accountsPartial(accounts)
             .transaction()
@@ -74,27 +75,20 @@ export class CreatorService {
     async claimCreatorTradingFee(
         claimCreatorTradingFeeParam: ClaimCreatorTradingFeeParam
     ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
         const { creator, pool, maxBaseAmount, maxQuoteAmount } =
             claimCreatorTradingFeeParam
 
-        const virtualPoolState = await this.programClient.getPool(pool)
+        const poolState = await this.state.getPool(pool)
 
-        if (!virtualPoolState) {
+        if (!poolState) {
             throw new Error(`Pool not found: ${pool.toString()}`)
         }
 
-        const poolConfigState = await this.programClient.getPoolConfig(
-            virtualPoolState.config
-        )
+        const poolConfigState = await this.state.getPoolConfig(poolState.config)
 
         if (!poolConfigState) {
             throw new Error(`Pool config not found: ${pool.toString()}`)
         }
-
-        const poolAuthority = derivePoolAuthority(
-            DYNAMIC_BONDING_CURVE_PROGRAM_ID
-        )
 
         const tokenBaseProgram =
             poolConfigState.tokenType == TokenType.SPL
@@ -111,7 +105,7 @@ export class CreatorService {
 
         const baseTokenAccount = findAssociatedTokenAddress(
             creator,
-            virtualPoolState.baseMint,
+            poolState.baseMint,
             tokenBaseProgram
         )
 
@@ -126,7 +120,7 @@ export class CreatorService {
                 creator,
                 baseTokenAccount,
                 creator,
-                virtualPoolState.baseMint,
+                poolState.baseMint,
                 tokenBaseProgram
             )
 
@@ -157,20 +151,20 @@ export class CreatorService {
         }
 
         const accounts = {
-            poolAuthority,
+            poolAuthority: this.poolAuthority,
             pool,
             tokenAAccount: baseTokenAccount,
             tokenBAccount: quoteTokenAccount,
-            baseVault: virtualPoolState.baseVault,
-            quoteVault: virtualPoolState.quoteVault,
-            baseMint: virtualPoolState.baseMint,
+            baseVault: poolState.baseVault,
+            quoteVault: poolState.quoteVault,
+            baseMint: poolState.baseMint,
             quoteMint: poolConfigState.quoteMint,
             creator,
             tokenBaseProgram,
             tokenQuoteProgram,
         }
 
-        return program.methods
+        return this.program.methods
             .claimCreatorTradingFee(maxBaseAmount, maxQuoteAmount)
             .accountsPartial(accounts)
             .preInstructions(preInstructions)
@@ -186,26 +180,19 @@ export class CreatorService {
     async creatorWithdrawSurplus(
         creatorWithdrawSurplusParam: CreatorWithdrawSurplusParam
     ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
         const { creator, virtualPool } = creatorWithdrawSurplusParam
 
-        const virtualPoolState = await this.programClient.getPool(virtualPool)
+        const poolState = await this.state.getPool(virtualPool)
 
-        if (!virtualPoolState) {
+        if (!poolState) {
             throw new Error(`Pool not found: ${virtualPool.toString()}`)
         }
 
-        const poolConfigState = await this.programClient.getPoolConfig(
-            virtualPoolState.config
-        )
+        const poolConfigState = await this.state.getPoolConfig(poolState.config)
 
         if (!poolConfigState) {
             throw new Error(`Pool config not found: ${virtualPool.toString()}`)
         }
-
-        const poolAuthority = derivePoolAuthority(
-            DYNAMIC_BONDING_CURVE_PROGRAM_ID
-        )
 
         const preInstructions: TransactionInstruction[] = []
         const postInstructions: TransactionInstruction[] = []
@@ -239,17 +226,17 @@ export class CreatorService {
         }
 
         const accounts = {
-            poolAuthority,
-            config: virtualPoolState.config,
+            poolAuthority: this.poolAuthority,
+            config: poolState.config,
             virtualPool,
             tokenQuoteAccount,
-            quoteVault: virtualPoolState.quoteVault,
+            quoteVault: poolState.quoteVault,
             quoteMint: poolConfigState.quoteMint,
             creator,
             tokenQuoteProgram: TOKEN_PROGRAM_ID,
         }
 
-        return program.methods
+        return this.program.methods
             .creatorWithdrawSurplus()
             .accountsPartial(accounts)
             .preInstructions(preInstructions)

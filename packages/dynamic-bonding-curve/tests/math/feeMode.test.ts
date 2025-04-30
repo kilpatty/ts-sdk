@@ -1,10 +1,10 @@
 import { test, expect } from 'bun:test'
 import { getFeeMode } from '../../src/math/swapQuote'
-import { CollectFeeMode, TradeDirection } from '../../src/types'
+import { GetFeeMode, TradeDirection } from '../../src/types'
 
 test('fee mode output token base to quote', () => {
     const feeMode = getFeeMode(
-        CollectFeeMode.OutputToken,
+        GetFeeMode.OutputToken,
         TradeDirection.BaseToQuote,
         false
     )
@@ -16,7 +16,7 @@ test('fee mode output token base to quote', () => {
 
 test('fee mode output token quote to base', () => {
     const feeMode = getFeeMode(
-        CollectFeeMode.OutputToken,
+        GetFeeMode.OutputToken,
         TradeDirection.QuoteToBase,
         true
     )
@@ -28,7 +28,7 @@ test('fee mode output token quote to base', () => {
 
 test('fee mode quote token base to quote', () => {
     const feeMode = getFeeMode(
-        CollectFeeMode.QuoteToken,
+        GetFeeMode.QuoteToken,
         TradeDirection.BaseToQuote,
         false
     )
@@ -40,7 +40,7 @@ test('fee mode quote token base to quote', () => {
 
 test('fee mode quote token quote to base', () => {
     const feeMode = getFeeMode(
-        CollectFeeMode.QuoteToken,
+        GetFeeMode.QuoteToken,
         TradeDirection.QuoteToBase,
         true
     )
@@ -50,20 +50,10 @@ test('fee mode quote token quote to base', () => {
     expect(feeMode.hasReferral).toBe(true)
 })
 
-test('invalid collect fee mode', () => {
-    expect(() =>
-        getFeeMode(
-            2, // Invalid mode
-            TradeDirection.QuoteToBase,
-            false
-        )
-    ).toThrow('Invalid collect fee mode')
-})
-
 test('fee mode default values', () => {
     // Test default values by passing default collect fee mode
     const feeMode = getFeeMode(
-        CollectFeeMode.QuoteToken,
+        GetFeeMode.QuoteToken,
         TradeDirection.BaseToQuote,
         false
     )
@@ -76,7 +66,7 @@ test('fee mode default values', () => {
 test('fee mode properties', () => {
     // When trading BaseToQuote, fees should never be on input
     const feeMode1 = getFeeMode(
-        CollectFeeMode.QuoteToken,
+        GetFeeMode.QuoteToken,
         TradeDirection.BaseToQuote,
         true
     )
@@ -84,7 +74,7 @@ test('fee mode properties', () => {
 
     // When using QuoteToken mode, base_token should always be false
     const feeMode2 = getFeeMode(
-        CollectFeeMode.QuoteToken,
+        GetFeeMode.QuoteToken,
         TradeDirection.QuoteToBase,
         false
     )
