@@ -10,7 +10,7 @@ import {
     TokenDecimal,
     TokenType,
 } from '../src'
-import { convertBNToDecimal } from '../src/utils'
+import { convertBNToDecimal } from './utils/common'
 
 describe('buildCurve tests', () => {
     const baseParams = {

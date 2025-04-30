@@ -11,7 +11,6 @@ import {
     VirtualPool,
     VirtualPoolMetadata,
 } from '../types'
-import { COMMITMENT, DYNAMIC_BONDING_CURVE_PROGRAM_ID } from '../constants'
 import {
     getMint,
     TOKEN_2022_PROGRAM_ID,
@@ -71,7 +70,7 @@ export class StateService extends DynamicBondingCurveProgram {
         const mintInfo = await getMint(
             this.program.provider.connection,
             mint,
-            COMMITMENT,
+            this.commitment,
             tokenType === TokenType.Token2022
                 ? TOKEN_2022_PROGRAM_ID
                 : TOKEN_PROGRAM_ID
@@ -92,8 +91,7 @@ export class StateService extends DynamicBondingCurveProgram {
             const signatures =
                 await this.program.provider.connection.getSignaturesForAddress(
                     config.publicKey,
-                    { limit: 1 },
-                    COMMITMENT
+                    { limit: 1 }
                 )
             return signatures[0]?.blockTime
                 ? new Date(signatures[0].blockTime * 1000)
@@ -123,8 +121,7 @@ export class StateService extends DynamicBondingCurveProgram {
             const signatures =
                 await this.program.provider.connection.getSignaturesForAddress(
                     config.publicKey,
-                    { limit: 1 },
-                    COMMITMENT
+                    { limit: 1 }
                 )
             return signatures[0]?.blockTime
                 ? new Date(signatures[0].blockTime * 1000)
@@ -152,8 +149,7 @@ export class StateService extends DynamicBondingCurveProgram {
             const signatures =
                 await this.program.provider.connection.getSignaturesForAddress(
                     pool.publicKey,
-                    { limit: 1 },
-                    COMMITMENT
+                    { limit: 1 }
                 )
             return signatures[0]?.blockTime
                 ? new Date(signatures[0].blockTime * 1000)
@@ -183,8 +179,7 @@ export class StateService extends DynamicBondingCurveProgram {
             const signatures =
                 await this.program.provider.connection.getSignaturesForAddress(
                     pool.publicKey,
-                    { limit: 1 },
-                    COMMITMENT
+                    { limit: 1 }
                 )
             return signatures[0]?.blockTime
                 ? new Date(signatures[0].blockTime * 1000)
