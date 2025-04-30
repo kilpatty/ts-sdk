@@ -31,15 +31,17 @@
 #### Feature Changes
 
 - feat: refactor SDK to be more modular and optimise RPC calls
+- feat: added `createPoolAndBuy` function
 
 #### Breaking Changes
 
-- `createConfig`, `buildCurveAndCreateConfig` and `buildCurveAndCreateConfigByMarketCap` functions now require a `creatorTradingFeePercentage` parameter.
-- IDL includes `creatorWithdrawSurplus` and `claimCreatorTradingFee` instructions.
-- Partner, Migration, Creator and Pool functions are now called in this manner:
+- Partner, Migration, Creator, Pool and State functions are now called in this manner:
     - `client.partners.createConfig` -> `client.partner.createConfig`
     - `client.migrations.migrateToDammV1` -> `client.migration.migrateToDammV1`
     - `client.creators.createPoolMetadata` -> `client.creator.createPoolMetadata`
     - `client.pools.swap` -> `client.pool.swap`
-- Getter functions are now called in this manner:
-    - `client.getProgram().getPoolConfig` -> `client.getPoolConfig`
+    - `client.getPoolConfig` -> `client.state.getPoolConfig`
+- In order to get the DBC Pool Address, or DAMM V1 Pool Address, or DAMM V2 Pool Address, use the following functions (the order matters):
+    - `deriveDbcPoolAddress`
+    - `deriveDammV1PoolAddress`
+    - `deriveDammV2PoolAddress`
