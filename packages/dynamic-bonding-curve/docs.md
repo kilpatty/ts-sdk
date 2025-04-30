@@ -14,6 +14,7 @@
 - [Pool Functions](#pool-functions)
 
     - [createPool](#createPool)
+    - [createPoolAndBuy](#createPoolAndBuy)
     - [swap](#swap)
     - [swapQuote](#swapQuote)
 
@@ -677,6 +678,65 @@ const transaction = await client.pool.createPool({
 
 ---
 
+### createPoolAndBuy
+
+Creates a new pool with the configuration key and buys the token immediately.
+
+#### Function
+
+```typescript
+async createPoolAndBuy(createPoolAndBuyParam: CreatePoolAndBuyParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface CreatePoolAndBuyParam {
+    createPoolParam: CreatePoolParam // The create pool parameters
+    buyAmount: BN // The amount of tokens to buy
+    minimumAmountOut: BN // The minimum amount of tokens to receive
+    referralTokenAccount: PublicKey | null // The referral token account (optional)
+}
+```
+
+#### Returns
+
+A transaction that requires signatures from the payer, the baseMint keypair, and the poolCreator before being submitted to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.pool.createPoolAndBuy({
+    createPoolParam: {
+        quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
+        baseMint: new PublicKey('0987654321zyxwvutsrqponmlkjihgfedcba'),
+        config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
+        baseTokenType: 0,
+        quoteTokenType: 0,
+        name: 'Meteora',
+        website: 'https://launch.meteora.ag',
+        logo: 'https://launch.meteora.ag/icons/logo.svg',
+        payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+        poolCreator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    },
+    buyAmount: new BN(0.1 * 1e9),
+    minimumAmountOut: new BN(1),
+    referralTokenAccount: null,
+})
+```
+
+#### Notes
+
+- The `payer` must be the same as the payer in the `CreatePoolParam` params.
+- The `poolCreator` is required to sign when creating the pool.
+- The `baseMint` token type must be the same as the config key's token type.
+- The `quoteMint` must be the same as the config key's quoteMint.
+- The `buyAmount` must be greater than 0.
+- The `minimumAmountOut` parameter protects against slippage. Set it to a value slightly lower than the expected output.
+- The `referralTokenAccount` parameter is an optional token account. If provided, the referral fee will be applied to the transaction.
+
+---
+
 ### swap
 
 Swaps between base and quote or quote and base on the Dynamic Bonding Curve.
@@ -724,6 +784,7 @@ const transaction = await client.pool.swap({
 - When swapping quote for base (buying tokens), set `swapBaseForQuote` to `false`.
 - When swapping base for quote (selling tokens), set `swapBaseForQuote` to `true`.
 - The `minimumAmountOut` parameter protects against slippage. Set it to a value slightly lower than the expected output.
+- The `referralTokenAccount` parameter is an optional token account. If provided, the referral fee will be applied to the transaction.
 - If the transaction fails with "insufficient balance", check that you have enough tokens plus fees for the transaction.
 - The pool address can be derived using `client.getDbcPoolAddress(quoteMint, baseMint, config)`.
 
