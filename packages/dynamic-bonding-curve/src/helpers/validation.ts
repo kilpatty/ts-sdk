@@ -440,3 +440,15 @@ export async function validateBalance(
 
     return true
 }
+
+/**
+ * Validate that the swap amount is valid
+ * @param amountIn - The input amount for the swap
+ * @returns true if the amount is valid, throws error if invalid
+ */
+export function validateSwapAmount(amountIn: BN): boolean {
+    if (amountIn.lte(new BN(0))) {
+        throw new Error('Swap amount must be greater than 0')
+    }
+    return true
+}

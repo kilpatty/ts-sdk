@@ -345,6 +345,13 @@ export type CreatePoolParam = {
     baseMint: PublicKey
 }
 
+export type CreatePoolAndBuyParam = {
+    createPoolParam: CreatePoolParam
+    buyAmount: BN
+    minimumAmountOut: BN
+    referralTokenAccount: PublicKey | null
+}
+
 export type SwapParam = {
     owner: PublicKey
     pool: PublicKey

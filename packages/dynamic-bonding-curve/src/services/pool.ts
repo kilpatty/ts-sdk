@@ -1,18 +1,17 @@
 import {
     Commitment,
     PublicKey,
-    SystemProgram,
     TransactionInstruction,
     type Connection,
     type Transaction,
 } from '@solana/web3.js'
 import { DynamicBondingCurveProgram } from './program'
 import {
+    CreatePoolAndBuyParam,
     InitializePoolBaseParam,
     PrepareSwapParams,
     TokenType,
     type CreatePoolParam,
-    type CreateVirtualPoolMetadataParam,
     type SwapParam,
     type SwapQuoteParam,
 } from '../types'
@@ -30,6 +29,7 @@ import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { METAPLEX_PROGRAM_ID } from '../constants'
 import { swapQuote } from '../math/swapQuote'
 import { StateService } from './state'
+import { validateSwapAmount } from '../helpers/validation'
 
 export class PoolService extends DynamicBondingCurveProgram {
     private state: StateService
@@ -197,6 +197,138 @@ export class PoolService extends DynamicBondingCurveProgram {
     }
 
     /**
+     * Create a new pool and buy tokens
+     * @param createPoolBuyParam - The parameters for the pool and buy
+     * @returns A transaction that creates the pool and buys tokens
+     */
+    async createPoolAndBuy(
+        createPoolBuyParam: CreatePoolAndBuyParam
+    ): Promise<Transaction> {
+        const { baseMint, config, name, symbol, uri, payer, poolCreator } =
+            createPoolBuyParam.createPoolParam
+
+        const { buyAmount, minimumAmountOut, referralTokenAccount } =
+            createPoolBuyParam
+
+        const poolConfigState = await this.state.getPoolConfig(config)
+
+        const { quoteMint, tokenType } = poolConfigState
+
+        const pool = deriveDbcPoolAddress(quoteMint, baseMint, config)
+        const baseVault = deriveDbcTokenVaultAddress(pool, baseMint)
+        const quoteVault = deriveDbcTokenVaultAddress(pool, quoteMint)
+
+        const baseParams: InitializePoolBaseParam = {
+            name,
+            symbol,
+            uri,
+            pool,
+            config,
+            payer,
+            poolCreator,
+            baseMint,
+            baseVault,
+            quoteVault,
+            quoteMint,
+        }
+
+        // Create the pool transaction
+        let tx: Transaction
+        if (tokenType === TokenType.SPL) {
+            const mintMetadata = deriveMintMetadata(baseMint)
+            tx = await this.initializeSplPool({ ...baseParams, mintMetadata })
+        } else {
+            tx = await this.initializeToken2022Pool(baseParams)
+        }
+
+        // Add buy instructions if buyAmount is provided
+        if (buyAmount) {
+            // Validate swap amount
+            validateSwapAmount(buyAmount)
+
+            const {
+                inputMint,
+                outputMint,
+                inputTokenProgram,
+                outputTokenProgram,
+            } = this.prepareSwapParams(
+                false,
+                { baseMint, poolType: tokenType },
+                poolConfigState
+            )
+
+            // Add preInstructions for ATA creation and SOL wrapping
+            const {
+                ataTokenA: inputTokenAccount,
+                ataTokenB: outputTokenAccount,
+                instructions: preInstructions,
+            } = await this.prepareTokenAccounts(
+                payer,
+                inputMint,
+                outputMint,
+                inputTokenProgram,
+                outputTokenProgram
+            )
+
+            // Add SOL wrapping instructions if needed
+            if (inputMint.equals(NATIVE_MINT)) {
+                preInstructions.push(
+                    ...wrapSOLInstruction(
+                        payer,
+                        inputTokenAccount,
+                        BigInt(buyAmount.toString())
+                    )
+                )
+            }
+
+            // Add postInstructions for SOL unwrapping
+            const postInstructions: TransactionInstruction[] = []
+            if (
+                [inputMint.toBase58(), outputMint.toBase58()].includes(
+                    NATIVE_MINT.toBase58()
+                )
+            ) {
+                const unwrapIx = unwrapSOLInstruction(payer)
+                unwrapIx && postInstructions.push(unwrapIx)
+            }
+
+            // Add the swap instruction
+            const swapIx = await this.program.methods
+                .swap({
+                    amountIn: buyAmount,
+                    minimumAmountOut,
+                })
+                .accountsPartial({
+                    baseMint,
+                    quoteMint,
+                    pool,
+                    baseVault,
+                    quoteVault,
+                    config,
+                    poolAuthority: this.poolAuthority,
+                    referralTokenAccount,
+                    inputTokenAccount,
+                    outputTokenAccount,
+                    payer,
+                    tokenBaseProgram:
+                        tokenType === TokenType.SPL
+                            ? TOKEN_PROGRAM_ID
+                            : TOKEN_2022_PROGRAM_ID,
+                    tokenQuoteProgram:
+                        poolConfigState.quoteTokenFlag === TokenType.SPL
+                            ? TOKEN_PROGRAM_ID
+                            : TOKEN_2022_PROGRAM_ID,
+                })
+                .instruction()
+
+            // Add all instructions to the transaction
+            tx.add(...preInstructions, swapIx, ...postInstructions)
+        }
+
+        return tx
+    }
+
+    /**
      * Swap between base and quote
      * @param pool - The pool address
      * @param swapParam - The parameters for the swap
@@ -213,6 +345,9 @@ export class PoolService extends DynamicBondingCurveProgram {
 
         const { amountIn, minimumAmountOut, swapBaseForQuote, owner } =
             swapParam
+
+        // Validate swap amount
+        validateSwapAmount(amountIn)
 
         const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
             this.prepareSwapParams(swapBaseForQuote, poolState, poolConfigState)
