@@ -366,6 +366,7 @@ export type SwapQuoteParam = {
     config: PoolConfig
     swapBaseForQuote: boolean
     amountIn: BN
+    slippageBps?: number
     hasReferral: boolean
     currentPoint: BN
 }

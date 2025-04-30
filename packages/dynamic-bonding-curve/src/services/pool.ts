@@ -423,6 +423,7 @@ export class PoolService extends DynamicBondingCurveProgram {
      * @param config - The config
      * @param swapBaseForQuote - Whether to swap base for quote
      * @param amountIn - The amount in
+     * @param slippageBps - Slippage tolerance in basis points (100 = 1%)
      * @param hasReferral - Whether the referral is enabled
      * @param currentPoint - The current point
      * @returns The swap quote result
@@ -433,6 +434,7 @@ export class PoolService extends DynamicBondingCurveProgram {
             config,
             swapBaseForQuote,
             amountIn,
+            slippageBps = 0,
             hasReferral,
             currentPoint,
         } = swapQuoteParam
@@ -442,6 +444,7 @@ export class PoolService extends DynamicBondingCurveProgram {
             config,
             swapBaseForQuote,
             amountIn,
+            slippageBps,
             hasReferral,
             currentPoint
         )
