@@ -7,7 +7,7 @@ import {
     METAPLEX_PROGRAM_ID,
     VAULT_PROGRAM_ID,
     DYNAMIC_BONDING_CURVE_PROGRAM_ID,
-} from './constants'
+} from '../constants'
 import { getFirstKey, getSecondKey } from './utils'
 
 const SEED = Object.freeze({
@@ -36,13 +36,13 @@ const SEED = Object.freeze({
 /////////////////////
 
 /**
- * Derive the dynamic bonding curve event authority
+ * Derive the DAMM V1 event authority
  * @returns The event authority
  */
-export function deriveEventAuthority(): PublicKey {
+export function deriveDammV1EventAuthority(): PublicKey {
     const [eventAuthority] = PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.EVENT_AUTHORITY)],
-        DYNAMIC_BONDING_CURVE_PROGRAM_ID
+        DAMM_V1_PROGRAM_ID
     )
     return eventAuthority
 }
@@ -76,14 +76,39 @@ export function deriveLockerEventAuthority(): PublicKey {
 ////////////////////
 
 /**
- * Derive the pool authority
- * @param programId - The program ID
+ * Derive the DBC pool authority
  * @returns The pool authority
  */
-export function derivePoolAuthority(programId: PublicKey): PublicKey {
+export function deriveDbcPoolAuthority(): PublicKey {
     const [poolAuthority] = PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.POOL_AUTHORITY)],
-        programId
+        DYNAMIC_BONDING_CURVE_PROGRAM_ID
+    )
+
+    return poolAuthority
+}
+
+/**
+ * Derive the DAMM V1 pool authority
+ * @returns The pool authority
+ */
+export function deriveDammV1PoolAuthority(): PublicKey {
+    const [poolAuthority] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.POOL_AUTHORITY)],
+        DAMM_V1_PROGRAM_ID
+    )
+
+    return poolAuthority
+}
+
+/**
+ * Derive the DAMM V2 pool authority
+ * @returns The pool authority
+ */
+export function deriveDammV2PoolAuthority(): PublicKey {
+    const [poolAuthority] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.POOL_AUTHORITY)],
+        DAMM_V2_PROGRAM_ID
     )
 
     return poolAuthority
@@ -94,18 +119,16 @@ export function derivePoolAuthority(programId: PublicKey): PublicKey {
 ////////////////////
 
 /**
- * Derive the pool address
+ * Derive the DBC pool address
  * @param quoteMint - The quote mint
  * @param baseMint - The base mint
  * @param config - The config
- * @param programId - The program ID
  * @returns The pool
  */
-export function derivePool(
+export function deriveDbcPoolAddress(
     quoteMint: PublicKey,
     baseMint: PublicKey,
-    config: PublicKey,
-    programId: PublicKey
+    config: PublicKey
 ): PublicKey {
     const isQuoteMintBiggerThanBaseMint =
         new PublicKey(quoteMint)
@@ -123,20 +146,20 @@ export function derivePool(
                 ? new PublicKey(baseMint).toBuffer()
                 : new PublicKey(quoteMint).toBuffer(),
         ],
-        programId
+        DYNAMIC_BONDING_CURVE_PROGRAM_ID
     )
 
     return pool
 }
 
 /**
- * Derive the DAMM pool address
+ * Derive the DAMM V1 pool address
  * @param config - The config
  * @param tokenAMint - The token A mint
  * @param tokenBMint - The token B mint
- * @returns The DAMM pool address
+ * @returns The DAMM V1 pool address
  */
-export function deriveDammPoolAddress(
+export function deriveDammV1PoolAddress(
     config: PublicKey,
     tokenAMint: PublicKey,
     tokenBMint: PublicKey
@@ -179,11 +202,11 @@ export function deriveDammV2PoolAddress(
 ////////////////////////
 
 /**
- * Derive the metadata address
+ * Derive the mint metadata address
  * @param mint - The mint
- * @returns The metadata address
+ * @returns The mint metadata address
  */
-export function deriveMetadata(mint: PublicKey): PublicKey {
+export function deriveMintMetadata(mint: PublicKey): PublicKey {
     const [metadata] = PublicKey.findProgramAddressSync(
         [
             Buffer.from(SEED.METADATA),
@@ -199,26 +222,22 @@ export function deriveMetadata(mint: PublicKey): PublicKey {
 /**
  * Derive the partner metadata
  * @param feeClaimer - The fee claimer
- * @param programId - The program ID
  * @returns The partner metadata
  */
-export function derivePartnerMetadata(
-    feeClaimer: PublicKey,
-    programId: PublicKey
-): PublicKey {
+export function derivePartnerMetadata(feeClaimer: PublicKey): PublicKey {
     const [partnerMetadata] = PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.PARTNER_METADATA), feeClaimer.toBuffer()],
-        programId
+        DYNAMIC_BONDING_CURVE_PROGRAM_ID
     )
     return partnerMetadata
 }
 
 /**
- * Derive the virtual pool metadata
+ * Derive the DBC pool metadata
  * @param pool - The pool
- * @returns The virtual pool metadata
+ * @returns The DBC pool metadata
  */
-export function deriveVirtualPoolMetadata(pool: PublicKey): PublicKey {
+export function deriveDbcPoolMetadata(pool: PublicKey): PublicKey {
     return PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.VIRTUAL_POOL_METADATA), pool.toBuffer()],
         DYNAMIC_BONDING_CURVE_PROGRAM_ID
@@ -226,10 +245,10 @@ export function deriveVirtualPoolMetadata(pool: PublicKey): PublicKey {
 }
 
 /**
- * Derive the DAMM V1 migration metadata address
+ * Derive the DAMM migration metadata address
  * @param virtual_pool - The virtual pool
- * @param programId - The program ID
- * @returns The DAMM V1 migration metadata address
+ * @param migrateToDammV2 - Whether to migrate to DAMM V2
+ * @returns The DAMM migration metadata address
  */
 export function deriveDammV1MigrationMetadataAddress(
     virtual_pool: PublicKey
@@ -241,10 +260,10 @@ export function deriveDammV1MigrationMetadataAddress(
 }
 
 /**
- * Derive the DAMM V2 migration metadata address
+ * Derive the DAMM migration metadata address
  * @param virtual_pool - The virtual pool
- * @param programId - The program ID
- * @returns The DAMM V2 migration metadata address
+ * @param migrateToDammV2 - Whether to migrate to DAMM V2
+ * @returns The DAMM migration metadata address
  */
 export function deriveDammV2MigrationMetadataAddress(
     virtual_pool: PublicKey
@@ -263,37 +282,51 @@ export function deriveDammV2MigrationMetadataAddress(
  * Derive the token vault address
  * @param pool - The pool
  * @param mint - The mint
- * @param programId - The program ID
  * @returns The token vault
  */
-export function deriveTokenVaultAddress(
+export function deriveDbcTokenVaultAddress(
     pool: PublicKey,
-    mint: PublicKey,
-    programId: PublicKey
+    mint: PublicKey
 ): PublicKey {
     const [tokenVault] = PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.TOKEN_VAULT), mint.toBuffer(), pool.toBuffer()],
-        programId
+        DYNAMIC_BONDING_CURVE_PROGRAM_ID
     )
 
     return tokenVault
 }
 
 /**
- * Derive the vault LP address
+ * Derive the token vault address
+ * @param pool - The pool
+ * @param mint - The mint
+ * @returns The token vault
+ */
+export function deriveDammV2TokenVaultAddress(
+    pool: PublicKey,
+    mint: PublicKey
+): PublicKey {
+    const [tokenVault] = PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.TOKEN_VAULT), mint.toBuffer(), pool.toBuffer()],
+        DAMM_V2_PROGRAM_ID
+    )
+
+    return tokenVault
+}
+
+/**
+ * Derive the DAMM V1 vault LP address
  * @param vault - The vault
  * @param pool - The pool
- * @param programId - The program ID
  * @returns The vault LP address
  */
-export function deriveVaultLPAddress(
+export function deriveDammV1VaultLPAddress(
     vault: PublicKey,
-    pool: PublicKey,
-    programId: PublicKey
+    pool: PublicKey
 ): PublicKey {
     return PublicKey.findProgramAddressSync(
         [vault.toBuffer(), pool.toBuffer()],
-        programId
+        DAMM_V1_PROGRAM_ID
     )[0]
 }
 
@@ -316,13 +349,11 @@ export function deriveVaultAddress(
 /**
  * Derive the vault PDAs
  * @param tokenMint - The token mint
- * @param programId - The program ID
  * @param seedBaseKey - The seed base key
  * @returns The vault PDAs
  */
 export const deriveVaultPdas = (
     tokenMint: PublicKey,
-    programId: PublicKey,
     seedBaseKey?: PublicKey
 ) => {
     const [vault] = PublicKey.findProgramAddressSync(
@@ -331,16 +362,16 @@ export const deriveVaultPdas = (
             tokenMint.toBuffer(),
             (seedBaseKey ?? BASE_ADDRESS).toBuffer(),
         ],
-        programId
+        VAULT_PROGRAM_ID
     )
 
     const [tokenVault] = PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.TOKEN_VAULT), vault.toBuffer()],
-        programId
+        VAULT_PROGRAM_ID
     )
     const [lpMint] = PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.LP_MINT), vault.toBuffer()],
-        programId
+        VAULT_PROGRAM_ID
     )
 
     return {
@@ -369,13 +400,24 @@ export function deriveTokenVaultKey(vaultKey: PublicKey): PublicKey {
 /**
  * Derive the LP mint address
  * @param pool - The pool
- * @param programId - The program ID
  * @returns The LP mint address
  */
-export function deriveLpMintAddress(pool: PublicKey, programId: PublicKey) {
+export function deriveVaultLpMintAddress(pool: PublicKey) {
     return PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.LP_MINT), pool.toBuffer()],
-        programId
+        VAULT_PROGRAM_ID
+    )[0]
+}
+
+/**
+ * Derive the LP mint address
+ * @param pool - The pool
+ * @returns The LP mint address
+ */
+export function deriveDammV1LpMintAddress(pool: PublicKey) {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from(SEED.LP_MINT), pool.toBuffer()],
+        DAMM_V1_PROGRAM_ID
     )[0]
 }
 
@@ -414,16 +456,14 @@ export function derivePositionNftAccount(
 //////////////////////
 
 /**
- * Derive the lock escrow address
+ * Derive the DAMM V1 lock escrow address
  * @param dammPool - The DAMM pool
  * @param creator - The creator of the virtual pool
- * @param programId - The program ID
  * @returns The lock escrow address
  */
-export function deriveLockEscrowAddress(
+export function deriveDammV1LockEscrowAddress(
     dammPool: PublicKey,
-    creator: PublicKey,
-    programId: PublicKey
+    creator: PublicKey
 ): PublicKey {
     return PublicKey.findProgramAddressSync(
         [
@@ -431,7 +471,27 @@ export function deriveLockEscrowAddress(
             dammPool.toBuffer(),
             creator.toBuffer(),
         ],
-        programId
+        DAMM_V1_PROGRAM_ID
+    )[0]
+}
+
+/**
+ * Derive the DAMM V2 lock escrow address
+ * @param dammPool - The DAMM pool
+ * @param creator - The creator of the virtual pool
+ * @returns The lock escrow address
+ */
+export function deriveDammV2LockEscrowAddress(
+    dammPool: PublicKey,
+    creator: PublicKey
+): PublicKey {
+    return PublicKey.findProgramAddressSync(
+        [
+            Buffer.from(SEED.LOCK_ESCROW),
+            dammPool.toBuffer(),
+            creator.toBuffer(),
+        ],
+        DAMM_V2_PROGRAM_ID
     )[0]
 }
 
@@ -456,17 +516,15 @@ export function deriveEscrow(base: PublicKey): PublicKey {
  * Derive the protocol fee address
  * @param mint - The mint
  * @param pool - The pool
- * @param programId - The program ID
  * @returns The protocol fee address
  */
-export function deriveProtocolFeeAddress(
+export function deriveDammV1ProtocolFeeAddress(
     mint: PublicKey,
-    pool: PublicKey,
-    programId: PublicKey
+    pool: PublicKey
 ) {
     return PublicKey.findProgramAddressSync(
         [Buffer.from(SEED.FEE), mint.toBuffer(), pool.toBuffer()],
-        programId
+        DAMM_V1_PROGRAM_ID
     )[0]
 }
 

@@ -1,38 +1,39 @@
 import {
+    Commitment,
     SystemProgram,
     TransactionInstruction,
     type Connection,
     type Transaction,
 } from '@solana/web3.js'
-import type { DynamicBondingCurveClient } from '../client'
+import { DynamicBondingCurveProgram } from './program'
 import {
-    TokenType,
     type ClaimTradingFeeParam,
     type ConfigParameters,
     type CreateConfigParam,
     type CreatePartnerMetadataParam,
     type CreatePartnerMetadataParameters,
     type PartnerWithdrawSurplusParam,
-    type WithdrawLeftoverParam,
     BuildCurveAndCreateConfigByMarketCapParam,
     BuildCurveAndCreateConfigParam,
 } from '../types'
-import { derivePartnerMetadata, derivePoolAuthority } from '../derive'
 import {
-    createAssociatedTokenAccountIdempotentInstruction,
-    NATIVE_MINT,
-    TOKEN_2022_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-} from '@solana/spl-token'
-import { findAssociatedTokenAddress, unwrapSOLInstruction } from '../utils'
-import { validateConfigParameters } from '../checks'
-import { buildCurve, buildCurveByMarketCap } from '../build'
+    derivePartnerMetadata,
+    unwrapSOLInstruction,
+    validateConfigParameters,
+    buildCurve,
+    buildCurveByMarketCap,
+    getTokenProgram,
+    getOrCreateATAInstruction,
+} from '../helpers'
+import { NATIVE_MINT } from '@solana/spl-token'
+import { StateService } from './state'
 
-export class PartnerService {
-    private connection: Connection
+export class PartnerService extends DynamicBondingCurveProgram {
+    private state: StateService
 
-    constructor(private programClient: DynamicBondingCurveClient) {
-        this.connection = this.programClient.getProgram().provider.connection
+    constructor(connection: Connection, commitment: Commitment) {
+        super(connection, commitment)
+        this.state = new StateService(connection, commitment)
     }
 
     /**
@@ -43,8 +44,6 @@ export class PartnerService {
     async createConfig(
         createConfigParam: CreateConfigParam
     ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-
         const {
             config,
             feeClaimer,
@@ -57,17 +56,15 @@ export class PartnerService {
         // error checks
         validateConfigParameters({ ...configParam, leftoverReceiver })
 
-        const accounts = {
-            config,
-            feeClaimer,
-            leftoverReceiver,
-            quoteMint,
-            payer,
-        }
-
-        return program.methods
+        return this.program.methods
             .createConfig(configParam)
-            .accountsPartial(accounts)
+            .accountsPartial({
+                config,
+                feeClaimer,
+                leftoverReceiver,
+                quoteMint,
+                payer,
+            })
             .transaction()
     }
 
@@ -79,8 +76,6 @@ export class PartnerService {
     async buildCurveAndCreateConfig(
         buildCurveAndCreateConfigParam: BuildCurveAndCreateConfigParam
     ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-
         const {
             buildCurveParam,
             feeClaimer,
@@ -100,17 +95,15 @@ export class PartnerService {
             leftoverReceiver,
         })
 
-        const accounts = {
-            config,
-            feeClaimer,
-            leftoverReceiver,
-            quoteMint,
-            payer,
-        }
-
-        return program.methods
+        return this.program.methods
             .createConfig(curveConfig)
-            .accountsPartial(accounts)
+            .accounts({
+                config,
+                feeClaimer,
+                leftoverReceiver,
+                quoteMint,
+                payer,
+            })
             .transaction()
     }
 
@@ -122,8 +115,6 @@ export class PartnerService {
     async buildCurveAndCreateConfigByMarketCap(
         buildCurveAndCreateConfigByMarketCapParam: BuildCurveAndCreateConfigByMarketCapParam
     ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-
         const {
             buildCurveByMarketCapParam,
             feeClaimer,
@@ -143,17 +134,15 @@ export class PartnerService {
             leftoverReceiver,
         })
 
-        const accounts = {
-            config,
-            feeClaimer,
-            leftoverReceiver,
-            quoteMint,
-            payer,
-        }
-
-        return program.methods
+        return this.program.methods
             .createConfig(curveConfig)
-            .accountsPartial(accounts)
+            .accounts({
+                config,
+                feeClaimer,
+                leftoverReceiver,
+                quoteMint,
+                payer,
+            })
             .transaction()
     }
 
@@ -165,10 +154,8 @@ export class PartnerService {
     async createPartnerMetadata(
         createPartnerMetadataParam: CreatePartnerMetadataParam
     ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
         const partnerMetadata = derivePartnerMetadata(
-            createPartnerMetadataParam.feeClaimer,
-            program.programId
+            createPartnerMetadataParam.feeClaimer
         )
 
         const partnerMetadataParam: CreatePartnerMetadataParameters = {
@@ -178,126 +165,79 @@ export class PartnerService {
             logo: createPartnerMetadataParam.logo,
         }
 
-        const accounts = {
-            partnerMetadata,
-            payer: createPartnerMetadataParam.payer,
-            feeClaimer: createPartnerMetadataParam.feeClaimer,
-            systemProgram: SystemProgram.programId,
-        }
-
-        return program.methods
+        return this.program.methods
             .createPartnerMetadata(partnerMetadataParam)
-            .accountsPartial(accounts)
+            .accountsPartial({
+                partnerMetadata,
+                payer: createPartnerMetadataParam.payer,
+                feeClaimer: createPartnerMetadataParam.feeClaimer,
+                systemProgram: SystemProgram.programId,
+            })
             .transaction()
     }
 
     /**
-     * Claim partner trading fee
+     * Claim trading fee
      * @param claimTradingFeeParam - The parameters for the claim trading fee
      * @returns A claim trading fee transaction
      */
     async claimPartnerTradingFee(
         claimTradingFeeParam: ClaimTradingFeeParam
     ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-        const poolAuthority = derivePoolAuthority(program.programId)
+        const poolState = await this.state.getPool(claimTradingFeeParam.pool)
 
-        const virtualPoolState = await this.programClient.getPool(
-            claimTradingFeeParam.pool
-        )
-
-        if (!virtualPoolState) {
+        if (!poolState) {
             throw new Error(
                 `Pool not found: ${claimTradingFeeParam.pool.toString()}`
             )
         }
 
-        const poolConfigState = await this.programClient.getPoolConfig(
-            virtualPoolState.config
+        const poolConfigState = await this.state.getPoolConfig(poolState.config)
+
+        const tokenBaseProgram = getTokenProgram(poolConfigState.tokenType)
+        const tokenQuoteProgram = getTokenProgram(
+            poolConfigState.quoteTokenFlag
         )
 
-        const tokenBaseProgram =
-            poolConfigState.tokenType === TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
-
-        const tokenQuoteProgram =
-            poolConfigState.quoteTokenFlag === TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
-
-        const tokenBaseAccount = findAssociatedTokenAddress(
+        const postInstructions: TransactionInstruction[] = []
+        const {
+            ataTokenA: tokenBaseAccount,
+            ataTokenB: tokenQuoteAccount,
+            instructions: preInstructions,
+        } = await this.prepareTokenAccounts(
             claimTradingFeeParam.feeClaimer,
-            virtualPoolState.baseMint,
-            tokenBaseProgram
-        )
-
-        const tokenQuoteAccount = findAssociatedTokenAddress(
-            claimTradingFeeParam.feeClaimer,
+            poolState.baseMint,
             poolConfigState.quoteMint,
+            tokenBaseProgram,
             tokenQuoteProgram
         )
-
-        const preInstructions: TransactionInstruction[] = []
-        const postInstructions: TransactionInstruction[] = []
-
-        const createBaseTokenAccountIx =
-            createAssociatedTokenAccountIdempotentInstruction(
-                claimTradingFeeParam.feeClaimer,
-                tokenBaseAccount,
-                claimTradingFeeParam.feeClaimer,
-                virtualPoolState.baseMint,
-                tokenBaseProgram
-            )
-
-        if (createBaseTokenAccountIx) {
-            preInstructions.push(createBaseTokenAccountIx)
-        }
-
-        const createQuoteTokenAccountIx =
-            createAssociatedTokenAccountIdempotentInstruction(
-                claimTradingFeeParam.feeClaimer,
-                tokenQuoteAccount,
-                claimTradingFeeParam.feeClaimer,
-                poolConfigState.quoteMint,
-                tokenQuoteProgram
-            )
-
-        if (createQuoteTokenAccountIx) {
-            preInstructions.push(createQuoteTokenAccountIx)
-        }
 
         if (poolConfigState.quoteMint.equals(NATIVE_MINT)) {
             const unwrapSolIx = unwrapSOLInstruction(
                 claimTradingFeeParam.feeClaimer
             )
-
-            if (unwrapSolIx) {
-                postInstructions.push(unwrapSolIx)
-            }
+            unwrapSolIx && postInstructions.push(unwrapSolIx)
         }
 
-        const accounts = {
-            poolAuthority,
-            config: virtualPoolState.config,
-            pool: claimTradingFeeParam.pool,
-            tokenAAccount: tokenBaseAccount,
-            tokenBAccount: tokenQuoteAccount,
-            baseVault: virtualPoolState.baseVault,
-            quoteVault: virtualPoolState.quoteVault,
-            baseMint: virtualPoolState.baseMint,
-            quoteMint: poolConfigState.quoteMint,
-            feeClaimer: claimTradingFeeParam.feeClaimer,
-            tokenBaseProgram,
-            tokenQuoteProgram,
-        }
-
-        return program.methods
+        return this.program.methods
             .claimTradingFee(
                 claimTradingFeeParam.maxBaseAmount,
                 claimTradingFeeParam.maxQuoteAmount
             )
-            .accountsPartial(accounts)
+            .accountsPartial({
+                poolAuthority: this.poolAuthority,
+                config: poolState.config,
+                pool: claimTradingFeeParam.pool,
+                tokenAAccount: tokenBaseAccount,
+                tokenBAccount: tokenQuoteAccount,
+                baseVault: poolState.baseVault,
+                quoteVault: poolState.quoteVault,
+                baseMint: poolState.baseMint,
+                quoteMint: poolConfigState.quoteMint,
+                feeClaimer: claimTradingFeeParam.feeClaimer,
+                tokenBaseProgram,
+                tokenQuoteProgram,
+            })
             .preInstructions(preInstructions)
             .postInstructions(postInstructions)
             .transaction()
@@ -311,73 +251,55 @@ export class PartnerService {
     async partnerWithdrawSurplus(
         partnerWithdrawSurplusParam: PartnerWithdrawSurplusParam
     ): Promise<Transaction> {
-        const program = this.programClient.getProgram()
-        const poolAuthority = derivePoolAuthority(program.programId)
-
-        const virtualPoolState = await this.programClient.getPool(
+        const poolState = await this.state.getPool(
             partnerWithdrawSurplusParam.virtualPool
         )
-        if (!virtualPoolState) {
+        if (!poolState) {
             throw new Error(
                 `Pool not found: ${partnerWithdrawSurplusParam.virtualPool.toString()}`
             )
         }
 
-        const poolConfigState = await this.programClient.getPoolConfig(
-            virtualPoolState.config
-        )
+        const poolConfigState = await this.state.getPoolConfig(poolState.config)
 
-        const tokenQuoteProgram =
-            poolConfigState.quoteTokenFlag === TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
-
-        const tokenQuoteAccount = findAssociatedTokenAddress(
-            partnerWithdrawSurplusParam.feeClaimer,
-            poolConfigState.quoteMint,
-            tokenQuoteProgram
+        const tokenQuoteProgram = getTokenProgram(
+            poolConfigState.quoteTokenFlag
         )
 
         const preInstructions: TransactionInstruction[] = []
         const postInstructions: TransactionInstruction[] = []
 
-        const createQuoteTokenAccountIx =
-            createAssociatedTokenAccountIdempotentInstruction(
-                partnerWithdrawSurplusParam.feeClaimer,
-                tokenQuoteAccount,
-                partnerWithdrawSurplusParam.feeClaimer,
+        const { ataPubkey: tokenQuoteAccount, ix: createQuoteTokenAccountIx } =
+            await getOrCreateATAInstruction(
+                this.connection,
                 poolConfigState.quoteMint,
+                partnerWithdrawSurplusParam.feeClaimer,
+                partnerWithdrawSurplusParam.feeClaimer,
+                true,
                 tokenQuoteProgram
             )
 
-        if (createQuoteTokenAccountIx) {
+        createQuoteTokenAccountIx &&
             preInstructions.push(createQuoteTokenAccountIx)
-        }
 
         if (poolConfigState.quoteMint.equals(NATIVE_MINT)) {
             const unwrapSolIx = unwrapSOLInstruction(
                 partnerWithdrawSurplusParam.feeClaimer
             )
-
-            if (unwrapSolIx) {
-                postInstructions.push(unwrapSolIx)
-            }
+            unwrapSolIx && postInstructions.push(unwrapSolIx)
         }
-
-        const accounts = {
-            poolAuthority,
-            config: virtualPoolState.config,
-            virtualPool: partnerWithdrawSurplusParam.virtualPool,
-            tokenQuoteAccount,
-            quoteVault: virtualPoolState.quoteVault,
-            quoteMint: poolConfigState.quoteMint,
-            feeClaimer: partnerWithdrawSurplusParam.feeClaimer,
-            tokenQuoteProgram,
-        }
-
-        return program.methods
+        return this.program.methods
             .partnerWithdrawSurplus()
-            .accountsPartial(accounts)
+            .accountsPartial({
+                poolAuthority: this.poolAuthority,
+                config: poolState.config,
+                virtualPool: partnerWithdrawSurplusParam.virtualPool,
+                tokenQuoteAccount,
+                quoteVault: poolState.quoteVault,
+                quoteMint: poolConfigState.quoteMint,
+                feeClaimer: partnerWithdrawSurplusParam.feeClaimer,
+                tokenQuoteProgram,
+            })
             .preInstructions(preInstructions)
             .postInstructions(postInstructions)
             .transaction()

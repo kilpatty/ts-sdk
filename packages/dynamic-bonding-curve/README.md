@@ -18,17 +18,27 @@ yarn add @meteora-ag/dynamic-bonding-curve-sdk
 
 ## Initialization
 
-```bash
-import { Connection } from "@solana/web3.js";
-import { DynamicBondingCurveClient } from "@meteora-ag/dynamic-bonding-curve-sdk";
+```typescript
+import { Connection } from '@solana/web3.js'
+import { DynamicBondingCurveClient } from '@meteora-ag/dynamic-bonding-curve-sdk'
 
 const connection = new Connection('https://api.mainnet-beta.solana.com')
-const client = new DynamicBondingCurveClient(connection)
+const client = new DynamicBondingCurveClient(connection, 'confirmed')
 ```
 
 ## Usage
 
-Refer to the [docs](./docs.md) for more information.
+Refer to the [docs](./docs.md) for how to use the functions.
+
+## Flow
+
+The generic flow of how Dynamic Bonding Curve works is as follows:
+
+1. The partner creates a config key for the pool.
+2. The creator creates a pool.
+3. The pool is tradeable on the Dynamic Bonding Curve.
+4. Meteora's migrator service migrates the pool to either DAMM V1 or DAMM V2 based on the config key once the migration quote threshold is met.
+5. The graduated pool is tradeable on either DAMM V1 or DAMM V2.
 
 ### Test
 

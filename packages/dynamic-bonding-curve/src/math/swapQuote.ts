@@ -7,6 +7,8 @@ import {
 } from './curve'
 import { getFeeOnAmount } from './feeMath'
 import {
+    CollectFeeMode,
+    GetFeeMode,
     Rounding,
     TradeDirection,
     type FeeMode,
@@ -342,32 +344,14 @@ export function getSwapAmountFromQuoteToBase(
  * @returns Fee mode
  */
 export function getFeeMode(
-    collectFeeMode: number,
+    collectFeeMode: GetFeeMode,
     tradeDirection: TradeDirection,
     hasReferral: boolean
 ): FeeMode {
-    let feesOnInput: boolean
-    let feesOnBaseToken: boolean
-
-    if (collectFeeMode === 0) {
-        if (tradeDirection === TradeDirection.BaseToQuote) {
-            feesOnInput = false
-            feesOnBaseToken = false
-        } else {
-            feesOnInput = true
-            feesOnBaseToken = false
-        }
-    } else if (collectFeeMode === 1) {
-        if (tradeDirection === TradeDirection.BaseToQuote) {
-            feesOnInput = false
-            feesOnBaseToken = false
-        } else {
-            feesOnInput = false
-            feesOnBaseToken = true
-        }
-    } else {
-        throw new Error('Invalid collect fee mode')
-    }
+    const quoteToBase = tradeDirection === TradeDirection.QuoteToBase
+    const feesOnInput = quoteToBase && collectFeeMode === GetFeeMode.QuoteToken
+    const feesOnBaseToken =
+        quoteToBase && collectFeeMode === GetFeeMode.OutputToken
 
     return {
         feesOnInput,
@@ -379,12 +363,21 @@ export function getFeeMode(
 /**
  * Calculate quote for a swap with exact input amount
  * Matches Rust's quote_exact_in function
+ * @param virtualPool Virtual pool state
+ * @param config Pool config state
+ * @param swapBaseForQuote Whether to swap base for quote
+ * @param amountIn Input amount
+ * @param slippageBps Slippage tolerance in basis points (100 = 1%)
+ * @param hasReferral Whether referral is used
+ * @param currentPoint Current point
+ * @returns Swap quote result
  */
 export async function swapQuote(
     virtualPool: VirtualPool,
     config: PoolConfig,
     swapBaseForQuote: boolean,
     amountIn: BN,
+    slippageBps: number = 0,
     hasReferral: boolean,
     currentPoint: BN
 ): Promise<QuoteResult> {
@@ -406,7 +399,7 @@ export async function swapQuote(
         hasReferral
     )
 
-    return getSwapResult(
+    const result = getSwapResult(
         virtualPool,
         config,
         amountIn,
@@ -414,4 +407,23 @@ export async function swapQuote(
         tradeDirection,
         currentPoint
     )
+
+    // calculate minimum amount out if slippage is provided
+    if (slippageBps > 0) {
+        // slippage factor: (10000 - slippageBps) / 10000
+        const slippageFactor = new BN(10000 - slippageBps)
+        const denominator = new BN(10000)
+
+        // minimum amount out: amountOut * (10000 - slippageBps) / 10000
+        const minimumAmountOut = result.amountOut
+            .mul(slippageFactor)
+            .div(denominator)
+
+        return {
+            ...result,
+            minimumAmountOut,
+        }
+    }
+
+    return result
 }

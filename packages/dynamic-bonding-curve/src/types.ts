@@ -8,9 +8,6 @@ import type {
 import type { DynamicBondingCurve } from './idl/dynamic-bonding-curve/idl'
 import type { Keypair, PublicKey, Transaction } from '@solana/web3.js'
 
-// Program Type
-export type DynamicBondingCurveProgram = Program<DynamicBondingCurve>
-
 /////////////////
 // IX ACCOUNTS //
 /////////////////
@@ -171,7 +168,7 @@ export enum MigrationOption {
     MET_DAMM_V2 = 1,
 }
 
-export enum CollectFeeMode {
+export enum GetFeeMode {
     QuoteToken = 0,
     OutputToken = 1,
 }
@@ -323,6 +320,21 @@ export type CreatePartnerMetadataParam = {
     payer: PublicKey
 }
 
+export type InitializePoolBaseParam = {
+    name: string
+    symbol: string
+    uri: string
+    pool: PublicKey
+    config: PublicKey
+    payer: PublicKey
+    poolCreator: PublicKey
+    baseMint: PublicKey
+    baseVault: PublicKey
+    quoteVault: PublicKey
+    quoteMint: PublicKey
+    mintMetadata?: PublicKey
+}
+
 export type CreatePoolParam = {
     name: string
     symbol: string
@@ -331,14 +343,18 @@ export type CreatePoolParam = {
     poolCreator: PublicKey
     config: PublicKey
     baseMint: PublicKey
-    baseTokenType: TokenType
-    quoteMint: PublicKey
-    quoteTokenType: TokenType
+}
+
+export type CreatePoolAndBuyParam = {
+    createPoolParam: CreatePoolParam
+    buyAmount: BN
+    minimumAmountOut: BN
+    referralTokenAccount: PublicKey | null
 }
 
 export type SwapParam = {
-    pool: PublicKey
     owner: PublicKey
+    pool: PublicKey
     amountIn: BN
     minimumAmountOut: BN
     swapBaseForQuote: boolean
@@ -350,6 +366,7 @@ export type SwapQuoteParam = {
     config: PoolConfig
     swapBaseForQuote: boolean
     amountIn: BN
+    slippageBps?: number
     hasReferral: boolean
     currentPoint: BN
 }
