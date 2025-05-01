@@ -43,28 +43,8 @@ export class StateService extends DynamicBondingCurveProgram {
      * Get all config keys
      * @returns An array of config key accounts
      */
-    async getPoolConfigs(): Promise<
-        (ProgramAccount<PoolConfig> & { createdAt?: Date })[]
-    > {
-        const poolConfigs = await this.program.account.poolConfig.all()
-
-        const signaturePromises = poolConfigs.map(async (config) => {
-            const signatures =
-                await this.program.provider.connection.getSignaturesForAddress(
-                    config.publicKey,
-                    { limit: 1 }
-                )
-            return signatures[0]?.blockTime
-                ? new Date(signatures[0].blockTime * 1000)
-                : undefined
-        })
-
-        const timestamps = await Promise.all(signaturePromises)
-
-        return poolConfigs.map((config, index) => ({
-            ...config,
-            createdAt: timestamps[index],
-        }))
+    async getPoolConfigs(): Promise<ProgramAccount<PoolConfig>[]> {
+        return this.program.account.poolConfig.all()
     }
 
     /**
@@ -74,27 +54,9 @@ export class StateService extends DynamicBondingCurveProgram {
      */
     async getPoolConfigsByOwner(
         owner: PublicKey | string
-    ): Promise<(ProgramAccount<PoolConfig> & { createdAt?: Date })[]> {
+    ): Promise<ProgramAccount<PoolConfig>[]> {
         const filters = owner ? createProgramAccountFilter(owner, 72) : []
-        const poolConfigs = await this.program.account.poolConfig.all(filters)
-
-        const signaturePromises = poolConfigs.map(async (config) => {
-            const signatures =
-                await this.program.provider.connection.getSignaturesForAddress(
-                    config.publicKey,
-                    { limit: 1 }
-                )
-            return signatures[0]?.blockTime
-                ? new Date(signatures[0].blockTime * 1000)
-                : undefined
-        })
-
-        const timestamps = await Promise.all(signaturePromises)
-
-        return poolConfigs.map((config, index) => ({
-            ...config,
-            createdAt: timestamps[index],
-        }))
+        return this.program.account.poolConfig.all(filters)
     }
 
     /**
@@ -114,28 +76,8 @@ export class StateService extends DynamicBondingCurveProgram {
      * Get all dynamic bonding curve pools
      * @returns Array of pool accounts with their addresses
      */
-    async getPools(): Promise<
-        (ProgramAccount<VirtualPool> & { createdAt?: Date })[]
-    > {
-        const pools = await this.program.account.virtualPool.all()
-
-        const signaturePromises = pools.map(async (pool) => {
-            const signatures =
-                await this.program.provider.connection.getSignaturesForAddress(
-                    pool.publicKey,
-                    { limit: 1 }
-                )
-            return signatures[0]?.blockTime
-                ? new Date(signatures[0].blockTime * 1000)
-                : undefined
-        })
-
-        const timestamps = await Promise.all(signaturePromises)
-
-        return pools.map((pool, index) => ({
-            ...pool,
-            createdAt: timestamps[index],
-        }))
+    async getPools(): Promise<ProgramAccount<VirtualPool>[]> {
+        return this.program.account.virtualPool.all()
     }
 
     /**
@@ -145,27 +87,9 @@ export class StateService extends DynamicBondingCurveProgram {
      */
     async getPoolsByConfig(
         configAddress: PublicKey | string
-    ): Promise<(ProgramAccount<VirtualPool> & { createdAt?: Date })[]> {
+    ): Promise<ProgramAccount<VirtualPool>[]> {
         const filters = createProgramAccountFilter(configAddress, 72)
-        const pools = await this.program.account.virtualPool.all(filters)
-
-        const signaturePromises = pools.map(async (pool) => {
-            const signatures =
-                await this.program.provider.connection.getSignaturesForAddress(
-                    pool.publicKey,
-                    { limit: 1 }
-                )
-            return signatures[0]?.blockTime
-                ? new Date(signatures[0].blockTime * 1000)
-                : undefined
-        })
-
-        const timestamps = await Promise.all(signaturePromises)
-
-        return pools.map((pool, index) => ({
-            ...pool,
-            createdAt: timestamps[index],
-        }))
+        return this.program.account.virtualPool.all(filters)
     }
 
     /**

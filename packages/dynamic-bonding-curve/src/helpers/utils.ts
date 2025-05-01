@@ -7,6 +7,7 @@ import {
     SYSVAR_RENT_PUBKEY,
     TransactionInstruction,
     type GetProgramAccountsFilter,
+    Connection,
 } from '@solana/web3.js'
 
 import { NATIVE_MINT, TOKEN_PROGRAM_ID } from '@solana/spl-token'
@@ -103,6 +104,46 @@ export async function getAccountData<T>(
             : new PublicKey(accountAddress)
 
     return (await program.account[accountType].fetchNullable(address)) as T
+}
+
+/**
+ * Get creation timestamp for an account
+ * @param accountAddress - The address of the account
+ * @param connection - The Solana connection instance
+ * @returns The creation timestamp as a Date object, or undefined if not found
+ */
+export async function getAccountCreationTimestamp(
+    accountAddress: PublicKey | string,
+    connection: Connection
+): Promise<Date | undefined> {
+    const address =
+        accountAddress instanceof PublicKey
+            ? accountAddress
+            : new PublicKey(accountAddress)
+
+    const signatures = await connection.getSignaturesForAddress(address, {
+        limit: 1,
+    })
+
+    return signatures[0]?.blockTime
+        ? new Date(signatures[0].blockTime * 1000)
+        : undefined
+}
+
+/**
+ * Get creation timestamps for multiple accounts
+ * @param accountAddresses - Array of account addresses
+ * @param connection - The Solana connection instance
+ * @returns Array of creation timestamps corresponding to the input addresses
+ */
+export async function getAccountCreationTimestamps(
+    accountAddresses: (PublicKey | string)[],
+    connection: Connection
+): Promise<(Date | undefined)[]> {
+    const timestampPromises = accountAddresses.map((address) =>
+        getAccountCreationTimestamp(address, connection)
+    )
+    return Promise.all(timestampPromises)
 }
 
 /**
