@@ -1368,17 +1368,17 @@ const config = await client.state.getPoolConfig(configAddress)
 
 ### getPoolConfigs
 
-Retrieves all config keys and their createdAt timestamps.
+Retrieves all config keys.
 
 #### Function
 
 ```typescript
-async getPoolConfigs(): Promise<(ProgramAccount<PoolConfig> & { createdAt?: Date })[]>
+async getPoolConfigs(): Promise<ProgramAccount<PoolConfig>[]>
 ```
 
 #### Returns
 
-An array of config keys with their creation dates.
+An array of config keys.
 
 #### Example
 
@@ -1395,7 +1395,7 @@ Retrieves all config keys owned by a specific wallet.
 #### Function
 
 ```typescript
-async getPoolConfigsByOwner(owner: PublicKey | string): Promise<(ProgramAccount<PoolConfig> & { createdAt?: Date })[]>
+async getPoolConfigsByOwner(owner: PublicKey | string): Promise<ProgramAccount<PoolConfig>[]>
 ```
 
 #### Parameters
@@ -1446,17 +1446,17 @@ const pool = await client.state.getPool(poolAddress)
 
 ### getPools
 
-Retrieves all pools and their createdAt timestamps.
+Retrieves all pools.
 
 #### Function
 
 ```typescript
-async getPools(): Promise<(ProgramAccount<VirtualPool> & { createdAt?: Date })[]>
+async getPools(): Promise<ProgramAccount<VirtualPool>[]>
 ```
 
 #### Returns
 
-An array of all pools with their creation dates.
+An array of all pools.
 
 #### Example
 
@@ -1473,7 +1473,7 @@ Retrieves all pools by config key address.
 #### Function
 
 ```typescript
-async getPoolsByConfig(configAddress: PublicKey): Promise<(ProgramAccount<VirtualPool> & { createdAt?: Date })[]>
+async getPoolsByConfig(configAddress: PublicKey | string): Promise<ProgramAccount<VirtualPool>[]>
 ```
 
 #### Parameters
@@ -1484,7 +1484,7 @@ configAddress: PublicKey | string // The address of the config key
 
 #### Returns
 
-An array of pools with their creation dates.
+An array of pools.
 
 #### Example
 
