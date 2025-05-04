@@ -621,10 +621,10 @@ const transaction = await client.partner.buildCurveGraphAndCreateConfig({
 - Effects of changing k factor
     1. `k = 1`: All segments have the same liquidity. The curve is "flat" in terms of liquidity distribution.
     2. `k > 1`: Liquidity increases exponentially as you move to higher price ranges.
-        - The curve becomes "steeper" at higher prices: more liquidity is available at higher prices, less at lower prices.
+        - The curve is "steeper" at **higher prices**: more liquidity is available at higher prices, less at lower prices.
         - This means that the price will move less for a given trade at higher prices (more resistance), and price will move more for a given trade at lower prices (less resistance).
     3. `k < 1`: Liquidity decreases exponentially as you move to higher price ranges.
-        - The curve is "steeper" at lower prices: more liquidity is available at lower prices, less at higher prices.
+        - The curve is "steeper" at **lower prices**: more liquidity is available at lower prices, less at higher prices.
         - This means that the price will move less for a given trade at lower prices (more resistance), and price will move more for a given trade at higher prices (less resistance).
 
 ---
