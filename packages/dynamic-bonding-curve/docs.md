@@ -7,6 +7,7 @@
     - [createConfig](#createConfig)
     - [buildCurveAndCreateConfig](#buildCurveAndCreateConfig)
     - [buildCurveAndCreateConfigByMarketCap](#buildCurveAndCreateConfigByMarketCap)
+    - [buildCurveGraphAndCreateConfig](#buildCurveGraphAndCreateConfig)
     - [createPartnerMetadata](#createPartnerMetadata)
     - [claimPartnerTradingFee](#claimPartnerTradingFee)
     - [partnerWithdrawSurplus](#partnerWithdrawSurplus)
@@ -321,6 +322,7 @@ interface BuildCurveAndCreateConfigParam {
         partnerLockedLpPercentage: number // The percentage of the pool that will be allocated to the partner locked
         creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked
         creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
+        leftover: number // The leftover amount that can be withdrawn by leftover receiver
     }
     feeClaimer: PublicKey // The wallet that will be able to claim the fee
     leftoverReceiver: PublicKey // The wallet that will receive the bonding curve leftover
@@ -369,6 +371,7 @@ const transaction = await client.partner.buildCurveAndCreateConfig({
         partnerLockedLpPercentage: 25,
         creatorLockedLpPercentage: 25,
         creatorTradingFeePercentage: 0,
+        leftover: 10000,
     },
     feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     leftoverReceiver: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
@@ -433,6 +436,7 @@ interface BuildCurveAndCreateConfigByMarketCapParam {
         partnerLockedLpPercentage: number // The percentage of the pool that will be allocated to the partner locked
         creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked
         creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
+        leftover: number // The leftover amount that can be withdrawn by leftover receiver
     }
     feeClaimer: PublicKey // The wallet that will be able to claim the fee
     leftoverReceiver: PublicKey // The wallet that will receive the bonding curve leftover
@@ -481,6 +485,7 @@ const transaction = await client.partner.buildCurveAndCreateConfigByMarketCap({
         partnerLockedLpPercentage: 25,
         creatorLockedLpPercentage: 25,
         creatorTradingFeePercentage: 0,
+        leftover: 10000,
     },
     feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     leftoverReceiver: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
@@ -495,6 +500,132 @@ const transaction = await client.partner.buildCurveAndCreateConfigByMarketCap({
 - Same validation checks as [createConfig](#createConfig)
 - Use `createConfig` when you understand the bonding curve math and want more customization to the curve structure
 - Use `buildCurveAndCreateConfigByMarketCap` when you want to create a curve structure based on market cap. We handle the math for you.
+
+---
+
+### buildCurveGraphAndCreateConfig
+
+Builds a custom curve graph config according to k factor and fee scheduler. This creates a new configuration key that will dictate the behavior of all pools created with this key.
+
+#### Function
+
+```typescript
+async buildCurveGraphAndCreateConfig(buildCurveGraphAndCreateConfigParam: BuildCurveGraphAndCreateConfigParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface BuildCurveGraphAndCreateConfigParam {
+    buildCurveGraphParam: {
+        totalTokenSupply: number // The total token supply
+        initialMarketCap: number // The initial market cap
+        migrationMarketCap: number // The migration market cap
+        migrationOption: number // 0: DAMM V1, 1: DAMM v2
+        tokenBaseDecimal: number // The number of decimals for the base token
+        tokenQuoteDecimal: number // The number of decimals for the quote token
+        lockedVesting: {
+            // Optional locked vesting (BN (0) for all fields for no vesting)
+            amountPerPeriod: BN // The amount of tokens that will be vested per period
+            cliffDurationFromMigrationTime: BN // The duration of the cliff period
+            frequency: BN // The frequency of the vesting
+            numberOfPeriod: BN // The number of periods
+            cliffUnlockAmount: BN // The amount of tokens that will be unlocked at the cliff
+        }
+        feeSchedulerParam: {
+            // Optional fee scheduler (BN (0) for all fields for no fee scheduler)
+            numberOfPeriod: number // The number of periods
+            reductionFactor: number // The reduction factor
+            periodFrequency: number // The frequency of the fee reduction
+            feeSchedulerMode: number // 0: Linear, 1: Exponential
+        }
+        baseFeeBps: number // The base fee in bps
+        dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
+        activationType: number // 0: Slot, 1: Timestamp
+        collectFeeMode: number // 0: Only Quote, 1: Both
+        migrationFeeOption: number // 0: Fixed 25bps, 1: Fixed 30bps, 2: Fixed 100bps, 3: Fixed 200bps, 4: Fixed 400bps, 5: Fixed 600bps
+        tokenType: number // 0: SPL, 1: Token2022
+        partnerLpPercentage: number // The percentage of the pool that will be allocated to the partner
+        creatorLpPercentage: number // The percentage of the pool that will be allocated to the creator
+        partnerLockedLpPercentage: number // The percentage of the pool that will be allocated to the partner locked
+        creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked
+        creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
+        leftover: number // The leftover amount that can be withdrawn by leftover receiver
+        kFactor: number // The k factor is an exponential scaling parameter that determines the curve's steepness
+    }
+    feeClaimer: PublicKey // The wallet that will be able to claim the fee
+    leftoverReceiver: PublicKey // The wallet that will receive the bonding curve leftover
+    payer: PublicKey // The wallet that will pay for the transaction
+    quoteMint: PublicKey // The quote mint address
+    config: PublicKey // The config account address (generated by the partner)
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.partner.buildCurveGraphAndCreateConfig({
+    buildCurveGraphParam: {
+        totalTokenSupply: 1000000000,
+        initialMarketCap: 98.58,
+        migrationMarketCap: 3187.61,
+        migrationOption: 0,
+        tokenBaseDecimal: 9,
+        tokenQuoteDecimal: 9,
+        lockedVesting: {
+            amountPerPeriod: new BN(0),
+            cliffDurationFromMigrationTime: new BN(0),
+            frequency: new BN(0),
+            numberOfPeriod: new BN(0),
+            cliffUnlockAmount: new BN(0),
+        },
+        feeSchedulerParam: {
+            numberOfPeriod: 0,
+            reductionFactor: 0,
+            periodFrequency: 0,
+            feeSchedulerMode: 0,
+        },
+        baseFeeBps: 100,
+        dynamicFeeEnabled: true,
+        activationType: 0,
+        collectFeeMode: 0,
+        migrationFeeOption: 0,
+        tokenType: TokenType.SPL,
+        partnerLpPercentage: 25,
+        creatorLpPercentage: 25,
+        partnerLockedLpPercentage: 25,
+        creatorLockedLpPercentage: 25,
+        creatorTradingFeePercentage: 0,
+        leftover: 10000,
+        kFactor: 1.2,
+    },
+    feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    leftoverReceiver: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
+    config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
+})
+```
+
+#### Notes
+
+- Use `buildCurveGraphAndCreateConfig` when you want to create a curve structure based on k factor.
+- What does k factor do?
+    - The `kFactor` is an exponential scaling parameter that determines how liquidity is distributed across the curve's price ranges.
+    - For each segment of the curve, the liquidity is scaled by k^i (where i is the segment index).
+    - This means that as you move along the curve (from lower to higher price ranges), the liquidity in each segment is multiplied by a higher power of k.
+- Effects of changing k factor
+    1. `k = 1`: All segments have the same liquidity. The curve is "flat" in terms of liquidity distribution.
+    2. `k > 1`: Liquidity increases exponentially as you move to higher price ranges.
+        - The curve is "steeper" at **higher prices**: more liquidity is available at higher prices, less at lower prices.
+        - This means that the price will move less for a given trade at higher prices (more resistance), and price will move more for a given trade at lower prices (less resistance).
+    3. `k < 1`: Liquidity decreases exponentially as you move to higher price ranges.
+        - The curve is "steeper" at **lower prices**: more liquidity is available at lower prices, less at higher prices.
+        - This means that the price will move less for a given trade at lower prices (more resistance), and price will move more for a given trade at higher prices (less resistance).
 
 ---
 

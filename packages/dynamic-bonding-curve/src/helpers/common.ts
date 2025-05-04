@@ -38,6 +38,28 @@ export const getSqrtPriceFromPrice = (
 }
 
 /**
+ * Get the sqrt price from the market cap
+ * @param marketCap - The market cap
+ * @param totalSupply - The total supply
+ * @param tokenBaseDecimal - The decimal of the base token
+ * @param tokenQuoteDecimal - The decimal of the quote token
+ * @returns The sqrt price
+ */
+export const getSqrtPriceFromMarketCap = (
+    marketCap: number,
+    totalSupply: number,
+    tokenBaseDecimal: number,
+    tokenQuoteDecimal: number
+): BN => {
+    let price = new Decimal(marketCap).div(new Decimal(totalSupply))
+    return getSqrtPriceFromPrice(
+        price.toString(),
+        tokenBaseDecimal,
+        tokenQuoteDecimal
+    )
+}
+
+/**
  * Get the base token for swap
  * @param sqrtStartPrice - The start sqrt price
  * @param sqrtMigrationPrice - The migration sqrt price
@@ -222,7 +244,8 @@ export const getTotalSupplyFromCurve = (
     sqrtStartPrice: BN,
     curve: Array<LiquidityDistributionParameters>,
     lockedVesting: LockedVestingParameters,
-    migrationOption: MigrationOption
+    migrationOption: MigrationOption,
+    leftover: BN
 ): BN => {
     const sqrtMigrationPrice = getMigrationThresholdPrice(
         migrationQuoteThreshold,
@@ -248,6 +271,7 @@ export const getTotalSupplyFromCurve = (
     const minimumBaseSupplyWithBuffer = swapBaseAmountBuffer
         .add(migrationBaseAmount)
         .add(totalVestingAmount)
+        .add(leftover)
     return minimumBaseSupplyWithBuffer
 }
 
@@ -398,4 +422,13 @@ export const calculateMigrationQuoteThreshold = (
         .mul(percentageDecimal)
         .div(new Decimal(100))
         .toNumber()
+}
+
+/**
+ * Convert a decimal to a BN
+ * @param value - The value
+ * @returns The BN
+ */
+export function convertDecimalToBN(value: Decimal): BN {
+    return new BN(value.floor().toFixed())
 }

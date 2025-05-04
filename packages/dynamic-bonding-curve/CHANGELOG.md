@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.1-rc.9] - 2025-04-29
+## [1.1.2] - 2025-04-30
 
 ### Release Notes
 
@@ -9,6 +9,8 @@
 - feat: added 4% and 6% graduation fee options
 - feat: creatorWithdrawSurplus and claimCreatorTradingFee functions
 - feat: added new getter functions
+- feat: refactor SDK to be more modular and optimise RPC calls
+- feat: added `createPoolAndBuy` function
 - fix: updated the way the services are called
 - fix: updated the way the getters are called
 
@@ -16,32 +18,15 @@
 
 - `createConfig`, `buildCurveAndCreateConfig` and `buildCurveAndCreateConfigByMarketCap` functions now require a `creatorTradingFeePercentage` parameter.
 - IDL includes `creatorWithdrawSurplus` and `claimCreatorTradingFee` instructions.
-- Partner, Migration, Creator and Pool functions are now called in this manner:
-    - `client.partners.createConfig` -> `client.partner.createConfig`
-    - `client.migrations.migrateToDammV1` -> `client.migration.migrateToDammV1`
-    - `client.creators.createPoolMetadata` -> `client.creator.createPoolMetadata`
-    - `client.pools.swap` -> `client.pool.swap`
-- Getter functions are now called in this manner:
-    - `client.getProgram().getPoolConfig` -> `client.getPoolConfig`
-
-## [1.1.2] - 2025-04-30
-
-### Release Notes
-
-#### Feature Changes
-
-- feat: refactor SDK to be more modular and optimise RPC calls
-- feat: added `createPoolAndBuy` function
-
-#### Breaking Changes
-
 - Partner, Migration, Creator, Pool and State functions are now called in this manner:
     - `client.partners.createConfig` -> `client.partner.createConfig`
     - `client.migrations.migrateToDammV1` -> `client.migration.migrateToDammV1`
     - `client.creators.createPoolMetadata` -> `client.creator.createPoolMetadata`
     - `client.pools.swap` -> `client.pool.swap`
-    - `client.getPoolConfig` -> `client.state.getPoolConfig`
+    - `client.getProgram().getPoolConfig` -> `client.state.getPoolConfig`
 - In order to get the DBC Pool Address, or DAMM V1 Pool Address, or DAMM V2 Pool Address, use the following functions (the order matters):
     - `deriveDbcPoolAddress`
     - `deriveDammV1PoolAddress`
     - `deriveDammV2PoolAddress`
+
+---

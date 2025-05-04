@@ -248,6 +248,7 @@ export type BuildCurveBaseParam = {
     partnerLockedLpPercentage: number
     creatorLockedLpPercentage: number
     creatorTradingFeePercentage: number
+    leftover: number
 }
 
 export type BuildCurveParam = BuildCurveBaseParam & {
@@ -258,6 +259,12 @@ export type BuildCurveParam = BuildCurveBaseParam & {
 export type BuildCurveByMarketCapParam = BuildCurveBaseParam & {
     initialMarketCap: number
     migrationMarketCap: number
+}
+
+export type BuildCurveGraphParam = BuildCurveBaseParam & {
+    initialMarketCap: number
+    migrationMarketCap: number
+    kFactor: number
 }
 
 export type BuildCurveAndCreateConfigParam = {
@@ -271,6 +278,15 @@ export type BuildCurveAndCreateConfigParam = {
 
 export type BuildCurveAndCreateConfigByMarketCapParam = {
     buildCurveByMarketCapParam: BuildCurveByMarketCapParam
+    feeClaimer: PublicKey
+    leftoverReceiver: PublicKey
+    payer: PublicKey
+    quoteMint: PublicKey
+    config: PublicKey
+}
+
+export type BuildCurveGraphAndCreateConfigParam = {
+    buildCurveGraphParam: BuildCurveGraphParam
     feeClaimer: PublicKey
     leftoverReceiver: PublicKey
     payer: PublicKey
