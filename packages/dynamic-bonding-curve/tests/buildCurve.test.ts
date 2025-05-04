@@ -1,5 +1,9 @@
 import { expect, test, describe } from 'bun:test'
-import { buildCurve, buildCurveByMarketCap } from '../src/helpers'
+import {
+    buildCurve,
+    buildCurveByMarketCap,
+    buildCurveGraph,
+} from '../src/helpers'
 import BN from 'bn.js'
 import {
     ActivationType,
@@ -42,6 +46,7 @@ describe('buildCurve tests', () => {
         partnerLockedLpPercentage: 100,
         creatorLockedLpPercentage: 0,
         creatorTradingFeePercentage: 0,
+        leftover: 10000,
     }
 
     test('build curve with percentage and threshold parameters', () => {
@@ -122,5 +127,23 @@ describe('buildCurve tests', () => {
 
             expect(migrationPercentage).toBeLessThan(100 - vestingPercentage)
         }
+    })
+
+    test('build graph curve', () => {
+        console.log('\n testing build curve graph...')
+        const curveGraphParams = {
+            ...baseParams,
+            initialMarketCap: 30,
+            migrationMarketCap: 300,
+            kFactor: 1.2,
+        }
+
+        const config = buildCurveGraph(curveGraphParams)
+
+        console.log('config for graph curve:', convertBNToDecimal(config))
+        expect(config).toBeDefined()
+        expect(config.migrationQuoteThreshold).toBeDefined()
+        expect(config.curve).toBeDefined()
+        expect(config.curve.length).toBeGreaterThan(0)
     })
 })

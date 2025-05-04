@@ -15,6 +15,7 @@ import {
     type PartnerWithdrawSurplusParam,
     BuildCurveAndCreateConfigByMarketCapParam,
     BuildCurveAndCreateConfigParam,
+    BuildCurveGraphAndCreateConfigParam,
 } from '../types'
 import {
     derivePartnerMetadata,
@@ -24,6 +25,7 @@ import {
     buildCurveByMarketCap,
     getTokenProgram,
     getOrCreateATAInstruction,
+    buildCurveGraph,
 } from '../helpers'
 import { NATIVE_MINT } from '@solana/spl-token'
 import { StateService } from './state'
@@ -126,6 +128,45 @@ export class PartnerService extends DynamicBondingCurveProgram {
 
         const curveConfig: ConfigParameters = buildCurveByMarketCap({
             ...buildCurveByMarketCapParam,
+        })
+
+        // error checks
+        validateConfigParameters({
+            ...curveConfig,
+            leftoverReceiver,
+        })
+
+        return this.program.methods
+            .createConfig(curveConfig)
+            .accounts({
+                config,
+                feeClaimer,
+                leftoverReceiver,
+                quoteMint,
+                payer,
+            })
+            .transaction()
+    }
+
+    /**
+     * Build a custom graph curve and create a new config
+     * @param buildCurveGraphAndCreateConfigParam - The parameters for the custom constant product config
+     * @returns A new custom constant product config
+     */
+    async buildCurveGraphAndCreateConfig(
+        buildCurveGraphAndCreateConfigParam: BuildCurveGraphAndCreateConfigParam
+    ): Promise<Transaction> {
+        const {
+            buildCurveGraphParam,
+            feeClaimer,
+            leftoverReceiver,
+            payer,
+            quoteMint,
+            config,
+        } = buildCurveGraphAndCreateConfigParam
+
+        const curveConfig: ConfigParameters = buildCurveGraph({
+            ...buildCurveGraphParam,
         })
 
         // error checks

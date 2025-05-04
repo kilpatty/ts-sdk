@@ -4,6 +4,7 @@ import {
     type ConfigParameters,
     type BuildCurveParam,
     BuildCurveByMarketCapParam,
+    BuildCurveGraphParam,
 } from '../types'
 import { MAX_SQRT_PRICE } from '../constants'
 import {
@@ -14,6 +15,10 @@ import {
     getTotalSupplyFromCurve,
     calculatePercentageSupplyOnMigration,
     calculateMigrationQuoteThreshold,
+    getSqrtPriceFromMarketCap,
+    convertDecimalToBN,
+    getBaseTokenForSwap,
+    getSwapAmountWithBuffer,
 } from './common'
 import { getInitialLiquidityFromDeltaBase } from '../math/curve'
 
@@ -42,6 +47,7 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         partnerLockedLpPercentage,
         creatorLockedLpPercentage,
         creatorTradingFeePercentage,
+        leftover,
     } = buildCurveParam
 
     const {
@@ -67,6 +73,10 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         new Decimal(migrationBaseSupply.toString())
     )
 
+    const totalLeftover = new BN(leftover).mul(
+        new BN(10).pow(new BN(tokenBaseDecimal))
+    )
+
     const migrateSqrtPrice = getSqrtPriceFromPrice(
         migrationPrice.toString(),
         tokenBaseDecimal,
@@ -84,6 +94,7 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
     const swapAmount = totalSupply
         .sub(migrationBaseAmount)
         .sub(totalVestingAmount)
+        .sub(totalLeftover)
 
     const { sqrtStartPrice, curve } = getFirstCurve(
         migrateSqrtPrice,
@@ -97,7 +108,8 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         sqrtStartPrice,
         curve,
         lockedVesting,
-        migrationOption
+        migrationOption,
+        totalLeftover
     )
 
     const remainingAmount = totalSupply.sub(totalDynamicSupply)
@@ -193,4 +205,182 @@ export function buildCurveByMarketCap(
         percentageSupplyOnMigration,
         migrationQuoteThreshold,
     })
+}
+
+export function buildCurveGraph(
+    buildCurveGraphParam: BuildCurveGraphParam
+): ConfigParameters {
+    const {
+        totalTokenSupply,
+        migrationOption,
+        tokenBaseDecimal,
+        tokenQuoteDecimal,
+        lockedVesting,
+        baseFeeBps,
+        dynamicFeeEnabled,
+        activationType,
+        collectFeeMode,
+        migrationFeeOption,
+        tokenType,
+        partnerLpPercentage,
+        creatorLpPercentage,
+        partnerLockedLpPercentage,
+        creatorLockedLpPercentage,
+        creatorTradingFeePercentage,
+        leftover,
+        initialMarketCap,
+        migrationMarketCap,
+        kFactor,
+    } = buildCurveGraphParam
+
+    const {
+        numberOfPeriod,
+        reductionFactor,
+        periodFrequency,
+        feeSchedulerMode,
+    } = buildCurveGraphParam.feeSchedulerParam
+
+    // 1. finding Pmax and Pmin
+    let pMin = getSqrtPriceFromMarketCap(
+        initialMarketCap,
+        totalTokenSupply,
+        tokenBaseDecimal,
+        tokenQuoteDecimal
+    )
+    let pMax = getSqrtPriceFromMarketCap(
+        migrationMarketCap,
+        totalTokenSupply,
+        tokenBaseDecimal,
+        tokenQuoteDecimal
+    )
+
+    // find q^16 = pMax / pMin
+    let priceRatio = new Decimal(pMax.toString()).div(
+        new Decimal(pMin.toString())
+    )
+    let qDecimal = priceRatio.pow(new Decimal(1).div(new Decimal(16)))
+
+    // finding all prices
+    let sqrtPrices = []
+    let currentPrice = pMin
+    for (let i = 0; i < 17; i++) {
+        sqrtPrices.push(currentPrice)
+        currentPrice = convertDecimalToBN(
+            qDecimal.mul(new Decimal(currentPrice.toString()))
+        )
+    }
+
+    let totalSupply = new BN(totalTokenSupply).mul(
+        new BN(10).pow(new BN(tokenBaseDecimal))
+    )
+    let totalLeftover = new BN(leftover).mul(
+        new BN(10).pow(new BN(tokenBaseDecimal))
+    )
+    let totalVestingAmount = getTotalVestingAmount(lockedVesting)
+
+    let totalSwapAndMigrationAmount = totalSupply
+        .sub(totalVestingAmount)
+        .sub(totalLeftover)
+
+    let kDecimal = new Decimal(kFactor)
+    let sumFactor = new Decimal(0)
+    let pmaxWeight = new Decimal(pMax.toString())
+    for (let i = 1; i < 17; i++) {
+        let pi = new Decimal(sqrtPrices[i].toString())
+        let piMinus = new Decimal(sqrtPrices[i - 1].toString())
+        let k = kDecimal.pow(new Decimal(i - 1))
+        let w1 = pi.sub(piMinus).div(pi.mul(piMinus))
+        let w2 = pi.sub(piMinus).div(pmaxWeight.mul(pmaxWeight))
+        let weight = k.mul(w1.add(w2))
+        sumFactor = sumFactor.add(weight)
+    }
+
+    let l1 = new Decimal(totalSwapAndMigrationAmount.toString()).div(sumFactor)
+
+    // construct curve
+    let curve = []
+    for (let i = 0; i < 16; i++) {
+        let k = kDecimal.pow(new Decimal(i))
+        let liquidity = convertDecimalToBN(l1.mul(k))
+        let sqrtPrice = i < 15 ? sqrtPrices[i + 1] : pMax
+        curve.push({
+            sqrtPrice,
+            liquidity,
+        })
+    }
+    // reverse to calculate swap amount and migration amount
+    let swapBaseAmount = getBaseTokenForSwap(pMin, pMax, curve)
+    let swapBaseAmountBuffer = getSwapAmountWithBuffer(
+        swapBaseAmount,
+        pMin,
+        curve
+    )
+
+    let migrationAmount = totalSwapAndMigrationAmount.sub(swapBaseAmountBuffer)
+
+    // calculate migration threshold
+    let migrationQuoteThreshold = migrationAmount.mul(pMax).mul(pMax).shrn(128)
+
+    // sanity check
+    let totalDynamicSupply = getTotalSupplyFromCurve(
+        migrationQuoteThreshold,
+        pMin,
+        curve,
+        lockedVesting,
+        migrationOption,
+        totalLeftover
+    )
+
+    if (totalDynamicSupply.gt(totalSupply)) {
+        // precision loss is used for leftover
+        let leftOverDelta = totalDynamicSupply.sub(totalSupply)
+        if (!leftOverDelta.lt(totalLeftover)) {
+            throw new Error('leftOverDelta must be less than totalLeftover')
+        }
+    }
+
+    const instructionParams: ConfigParameters = {
+        poolFees: {
+            baseFee: {
+                cliffFeeNumerator: new BN((baseFeeBps * 100000).toString()),
+                numberOfPeriod: numberOfPeriod,
+                reductionFactor: new BN(reductionFactor),
+                periodFrequency: new BN(periodFrequency),
+                feeSchedulerMode: feeSchedulerMode,
+            },
+            dynamicFee: dynamicFeeEnabled
+                ? {
+                      binStep: 1,
+                      binStepU128: new BN('1844674407370955'),
+                      filterPeriod: 10,
+                      decayPeriod: 120,
+                      reductionFactor: 5000,
+                      variableFeeControl: 2000000,
+                      maxVolatilityAccumulator: 100000,
+                  }
+                : null,
+        },
+        activationType: activationType,
+        collectFeeMode: collectFeeMode,
+        migrationOption: migrationOption,
+        tokenType: tokenType,
+        tokenDecimal: tokenBaseDecimal,
+        migrationQuoteThreshold,
+        partnerLpPercentage: partnerLpPercentage,
+        creatorLpPercentage: creatorLpPercentage,
+        partnerLockedLpPercentage: partnerLockedLpPercentage,
+        creatorLockedLpPercentage: creatorLockedLpPercentage,
+        sqrtStartPrice: pMin,
+        lockedVesting,
+        migrationFeeOption: migrationFeeOption,
+        tokenSupply: {
+            preMigrationTokenSupply: totalSupply,
+            postMigrationTokenSupply: totalSupply,
+        },
+        creatorTradingFeePercentage,
+        padding0: [],
+        padding1: [],
+        curve,
+    }
+    return instructionParams
 }
