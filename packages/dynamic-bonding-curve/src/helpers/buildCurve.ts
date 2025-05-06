@@ -19,6 +19,8 @@ import {
     convertDecimalToBN,
     getBaseTokenForSwap,
     getSwapAmountWithBuffer,
+    bpsToFeeNumerator,
+    getDynamicFeeParams,
 } from './common'
 import { getInitialLiquidityFromDeltaBase } from '../math/curve'
 
@@ -130,22 +132,14 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
     const instructionParams: ConfigParameters = {
         poolFees: {
             baseFee: {
-                cliffFeeNumerator: new BN((baseFeeBps * 100000).toString()),
+                cliffFeeNumerator: bpsToFeeNumerator(baseFeeBps),
                 numberOfPeriod: numberOfPeriod,
                 reductionFactor: new BN(reductionFactor),
                 periodFrequency: new BN(periodFrequency),
                 feeSchedulerMode: feeSchedulerMode,
             },
             dynamicFee: dynamicFeeEnabled
-                ? {
-                      binStep: 1,
-                      binStepU128: new BN('1844674407370955'),
-                      filterPeriod: 10,
-                      decayPeriod: 120,
-                      reductionFactor: 5000,
-                      variableFeeControl: 2000000,
-                      maxVolatilityAccumulator: 100000,
-                  }
+                ? getDynamicFeeParams(baseFeeBps)
                 : null,
         },
         activationType: activationType,
@@ -342,22 +336,14 @@ export function buildCurveGraph(
     const instructionParams: ConfigParameters = {
         poolFees: {
             baseFee: {
-                cliffFeeNumerator: new BN((baseFeeBps * 100000).toString()),
+                cliffFeeNumerator: bpsToFeeNumerator(baseFeeBps),
                 numberOfPeriod: numberOfPeriod,
                 reductionFactor: new BN(reductionFactor),
                 periodFrequency: new BN(periodFrequency),
                 feeSchedulerMode: feeSchedulerMode,
             },
             dynamicFee: dynamicFeeEnabled
-                ? {
-                      binStep: 1,
-                      binStepU128: new BN('1844674407370955'),
-                      filterPeriod: 10,
-                      decayPeriod: 120,
-                      reductionFactor: 5000,
-                      variableFeeControl: 2000000,
-                      maxVolatilityAccumulator: 100000,
-                  }
+                ? getDynamicFeeParams(baseFeeBps)
                 : null,
         },
         activationType: activationType,
