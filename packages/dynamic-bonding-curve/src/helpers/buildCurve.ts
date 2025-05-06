@@ -139,7 +139,13 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
                 feeSchedulerMode: feeSchedulerMode,
             },
             dynamicFee: dynamicFeeEnabled
-                ? getDynamicFeeParams(baseFeeBps)
+                ? getDynamicFeeParams(
+                      baseFeeBps,
+                      baseFeeBps,
+                      numberOfPeriod,
+                      reductionFactor,
+                      feeSchedulerMode
+                  )
                 : null,
         },
         activationType: activationType,
@@ -343,7 +349,13 @@ export function buildCurveGraph(
                 feeSchedulerMode: feeSchedulerMode,
             },
             dynamicFee: dynamicFeeEnabled
-                ? getDynamicFeeParams(baseFeeBps)
+                ? getDynamicFeeParams(
+                      baseFeeBps,
+                      baseFeeBps,
+                      numberOfPeriod,
+                      reductionFactor,
+                      feeSchedulerMode
+                  )
                 : null,
         },
         activationType: activationType,

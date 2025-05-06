@@ -457,6 +457,26 @@ export function bpsToFeeNumerator(bps: number): BN {
     return new BN(bps * FEE_DENOMINATOR).divn(BASIS_POINT_MAX)
 }
 
+export function getMinBaseFeeBps(
+    cliffFeeNumerator: number,
+    numberOfPeriod: number,
+    reductionFactor: number,
+    feeSchedulerMode: number
+): number {
+    let baseFee: number
+    if (feeSchedulerMode === 0) {
+        // linear mode
+        baseFee = cliffFeeNumerator - numberOfPeriod * reductionFactor
+    } else if (feeSchedulerMode === 1) {
+        // exponential mode
+        const decayRate = 1 - reductionFactor / BASIS_POINT_MAX
+        baseFee = cliffFeeNumerator * Math.pow(decayRate, numberOfPeriod)
+    }
+
+    // ensure base fee is not negative
+    return Math.max(0, baseFee)
+}
+
 /**
  * Get the dynamic fee parameters (20% of base fee)
  * @param baseFeeBps - The base fee in basis points
@@ -465,6 +485,9 @@ export function bpsToFeeNumerator(bps: number): BN {
  */
 export function getDynamicFeeParams(
     baseFeeBps: number,
+    numberOfPeriod: number,
+    reductionFactor: number,
+    feeSchedulerMode: number,
     maxPriceChangeBps: number = MAX_PRICE_CHANGE_BPS_DEFAULT // default 15%
 ): DynamicFeeParameters {
     if (maxPriceChangeBps > MAX_PRICE_CHANGE_BPS_DEFAULT) {
@@ -492,8 +515,18 @@ export function getDynamicFeeParams(
         .mul(new BN(BIN_STEP_BPS_DEFAULT))
         .pow(new BN(2))
 
-    const baseFeeNumerator = new BN(bpsToFeeNumerator(baseFeeBps))
-    const maxDynamicFeeNumerator = baseFeeNumerator.muln(20).divn(100) // default max dynamic fee = 20% of base fee.
+    const cliffFeeNumerator = (baseFeeBps * FEE_DENOMINATOR) / BASIS_POINT_MAX
+
+    // Calculate minimum base fee for dynamic fee calculation
+    const minBaseFeeBps = getMinBaseFeeBps(
+        cliffFeeNumerator,
+        numberOfPeriod,
+        reductionFactor,
+        feeSchedulerMode
+    )
+    const minBaseFeeNumerator = new BN(bpsToFeeNumerator(minBaseFeeBps))
+
+    const maxDynamicFeeNumerator = minBaseFeeNumerator.muln(20).divn(100) // default max dynamic fee = 20% of min base fee
     const vFee = maxDynamicFeeNumerator
         .mul(new BN(100_000_000_000))
         .sub(new BN(99_999_999_999))
