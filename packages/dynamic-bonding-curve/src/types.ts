@@ -314,6 +314,7 @@ export type MigrateToDammV2Response = {
 
 export type ClaimTradingFeeParam = {
     feeClaimer: PublicKey
+    payer: PublicKey
     pool: PublicKey
     maxBaseAmount: BN
     maxQuoteAmount: BN
@@ -411,6 +412,7 @@ export type CreateLockerParam = {
 
 export type ClaimCreatorTradingFeeParam = {
     creator: PublicKey
+    payer: PublicKey
     pool: PublicKey
     maxBaseAmount: BN
     maxQuoteAmount: BN

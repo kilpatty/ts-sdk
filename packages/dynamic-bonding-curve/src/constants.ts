@@ -39,3 +39,12 @@ export const LOCKER_PROGRAM_ID = new PublicKey(
 export const BASE_ADDRESS = new PublicKey(
     'HWzXGcGHy4tcpYfaRDCyLNzXqBTv3E6BttpCH2vJxArv'
 )
+
+// Dynamic Fee
+export const DYNAMIC_FEE_FILTER_PERIOD_DEFAULT = 10
+export const DYNAMIC_FEE_DECAY_PERIOD_DEFAULT = 120
+export const DYNAMIC_FEE_REDUCTION_FACTOR_DEFAULT = 5000 // 50%
+export const BIN_STEP_BPS_DEFAULT = 1
+//  bin_step << 64 / BASIS_POINT_MAX
+export const BIN_STEP_BPS_U128_DEFAULT = new BN('1844674407370955')
+export const MAX_PRICE_CHANGE_BPS_DEFAULT = 1500 // 15%

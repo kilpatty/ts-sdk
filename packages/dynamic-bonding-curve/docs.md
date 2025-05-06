@@ -685,6 +685,7 @@ async claimPartnerTradingFee(claimTradingFeeParam: ClaimTradingFeeParam): Promis
 interface ClaimTradingFeeParam {
     pool: PublicKey // The pool address
     feeClaimer: PublicKey // The wallet that will claim the fee
+    payer: PublicKey // The wallet that will pay for the transaction
     maxBaseAmount: BN // The maximum base amount to claim (use 0 to not claim base tokens)
     maxQuoteAmount: BN // The maximum quote amount to claim (use 0 to not claim quote tokens)
 }
@@ -700,6 +701,7 @@ A transaction that can be signed and sent to the network.
 const transaction = await client.partner.claimPartnerTradingFee({
     pool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
     feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    payer: new PublicKey('payer1234567890abcdefghijklmnopqrstuvwxyz'),
     maxBaseAmount: new BN(1000000),
     maxQuoteAmount: new BN(1000000),
 })
@@ -1401,6 +1403,7 @@ async claimCreatorTradingFee(claimCreatorTradingFeeParam: ClaimCreatorTradingFee
 ```typescript
 interface ClaimCreatorTradingFeeParam {
     creator: PublicKey // The creator of the pool
+    payer: PublicKey // The payer of the transaction
     pool: PublicKey // The pool address
     maxBaseAmount: BN // The maximum amount of base tokens to claim
     maxQuoteAmount: BN // The maximum amount of quote tokens to claim
@@ -1416,6 +1419,7 @@ A transaction that can be signed and sent to the network.
 ```typescript
 const transaction = await client.creator.claimCreatorTradingFee({
     creator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    payer: new PublicKey('payer1234567890abcdefghijklmnopqrstuvwxyz'),
     pool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
     maxBaseAmount: new BN(1000000000),
     maxQuoteAmount: new BN(1000000000),

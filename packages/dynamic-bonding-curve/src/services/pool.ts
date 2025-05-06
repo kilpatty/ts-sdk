@@ -263,6 +263,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 ataTokenB: outputTokenAccount,
                 instructions: preInstructions,
             } = await this.prepareTokenAccounts(
+                poolCreator,
                 payer,
                 inputMint,
                 outputMint,
@@ -358,6 +359,7 @@ export class PoolService extends DynamicBondingCurveProgram {
             ataTokenB: outputTokenAccount,
             instructions: preInstructions,
         } = await this.prepareTokenAccounts(
+            owner,
             owner,
             inputMint,
             outputMint,

@@ -21,6 +21,7 @@ import { DynamicBondingCurveProgram } from './program'
 import {
     deriveDbcPoolMetadata,
     findAssociatedTokenAddress,
+    getTokenProgram,
     isNativeSol,
     unwrapSOLInstruction,
 } from '../helpers'
@@ -85,71 +86,38 @@ export class CreatorService extends DynamicBondingCurveProgram {
             throw new Error(`Pool config not found: ${pool.toString()}`)
         }
 
-        const tokenBaseProgram =
-            poolConfigState.tokenType == TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
-
-        const tokenQuoteProgram =
-            poolConfigState.quoteTokenFlag == TokenType.SPL
-                ? TOKEN_PROGRAM_ID
-                : TOKEN_2022_PROGRAM_ID
-
-        const preInstructions: TransactionInstruction[] = []
-        const postInstructions: TransactionInstruction[] = []
-
-        const baseTokenAccount = findAssociatedTokenAddress(
-            creator,
-            poolState.baseMint,
-            tokenBaseProgram
+        const tokenBaseProgram = getTokenProgram(poolConfigState.tokenType)
+        const tokenQuoteProgram = getTokenProgram(
+            poolConfigState.quoteTokenFlag
         )
 
-        const quoteTokenAccount = findAssociatedTokenAddress(
-            creator,
+        // const preInstructions: TransactionInstruction[] = []
+        const postInstructions: TransactionInstruction[] = []
+        const {
+            ataTokenA: tokenBaseAccount,
+            ataTokenB: tokenQuoteAccount,
+            instructions: preInstructions,
+        } = await this.prepareTokenAccounts(
+            claimCreatorTradingFeeParam.creator,
+            claimCreatorTradingFeeParam.payer,
+            poolState.baseMint,
             poolConfigState.quoteMint,
+            tokenBaseProgram,
             tokenQuoteProgram
         )
-
-        const createBaseTokenAccountIx =
-            createAssociatedTokenAccountIdempotentInstruction(
-                creator,
-                baseTokenAccount,
-                creator,
-                poolState.baseMint,
-                tokenBaseProgram
-            )
-
-        if (createBaseTokenAccountIx) {
-            preInstructions.push(createBaseTokenAccountIx)
-        }
-
-        const createQuoteTokenAccountIx =
-            createAssociatedTokenAccountIdempotentInstruction(
-                creator,
-                quoteTokenAccount,
-                creator,
-                poolConfigState.quoteMint,
-                tokenQuoteProgram
-            )
-
-        if (createQuoteTokenAccountIx) {
-            preInstructions.push(createQuoteTokenAccountIx)
-        }
 
         const isSOLQuoteMint = isNativeSol(poolConfigState.quoteMint)
 
         if (isSOLQuoteMint) {
-            const unwrapIx = unwrapSOLInstruction(creator)
-            if (unwrapIx) {
-                postInstructions.push(unwrapIx)
-            }
+            const unwrapSolIx = unwrapSOLInstruction(creator)
+            unwrapSolIx && postInstructions.push(unwrapSolIx)
         }
 
         const accounts = {
             poolAuthority: this.poolAuthority,
             pool,
-            tokenAAccount: baseTokenAccount,
-            tokenBAccount: quoteTokenAccount,
+            tokenAAccount: tokenBaseAccount,
+            tokenBAccount: tokenQuoteAccount,
             baseVault: poolState.baseVault,
             quoteVault: poolState.quoteVault,
             baseMint: poolState.baseMint,
