@@ -598,7 +598,7 @@ export function getMinBaseFeeBps(
     if (feeSchedulerMode == FeeSchedulerMode.Linear) {
         // linear mode
         baseFeeNumerator = cliffFeeNumerator - numberOfPeriod * reductionFactor
-    } else if (feeSchedulerMode == FeeSchedulerMode.Exponential) {
+    } else {
         // exponential mode
         const decayRate = 1 - reductionFactor / BASIS_POINT_MAX
         baseFeeNumerator =
