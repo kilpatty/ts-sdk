@@ -6,7 +6,7 @@ import {
     BuildCurveByMarketCapParam,
     BuildCurveGraphParam,
 } from '../types'
-import { MAX_SQRT_PRICE } from '../constants'
+import { BASIS_POINT_MAX, FEE_DENOMINATOR, MAX_SQRT_PRICE } from '../constants'
 import {
     getSqrtPriceFromPrice,
     getMigrationBaseToken,
@@ -21,6 +21,7 @@ import {
     getSwapAmountWithBuffer,
     bpsToFeeNumerator,
     getDynamicFeeParams,
+    getMinBaseFeeBps,
 } from './common'
 import { getInitialLiquidityFromDeltaBase } from '../math/curve'
 
@@ -129,6 +130,20 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         })
     }
 
+    // Calculate minimum base fee for dynamic fee calculation
+    let minBaseFeeBps = baseFeeBps
+    if (periodFrequency > 0) {
+        const cliffFeeNumerator =
+            (baseFeeBps * FEE_DENOMINATOR) / BASIS_POINT_MAX
+
+        minBaseFeeBps = getMinBaseFeeBps(
+            cliffFeeNumerator,
+            numberOfPeriod,
+            reductionFactor,
+            feeSchedulerMode
+        )
+    }
+
     const instructionParams: ConfigParameters = {
         poolFees: {
             baseFee: {
@@ -139,7 +154,7 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
                 feeSchedulerMode: feeSchedulerMode,
             },
             dynamicFee: dynamicFeeEnabled
-                ? getDynamicFeeParams(baseFeeBps)
+                ? getDynamicFeeParams(minBaseFeeBps)
                 : null,
         },
         activationType: activationType,
@@ -333,6 +348,20 @@ export function buildCurveGraph(
         }
     }
 
+    // Calculate minimum base fee for dynamic fee calculation
+    let minBaseFeeBps = baseFeeBps
+    if (periodFrequency > 0) {
+        const cliffFeeNumerator =
+            (baseFeeBps * FEE_DENOMINATOR) / BASIS_POINT_MAX
+
+        minBaseFeeBps = getMinBaseFeeBps(
+            cliffFeeNumerator,
+            numberOfPeriod,
+            reductionFactor,
+            feeSchedulerMode
+        )
+    }
+
     const instructionParams: ConfigParameters = {
         poolFees: {
             baseFee: {
@@ -343,7 +372,7 @@ export function buildCurveGraph(
                 feeSchedulerMode: feeSchedulerMode,
             },
             dynamicFee: dynamicFeeEnabled
-                ? getDynamicFeeParams(baseFeeBps)
+                ? getDynamicFeeParams(minBaseFeeBps)
                 : null,
         },
         activationType: activationType,
