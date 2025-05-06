@@ -264,7 +264,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 instructions: preInstructions,
             } = await this.prepareTokenAccounts(
                 poolCreator,
-                payer,
+                poolCreator,
                 inputMint,
                 outputMint,
                 inputTokenProgram,
@@ -275,7 +275,7 @@ export class PoolService extends DynamicBondingCurveProgram {
             if (inputMint.equals(NATIVE_MINT)) {
                 preInstructions.push(
                     ...wrapSOLInstruction(
-                        payer,
+                        poolCreator,
                         inputTokenAccount,
                         BigInt(buyAmount.toString())
                     )
@@ -289,7 +289,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                     NATIVE_MINT.toBase58()
                 )
             ) {
-                const unwrapIx = unwrapSOLInstruction(payer)
+                const unwrapIx = unwrapSOLInstruction(poolCreator)
                 unwrapIx && postInstructions.push(unwrapIx)
             }
 
@@ -310,7 +310,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                     referralTokenAccount,
                     inputTokenAccount,
                     outputTokenAccount,
-                    payer,
+                    payer: poolCreator,
                     tokenBaseProgram:
                         tokenType === TokenType.SPL
                             ? TOKEN_PROGRAM_ID

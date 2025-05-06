@@ -594,7 +594,7 @@ export function getMinBaseFeeBps(
     reductionFactor: number,
     feeSchedulerMode: number
 ): number {
-    let baseFeeNumerator: number
+    let baseFeeNumerator: number = 0
     if (feeSchedulerMode === 0) {
         // linear mode
         baseFeeNumerator = cliffFeeNumerator - numberOfPeriod * reductionFactor
