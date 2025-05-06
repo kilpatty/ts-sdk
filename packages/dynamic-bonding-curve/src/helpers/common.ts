@@ -592,17 +592,19 @@ export function getMinBaseFeeBps(
     cliffFeeNumerator: number,
     numberOfPeriod: number,
     reductionFactor: number,
-    feeSchedulerMode: number
+    feeSchedulerMode: FeeSchedulerMode
 ): number {
-    let baseFeeNumerator: number = 0
-    if (feeSchedulerMode === 0) {
+    let baseFeeNumerator: number
+    if (feeSchedulerMode == FeeSchedulerMode.Linear) {
         // linear mode
         baseFeeNumerator = cliffFeeNumerator - numberOfPeriod * reductionFactor
-    } else if (feeSchedulerMode === 1) {
+    } else if (feeSchedulerMode == FeeSchedulerMode.Exponential) {
         // exponential mode
         const decayRate = 1 - reductionFactor / BASIS_POINT_MAX
         baseFeeNumerator =
             cliffFeeNumerator * Math.pow(decayRate, numberOfPeriod)
+    } else {
+        throw new Error('Invalid fee scheduler mode')
     }
 
     // ensure base fee is not negative
