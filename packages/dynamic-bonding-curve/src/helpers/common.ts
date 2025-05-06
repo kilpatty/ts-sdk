@@ -603,8 +603,6 @@ export function getMinBaseFeeBps(
         const decayRate = 1 - reductionFactor / BASIS_POINT_MAX
         baseFeeNumerator =
             cliffFeeNumerator * Math.pow(decayRate, numberOfPeriod)
-    } else {
-        throw new Error('Invalid fee scheduler mode')
     }
 
     // ensure base fee is not negative
