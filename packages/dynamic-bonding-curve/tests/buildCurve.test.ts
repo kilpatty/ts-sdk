@@ -15,6 +15,8 @@ import {
     TokenType,
 } from '../src'
 import { convertBNToDecimal } from './utils/common'
+import { getMinBaseFeeBps } from '../src/helpers'
+import { FEE_DENOMINATOR, BASIS_POINT_MAX } from '../src/constants'
 
 describe('buildCurve tests', () => {
     const baseParams = {
@@ -145,5 +147,70 @@ describe('buildCurve tests', () => {
         expect(config.migrationQuoteThreshold).toBeDefined()
         expect(config.curve).toBeDefined()
         expect(config.curve.length).toBeGreaterThan(0)
+    })
+
+    describe('getMinBaseFeeBps tests', () => {
+        test('linear fee scheduler - should not go below zero', () => {
+            const baseFeeBps = 50 // 0.5%
+            const cliffFeeNumerator =
+                (baseFeeBps * FEE_DENOMINATOR) / BASIS_POINT_MAX
+            const numberOfPeriod = 120
+            const reductionFactor = 321
+            const feeSchedulerMode = FeeSchedulerMode.Linear
+
+            const minBaseFeeBps = getMinBaseFeeBps(
+                cliffFeeNumerator,
+                numberOfPeriod,
+                reductionFactor,
+                feeSchedulerMode
+            )
+
+            console.log('minBaseFeeBps:', minBaseFeeBps)
+
+            // linear mode: cliffFeeNumerator - (numberOfPeriod * reductionFactor)
+            expect(minBaseFeeBps).toBeGreaterThan(0)
+            expect(minBaseFeeBps).toBeLessThan(baseFeeBps)
+        })
+
+        test('exponential fee scheduler - should reduce fee exponentially', () => {
+            const cliffFeeBps = 2500 // 25 bps
+            const cliffFeeNumerator =
+                (cliffFeeBps * FEE_DENOMINATOR) / BASIS_POINT_MAX
+            const numberOfPeriod = 5
+            const reductionFactor = 2000 // 20% reduction per period
+            const feeSchedulerMode = FeeSchedulerMode.Exponential
+
+            const minBaseFeeBps = getMinBaseFeeBps(
+                cliffFeeNumerator,
+                numberOfPeriod,
+                reductionFactor,
+                feeSchedulerMode
+            )
+
+            console.log('minBaseFeeBps:', minBaseFeeBps)
+
+            // For exponential mode: cliffFeeNumerator * (1 - reductionFactor/BASIS_POINT_MAX)^numberOfPeriod
+            expect(minBaseFeeBps).toBeGreaterThan(0)
+            expect(minBaseFeeBps).toBeLessThan(cliffFeeBps)
+        })
+
+        test('exponential fee scheduler - should handle zero periods', () => {
+            const cliffFeeBps = 2500 // 25 bps
+            const cliffFeeNumerator =
+                (cliffFeeBps * FEE_DENOMINATOR) / BASIS_POINT_MAX
+            const numberOfPeriod = 0
+            const reductionFactor = 2000 // 20% reduction per period
+            const feeSchedulerMode = FeeSchedulerMode.Exponential
+
+            const minBaseFeeBps = getMinBaseFeeBps(
+                cliffFeeNumerator,
+                numberOfPeriod,
+                reductionFactor,
+                feeSchedulerMode
+            )
+
+            // With zero periods, should return original fee in bps
+            expect(minBaseFeeBps).toBe(cliffFeeBps)
+        })
     })
 })
