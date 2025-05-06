@@ -150,12 +150,12 @@ describe('buildCurve tests', () => {
     })
 
     describe('getMinBaseFeeBps tests', () => {
-        test('linear fee scheduler - should not go below zero', () => {
-            const baseFeeBps = 50 // 0.5%
+        test('linear fee scheduler - should calculate minimum fee correctly', () => {
+            const baseFeeBps = 5000
             const cliffFeeNumerator =
                 (baseFeeBps * FEE_DENOMINATOR) / BASIS_POINT_MAX
-            const numberOfPeriod = 120
-            const reductionFactor = 321
+            const numberOfPeriod = 144
+            const reductionFactor = 3333333
             const feeSchedulerMode = FeeSchedulerMode.Linear
 
             const minBaseFeeBps = getMinBaseFeeBps(
@@ -165,14 +165,22 @@ describe('buildCurve tests', () => {
                 feeSchedulerMode
             )
 
-            console.log('minBaseFeeBps:', minBaseFeeBps)
-
             // linear mode: cliffFeeNumerator - (numberOfPeriod * reductionFactor)
-            expect(minBaseFeeBps).toBeGreaterThan(0)
+            const expectedMinFeeNumerator =
+                cliffFeeNumerator - numberOfPeriod * reductionFactor
+            const expectedMinFeeBps = Math.max(
+                0,
+                (expectedMinFeeNumerator / FEE_DENOMINATOR) * BASIS_POINT_MAX
+            )
+
+            console.log('minBaseFeeBps:', minBaseFeeBps)
+            console.log('expectedMinFeeBps:', expectedMinFeeBps)
+
             expect(minBaseFeeBps).toBeLessThan(baseFeeBps)
+            expect(minBaseFeeBps).toEqual(expectedMinFeeBps)
         })
 
-        test('exponential fee scheduler - should reduce fee exponentially', () => {
+        test('exponential fee scheduler - should calculate minimum fee correctly', () => {
             const baseFeeBps = 5000
             const cliffFeeNumerator =
                 (baseFeeBps * FEE_DENOMINATOR) / BASIS_POINT_MAX
@@ -187,11 +195,20 @@ describe('buildCurve tests', () => {
                 feeSchedulerMode
             )
 
-            console.log('minBaseFeeBps:', minBaseFeeBps)
+            // exponential mode: cliffFeeNumerator * (1 - reductionFactor/BASIS_POINT_MAX)^numberOfPeriod
+            const decayRate = 1 - reductionFactor / BASIS_POINT_MAX
+            const expectedMinFeeNumerator =
+                cliffFeeNumerator * Math.pow(decayRate, numberOfPeriod)
+            const expectedMinFeeBps = Math.max(
+                0,
+                (expectedMinFeeNumerator / FEE_DENOMINATOR) * BASIS_POINT_MAX
+            )
 
-            // For exponential mode: cliffFeeNumerator * (1 - reductionFactor/BASIS_POINT_MAX)^numberOfPeriod
-            expect(minBaseFeeBps).toBeGreaterThan(0)
+            console.log('minBaseFeeBps:', minBaseFeeBps)
+            console.log('expectedMinFeeBps:', expectedMinFeeBps)
+
             expect(minBaseFeeBps).toBeLessThan(baseFeeBps)
+            expect(minBaseFeeBps).toEqual(expectedMinFeeBps)
         })
     })
 })
