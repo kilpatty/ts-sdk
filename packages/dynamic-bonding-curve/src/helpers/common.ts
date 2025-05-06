@@ -463,18 +463,19 @@ export function getMinBaseFeeBps(
     reductionFactor: number,
     feeSchedulerMode: number
 ): number {
-    let baseFee: number
+    let baseFeeNumerator: number
     if (feeSchedulerMode === 0) {
         // linear mode
-        baseFee = cliffFeeNumerator - numberOfPeriod * reductionFactor
+        baseFeeNumerator = cliffFeeNumerator - numberOfPeriod * reductionFactor
     } else if (feeSchedulerMode === 1) {
         // exponential mode
         const decayRate = 1 - reductionFactor / BASIS_POINT_MAX
-        baseFee = cliffFeeNumerator * Math.pow(decayRate, numberOfPeriod)
+        baseFeeNumerator =
+            cliffFeeNumerator * Math.pow(decayRate, numberOfPeriod)
     }
 
     // ensure base fee is not negative
-    return Math.max(0, (baseFee / FEE_DENOMINATOR) * BASIS_POINT_MAX)
+    return Math.max(0, (baseFeeNumerator / FEE_DENOMINATOR) * BASIS_POINT_MAX)
 }
 
 /**
@@ -484,7 +485,7 @@ export function getMinBaseFeeBps(
  * @returns The dynamic fee parameters
  */
 export function getDynamicFeeParams(
-    minBaseFeeBps: number,
+    baseFeeBps: number,
     maxPriceChangeBps: number = MAX_PRICE_CHANGE_BPS_DEFAULT // default 15%
 ): DynamicFeeParameters {
     if (maxPriceChangeBps > MAX_PRICE_CHANGE_BPS_DEFAULT) {
@@ -512,9 +513,9 @@ export function getDynamicFeeParams(
         .mul(new BN(BIN_STEP_BPS_DEFAULT))
         .pow(new BN(2))
 
-    const minBaseFeeNumerator = new BN(bpsToFeeNumerator(minBaseFeeBps))
+    const baseFeeNumerator = new BN(bpsToFeeNumerator(baseFeeBps))
 
-    const maxDynamicFeeNumerator = minBaseFeeNumerator.muln(20).divn(100) // default max dynamic fee = 20% of min base fee
+    const maxDynamicFeeNumerator = baseFeeNumerator.muln(20).divn(100) // default max dynamic fee = 20% of min base fee
     const vFee = maxDynamicFeeNumerator
         .mul(new BN(100_000_000_000))
         .sub(new BN(99_999_999_999))
