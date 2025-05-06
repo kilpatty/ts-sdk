@@ -28,6 +28,7 @@ export class DynamicBondingCurveProgram {
 
     protected async prepareTokenAccounts(
         owner: PublicKey,
+        payer: PublicKey,
         tokenAMint: PublicKey,
         tokenBMint: PublicKey,
         tokenAProgram: PublicKey,
@@ -46,7 +47,7 @@ export class DynamicBondingCurveProgram {
                 this.connection,
                 tokenAMint,
                 owner,
-                owner,
+                payer,
                 true,
                 tokenAProgram
             ),
@@ -54,7 +55,7 @@ export class DynamicBondingCurveProgram {
                 this.connection,
                 tokenBMint,
                 owner,
-                owner,
+                payer,
                 true,
                 tokenBProgram
             ),

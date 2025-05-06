@@ -18,11 +18,21 @@ import {
     TokenInvalidAccountOwnerError,
 } from '@solana/spl-token'
 
+/**
+ * Get or create an ATA instruction
+ * @param connection - The connection
+ * @param tokenMint - The token mint
+ * @param owner - The owner
+ * @param payer - The payer
+ * @param allowOwnerOffCurve - Whether to allow the owner to be off curve
+ * @param tokenProgram - The token program
+ * @returns The ATA instruction
+ */
 export const getOrCreateATAInstruction = async (
     connection: Connection,
     tokenMint: PublicKey,
     owner: PublicKey,
-    payer: PublicKey = owner,
+    payer: PublicKey,
     allowOwnerOffCurve = true,
     tokenProgram: PublicKey
 ): Promise<{ ataPubkey: PublicKey; ix?: TransactionInstruction }> => {

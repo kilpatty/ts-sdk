@@ -26,6 +26,7 @@ import {
     getTokenProgram,
     getOrCreateATAInstruction,
     buildCurveGraph,
+    isNativeSol,
 } from '../helpers'
 import { NATIVE_MINT } from '@solana/spl-token'
 import { StateService } from './state'
@@ -235,6 +236,10 @@ export class PartnerService extends DynamicBondingCurveProgram {
 
         const poolConfigState = await this.state.getPoolConfig(poolState.config)
 
+        if (!poolConfigState) {
+            throw new Error(`Pool config not found: ${poolState.toString()}`)
+        }
+
         const tokenBaseProgram = getTokenProgram(poolConfigState.tokenType)
         const tokenQuoteProgram = getTokenProgram(
             poolConfigState.quoteTokenFlag
@@ -247,13 +252,16 @@ export class PartnerService extends DynamicBondingCurveProgram {
             instructions: preInstructions,
         } = await this.prepareTokenAccounts(
             claimTradingFeeParam.feeClaimer,
+            claimTradingFeeParam.payer,
             poolState.baseMint,
             poolConfigState.quoteMint,
             tokenBaseProgram,
             tokenQuoteProgram
         )
 
-        if (poolConfigState.quoteMint.equals(NATIVE_MINT)) {
+        const isSOLQuoteMint = isNativeSol(poolConfigState.quoteMint)
+
+        if (isSOLQuoteMint) {
             const unwrapSolIx = unwrapSOLInstruction(
                 claimTradingFeeParam.feeClaimer
             )
