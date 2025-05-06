@@ -474,7 +474,7 @@ export function getMinBaseFeeBps(
     }
 
     // ensure base fee is not negative
-    return Math.max(0, baseFee)
+    return Math.max(0, (baseFee / FEE_DENOMINATOR) * BASIS_POINT_MAX)
 }
 
 /**
@@ -484,10 +484,7 @@ export function getMinBaseFeeBps(
  * @returns The dynamic fee parameters
  */
 export function getDynamicFeeParams(
-    baseFeeBps: number,
-    numberOfPeriod: number,
-    reductionFactor: number,
-    feeSchedulerMode: number,
+    minBaseFeeBps: number,
     maxPriceChangeBps: number = MAX_PRICE_CHANGE_BPS_DEFAULT // default 15%
 ): DynamicFeeParameters {
     if (maxPriceChangeBps > MAX_PRICE_CHANGE_BPS_DEFAULT) {
@@ -515,15 +512,6 @@ export function getDynamicFeeParams(
         .mul(new BN(BIN_STEP_BPS_DEFAULT))
         .pow(new BN(2))
 
-    const cliffFeeNumerator = (baseFeeBps * FEE_DENOMINATOR) / BASIS_POINT_MAX
-
-    // Calculate minimum base fee for dynamic fee calculation
-    const minBaseFeeBps = getMinBaseFeeBps(
-        cliffFeeNumerator,
-        numberOfPeriod,
-        reductionFactor,
-        feeSchedulerMode
-    )
     const minBaseFeeNumerator = new BN(bpsToFeeNumerator(minBaseFeeBps))
 
     const maxDynamicFeeNumerator = minBaseFeeNumerator.muln(20).divn(100) // default max dynamic fee = 20% of min base fee
