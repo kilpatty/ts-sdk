@@ -325,7 +325,7 @@ export function buildCurveGraph(
     )
 
     let migrationAmount = totalSwapAndMigrationAmount.sub(swapBaseAmountBuffer)
-    let percentage = migrationAmount.mul(new BN(100)).div(totalSupply)
+    // let percentage = migrationAmount.mul(new BN(100)).div(totalSupply)
 
     // calculate migration threshold
     let migrationQuoteThreshold = migrationAmount.mul(pMax).mul(pMax).shrn(128)
