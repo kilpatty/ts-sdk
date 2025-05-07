@@ -141,6 +141,8 @@ describe('buildCurve tests', () => {
                 .toNumber()
         }
 
+        console.log('liquidityWeights:', liquidityWeights)
+
         const curveGraphParams = {
             ...baseParams,
             initialMarketCap: 30,
@@ -193,6 +195,8 @@ describe('buildCurve tests', () => {
                 .toNumber()
         }
 
+        console.log('liquidityWeights:', liquidityWeights)
+
         const curveGraphParams = {
             ...baseParams,
             initialMarketCap: 15,
@@ -241,6 +245,8 @@ describe('buildCurve tests', () => {
                 liquidityWeights[i] = 2.13
             }
         }
+
+        console.log('liquidityWeights:', liquidityWeights)
 
         const curveGraphParams = {
             ...baseParams,
