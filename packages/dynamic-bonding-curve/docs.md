@@ -551,7 +551,7 @@ interface BuildCurveGraphAndCreateConfigParam {
         creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked
         creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
         leftover: number // The leftover amount that can be withdrawn by leftover receiver
-        kFactor: number // The k factor is an exponential scaling parameter that determines the curve's steepness
+        liquidityWeights: number[] // The liquidity weights for each liquidity segment in the curve
     }
     feeClaimer: PublicKey // The wallet that will be able to claim the fee
     leftoverReceiver: PublicKey // The wallet that will receive the bonding curve leftover
@@ -568,6 +568,11 @@ A transaction that can be signed and sent to the network.
 #### Example
 
 ```typescript
+let liquidityWeights: number[] = []
+for (let i = 0; i < 16; i++) {
+    liquidityWeights[i] = new Decimal(1.2).pow(new Decimal(i)).toNumber()
+}
+
 const transaction = await client.partner.buildCurveGraphAndCreateConfig({
     buildCurveGraphParam: {
         totalTokenSupply: 1000000000,
@@ -601,7 +606,7 @@ const transaction = await client.partner.buildCurveGraphAndCreateConfig({
         creatorLockedLpPercentage: 25,
         creatorTradingFeePercentage: 0,
         leftover: 10000,
-        kFactor: 1.2,
+        liquidityWeights,
     },
     feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     leftoverReceiver: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
@@ -613,18 +618,18 @@ const transaction = await client.partner.buildCurveGraphAndCreateConfig({
 
 #### Notes
 
-- Use `buildCurveGraphAndCreateConfig` when you want to create a curve structure based on k factor.
-- What does k factor do?
-    - The `kFactor` is an exponential scaling parameter that determines how liquidity is distributed across the curve's price ranges.
-    - For each segment of the curve, the liquidity is scaled by k^i (where i is the segment index).
-    - This means that as you move along the curve (from lower to higher price ranges), the liquidity in each segment is multiplied by a higher power of k.
-- Effects of changing k factor
-    1. `k = 1`: All segments have the same liquidity. The curve is "flat" in terms of liquidity distribution.
-    2. `k > 1`: Liquidity increases exponentially as you move to higher price ranges.
-        - The curve is "steeper" at **higher prices**: more liquidity is available at higher prices, less at lower prices.
-        - This means that the price will move less for a given trade at higher prices (more resistance), and price will move more for a given trade at lower prices (less resistance).
-    3. `k < 1`: Liquidity decreases exponentially as you move to higher price ranges.
-        - The curve is "steeper" at **lower prices**: more liquidity is available at lower prices, less at higher prices.
+- Use `buildCurveGraphAndCreateConfig` when you want to create a curve structure based on liquidity weights.
+- What does liquidity weights do?
+    - The `liquidityWeights` is an array of numbers that determines how liquidity is distributed across the curve's price ranges.
+    - The maximum number of liquidity weights[i] is `16`.
+    - Each element in the array represents the liquidity weight for a specific curve segment (total `16` curve segments).
+    - For each segment of the curve, the liquidity is scaled by liquidityWeights[i] (where `i` is the liquidityWeight index).
+    - This means that as you move along the curve (from lower to higher price ranges), the liquidity in each curve segment can be controlled.
+- Effects of changing liquidity weights
+    1. `All liquidityWeights[i] === 1`: All segments have the same liquidity. The curve is "flat" in terms of liquidity distribution.
+    2. `liquidityWeights[i] < liquidityWeights[i+1]`: Lower liquidity at lower prices.
+        - This means that the price will move more for a given trade at lower prices (less resistance), and price will move less for a given trade at higher prices (more resistance).
+    3. `liquidityWeights[i] > liquidityWeights[i+1]`: Higher liquidity at lower prices.
         - This means that the price will move less for a given trade at lower prices (more resistance), and price will move more for a given trade at higher prices (less resistance).
 
 ---

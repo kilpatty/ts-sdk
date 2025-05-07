@@ -1,6 +1,5 @@
 import BN from 'bn.js'
 import { SafeMath } from './safeMath'
-import { RESOLUTION } from '../constants'
 import { Rounding } from '../types'
 
 /**

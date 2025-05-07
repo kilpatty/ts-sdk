@@ -239,7 +239,7 @@ export function buildCurveGraph(
         leftover,
         initialMarketCap,
         migrationMarketCap,
-        kFactor,
+        liquidityWeights,
     } = buildCurveGraphParam
 
     const {
@@ -291,13 +291,12 @@ export function buildCurveGraph(
         .sub(totalVestingAmount)
         .sub(totalLeftover)
 
-    let kDecimal = new Decimal(kFactor)
     let sumFactor = new Decimal(0)
     let pmaxWeight = new Decimal(pMax.toString())
     for (let i = 1; i < 17; i++) {
         let pi = new Decimal(sqrtPrices[i].toString())
         let piMinus = new Decimal(sqrtPrices[i - 1].toString())
-        let k = kDecimal.pow(new Decimal(i - 1))
+        let k = new Decimal(liquidityWeights[i - 1])
         let w1 = pi.sub(piMinus).div(pi.mul(piMinus))
         let w2 = pi.sub(piMinus).div(pmaxWeight.mul(pmaxWeight))
         let weight = k.mul(w1.add(w2))
@@ -309,7 +308,7 @@ export function buildCurveGraph(
     // construct curve
     let curve = []
     for (let i = 0; i < 16; i++) {
-        let k = kDecimal.pow(new Decimal(i))
+        let k = new Decimal(liquidityWeights[i])
         let liquidity = convertDecimalToBN(l1.mul(k))
         let sqrtPrice = i < 15 ? sqrtPrices[i + 1] : pMax
         curve.push({
@@ -326,6 +325,7 @@ export function buildCurveGraph(
     )
 
     let migrationAmount = totalSwapAndMigrationAmount.sub(swapBaseAmountBuffer)
+    // let percentage = migrationAmount.mul(new BN(100)).div(totalSupply)
 
     // calculate migration threshold
     let migrationQuoteThreshold = migrationAmount.mul(pMax).mul(pMax).shrn(128)

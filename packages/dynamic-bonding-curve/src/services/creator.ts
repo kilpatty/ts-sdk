@@ -8,13 +8,10 @@ import {
 import {
     ClaimCreatorTradingFeeParam,
     CreateVirtualPoolMetadataParam,
-    CreateVirtualPoolMetadataParameters,
     CreatorWithdrawSurplusParam,
-    TokenType,
 } from '../types'
 import {
     createAssociatedTokenAccountIdempotentInstruction,
-    TOKEN_2022_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 import { DynamicBondingCurveProgram } from './program'

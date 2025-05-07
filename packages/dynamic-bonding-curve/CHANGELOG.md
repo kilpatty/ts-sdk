@@ -30,3 +30,16 @@
     - `deriveDammV2PoolAddress`
 
 ---
+
+## [1.1.3] - 2025-05-07
+
+### Release Notes
+
+#### Feature Changes
+
+- fix: updated `buildCurveGraphAndCreateConfig` to use `liquidityWeights[]` instead of `kFactor`
+- fix: added payer option to `claimCreatorTradingFee` and `claimPartnerTradingFee` functions
+- fix: updated dynamic fee calculation to be 20% of minimum base fee
+- fix: changed `createPoolAndBuy` buyer from `payer` to `poolCreator`
+
+---
