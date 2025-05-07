@@ -627,10 +627,10 @@ const transaction = await client.partner.buildCurveGraphAndCreateConfig({
     - This means that as you move along the curve (from lower to higher price ranges), the liquidity in each curve segment can be controlled.
 - Effects of changing liquidity weights
     1. `All liquidityWeights[i] === 1`: All segments have the same liquidity. The curve is "flat" in terms of liquidity distribution.
-    2. `liquidityWeights[i] < liquidityWeights[i+1]`: Higher liquidity at lower prices.
-        - This means that the price will move less for a given trade at lower prices (more resistance), and price will move more for a given trade at higher prices (less resistance).
-    3. `liquidityWeights[i] > liquidityWeights[i+1]`: Higher liquidity at higher prices.
+    2. `liquidityWeights[i] < liquidityWeights[i+1]`: Lower liquidity at lower prices.
         - This means that the price will move more for a given trade at lower prices (less resistance), and price will move less for a given trade at higher prices (more resistance).
+    3. `liquidityWeights[i] > liquidityWeights[i+1]`: Higher liquidity at lower prices.
+        - This means that the price will move less for a given trade at lower prices (more resistance), and price will move more for a given trade at higher prices (less resistance).
 
 ---
 
