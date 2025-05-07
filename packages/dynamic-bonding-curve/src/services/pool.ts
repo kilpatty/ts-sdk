@@ -18,7 +18,6 @@ import {
 import {
     deriveDbcPoolAddress,
     deriveMintMetadata,
-    deriveDbcPoolMetadata,
     getTokenProgram,
     unwrapSOLInstruction,
     wrapSOLInstruction,

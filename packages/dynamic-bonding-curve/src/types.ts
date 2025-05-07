@@ -272,7 +272,7 @@ export type BuildCurveByMarketCapParam = BuildCurveBaseParam & {
 export type BuildCurveGraphParam = BuildCurveBaseParam & {
     initialMarketCap: number
     migrationMarketCap: number
-    kFactor: number
+    liquidityWeights: number[]
 }
 
 export type BuildCurveAndCreateConfigParam = {

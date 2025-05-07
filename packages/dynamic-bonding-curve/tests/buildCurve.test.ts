@@ -17,6 +17,7 @@ import {
 import { convertBNToDecimal } from './utils/common'
 import { getMinBaseFeeBps } from '../src/helpers'
 import { FEE_DENOMINATOR, BASIS_POINT_MAX } from '../src/constants'
+import Decimal from 'decimal.js'
 
 describe('buildCurve tests', () => {
     const baseParams = {
@@ -131,13 +132,20 @@ describe('buildCurve tests', () => {
         }
     })
 
-    test('build graph curve', () => {
-        console.log('\n testing build curve graph...')
+    test('build exponential graph curve and k > 1', () => {
+        console.log('\n testing build exponential curve graph and k > 1...')
+        let liquidityWeights: number[] = []
+        for (let i = 0; i < 16; i++) {
+            liquidityWeights[i] = new Decimal(1.2)
+                .pow(new Decimal(i))
+                .toNumber()
+        }
+
         const curveGraphParams = {
             ...baseParams,
             initialMarketCap: 30,
             migrationMarketCap: 300,
-            kFactor: 1.2,
+            liquidityWeights,
         }
 
         const config = buildCurveGraph(curveGraphParams)
@@ -146,6 +154,121 @@ describe('buildCurve tests', () => {
         expect(config).toBeDefined()
         expect(config.migrationQuoteThreshold).toBeDefined()
         expect(config.curve).toBeDefined()
+        expect(config.curve.length).toBeGreaterThan(0)
+    })
+
+    test('build exponential graph curve and k < 1', () => {
+        console.log('\n testing build exponential curve graph and k < 1...')
+        let liquidityWeights: number[] = []
+        for (let i = 0; i < 16; i++) {
+            liquidityWeights[i] = new Decimal(0.6)
+                .pow(new Decimal(i))
+                .toNumber()
+        }
+
+        const curveGraphParams = {
+            ...baseParams,
+            initialMarketCap: 30,
+            migrationMarketCap: 300,
+            liquidityWeights,
+        }
+
+        const config = buildCurveGraph(curveGraphParams)
+
+        console.log('config for graph curve:', convertBNToDecimal(config))
+        expect(config).toBeDefined()
+        expect(config.migrationQuoteThreshold).toBeDefined()
+        expect(config.curve).toBeDefined()
+        expect(config.curve.length).toBeGreaterThan(0)
+    })
+
+    test('build graph curve with customisable curve values v1', () => {
+        console.log(
+            '\n testing build graph curve with customisable curve values v1...'
+        )
+        let liquidityWeights: number[] = []
+        for (let i = 0; i < 16; i++) {
+            liquidityWeights[i] = new Decimal(0.6)
+                .pow(new Decimal(i))
+                .toNumber()
+        }
+
+        const curveGraphParams = {
+            ...baseParams,
+            initialMarketCap: 15,
+            migrationMarketCap: 255,
+            liquidityWeights,
+            tokenQuoteDecimal: TokenDecimal.SIX,
+            tokenBaseDecimal: TokenDecimal.NINE,
+            leftover: 200000000,
+            migrationOption: MigrationOption.MET_DAMM,
+            lockedVesting: {
+                amountPerPeriod: new BN(1),
+                cliffDurationFromMigrationTime: new BN(1),
+                frequency: new BN(1),
+                numberOfPeriod: new BN(1),
+                cliffUnlockAmount: new BN(10_000_000 * 10 ** TokenDecimal.SIX), // 10M for creator
+            },
+        }
+
+        const config = buildCurveGraph(curveGraphParams)
+
+        console.log('config for graph curve:', convertBNToDecimal(config))
+        console.log(
+            'migrationQuoteThreshold: %d',
+            config.migrationQuoteThreshold
+                .div(new BN(10 ** TokenDecimal.SIX))
+                .toString()
+        )
+        expect(config).toBeDefined()
+        expect(config.migrationQuoteThreshold).toBeDefined()
+        expect(config.curve).toBeDefined()
+        expect(config.migrationQuoteThreshold.toString()).toEqual('15812522')
+        expect(config.curve.length).toBeGreaterThan(0)
+    })
+
+    test('build graph curve with customisable curve values v2', () => {
+        console.log(
+            '\n testing build graph curve with customisable curve values v2...'
+        )
+        let liquidityWeights: number[] = []
+        for (let i = 0; i < 16; i++) {
+            if (i < 13) {
+                liquidityWeights[i] = new Decimal(1.2)
+                    .pow(new Decimal(i))
+                    .toNumber()
+            } else {
+                liquidityWeights[i] = 2.13
+            }
+        }
+
+        const curveGraphParams = {
+            ...baseParams,
+            totalTokenSupply: 1000000000,
+            initialMarketCap: 5000,
+            migrationMarketCap: 1000000,
+            liquidityWeights,
+            tokenQuoteDecimal: TokenDecimal.SIX,
+            tokenBaseDecimal: TokenDecimal.SIX,
+            leftover: 1000,
+            migrationOption: MigrationOption.MET_DAMM,
+        }
+
+        const config = buildCurveGraph(curveGraphParams)
+
+        console.log('config for graph curve:', convertBNToDecimal(config))
+        console.log(
+            'migrationQuoteThreshold: %d',
+            config.migrationQuoteThreshold
+                .div(new BN(10 ** TokenDecimal.SIX))
+                .toString()
+        )
+        expect(config).toBeDefined()
+        expect(config.migrationQuoteThreshold).toBeDefined()
+        expect(config.curve).toBeDefined()
+        expect(config.migrationQuoteThreshold.toString()).toEqual(
+            '100381849371'
+        )
         expect(config.curve.length).toBeGreaterThan(0)
     })
 

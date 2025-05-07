@@ -349,8 +349,10 @@ export const getMigrationThresholdPrice = (
             }
         }
         if (!amountLeft.isZero()) {
+            let migrationThresholdStr = migrationThreshold.toString()
+            let amountLeftStr = amountLeft.toString()
             throw Error(
-                'Not enough liquidity, amountLeft: ' + amountLeft.toString()
+                `Not enough liquidity, migrationThreshold: ${migrationThresholdStr}  amountLeft: ${amountLeftStr}`
             )
         }
     }
