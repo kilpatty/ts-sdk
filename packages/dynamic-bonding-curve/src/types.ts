@@ -326,6 +326,7 @@ export type ClaimTradingFeeParam = {
     pool: PublicKey
     maxBaseAmount: BN
     maxQuoteAmount: BN
+    receiver?: PublicKey
 }
 
 export type CreateVirtualPoolMetadataParam = {
@@ -424,6 +425,7 @@ export type ClaimCreatorTradingFeeParam = {
     pool: PublicKey
     maxBaseAmount: BN
     maxQuoteAmount: BN
+    receiver?: PublicKey
 }
 
 export type CreatorWithdrawSurplusParam = {

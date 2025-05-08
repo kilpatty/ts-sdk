@@ -226,18 +226,25 @@ export class PartnerService extends DynamicBondingCurveProgram {
     async claimPartnerTradingFee(
         claimTradingFeeParam: ClaimTradingFeeParam
     ): Promise<Transaction> {
-        const poolState = await this.state.getPool(claimTradingFeeParam.pool)
+        const {
+            feeClaimer,
+            payer,
+            pool,
+            maxBaseAmount,
+            maxQuoteAmount,
+            receiver,
+        } = claimTradingFeeParam
+
+        const poolState = await this.state.getPool(pool)
 
         if (!poolState) {
-            throw new Error(
-                `Pool not found: ${claimTradingFeeParam.pool.toString()}`
-            )
+            throw new Error(`Pool not found: ${pool.toString()}`)
         }
 
         const poolConfigState = await this.state.getPoolConfig(poolState.config)
 
         if (!poolConfigState) {
-            throw new Error(`Pool config not found: ${poolState.toString()}`)
+            throw new Error(`Pool config not found: ${pool.toString()}`)
         }
 
         const tokenBaseProgram = getTokenProgram(poolConfigState.tokenType)
@@ -251,8 +258,8 @@ export class PartnerService extends DynamicBondingCurveProgram {
             ataTokenB: tokenQuoteAccount,
             instructions: preInstructions,
         } = await this.prepareTokenAccounts(
-            claimTradingFeeParam.feeClaimer,
-            claimTradingFeeParam.payer,
+            receiver ? receiver : feeClaimer,
+            payer,
             poolState.baseMint,
             poolConfigState.quoteMint,
             tokenBaseProgram,
@@ -263,27 +270,24 @@ export class PartnerService extends DynamicBondingCurveProgram {
 
         if (isSOLQuoteMint) {
             const unwrapSolIx = unwrapSOLInstruction(
-                claimTradingFeeParam.feeClaimer
+                receiver ? receiver : feeClaimer
             )
             unwrapSolIx && postInstructions.push(unwrapSolIx)
         }
 
         return this.program.methods
-            .claimTradingFee(
-                claimTradingFeeParam.maxBaseAmount,
-                claimTradingFeeParam.maxQuoteAmount
-            )
+            .claimTradingFee(maxBaseAmount, maxQuoteAmount)
             .accountsPartial({
                 poolAuthority: this.poolAuthority,
                 config: poolState.config,
-                pool: claimTradingFeeParam.pool,
+                pool,
                 tokenAAccount: tokenBaseAccount,
                 tokenBAccount: tokenQuoteAccount,
                 baseVault: poolState.baseVault,
                 quoteVault: poolState.quoteVault,
                 baseMint: poolState.baseMint,
                 quoteMint: poolConfigState.quoteMint,
-                feeClaimer: claimTradingFeeParam.feeClaimer,
+                feeClaimer,
                 tokenBaseProgram,
                 tokenQuoteProgram,
             })

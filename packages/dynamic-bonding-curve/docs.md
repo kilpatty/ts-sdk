@@ -693,6 +693,7 @@ interface ClaimTradingFeeParam {
     payer: PublicKey // The wallet that will pay for the transaction
     maxBaseAmount: BN // The maximum base amount to claim (use 0 to not claim base tokens)
     maxQuoteAmount: BN // The maximum quote amount to claim (use 0 to not claim quote tokens)
+    receiver?: PublicKey | null // The wallet that will receive the tokens (optional)
 }
 ```
 
@@ -709,6 +710,7 @@ const transaction = await client.partner.claimPartnerTradingFee({
     payer: new PublicKey('payer1234567890abcdefghijklmnopqrstuvwxyz'),
     maxBaseAmount: new BN(1000000),
     maxQuoteAmount: new BN(1000000),
+    receiver: new PublicKey('receiver1234567890abcdefghijklmnopqrstuvwxyz'),
 })
 ```
 
@@ -716,6 +718,7 @@ const transaction = await client.partner.claimPartnerTradingFee({
 
 - The feeClaimer of the pool must be the same as the feeClaimer in the `ClaimTradingFeeParam` params.
 - You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
+- If you indicated a receiver, the receiver will be required to sign the transaction as well.
 
 ---
 
@@ -1412,6 +1415,7 @@ interface ClaimCreatorTradingFeeParam {
     pool: PublicKey // The pool address
     maxBaseAmount: BN // The maximum amount of base tokens to claim
     maxQuoteAmount: BN // The maximum amount of quote tokens to claim
+    receiver?: PublicKey | null // The wallet that will receive the tokens (optional)
 }
 ```
 
@@ -1428,6 +1432,7 @@ const transaction = await client.creator.claimCreatorTradingFee({
     pool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
     maxBaseAmount: new BN(1000000000),
     maxQuoteAmount: new BN(1000000000),
+    receiver: new PublicKey('receiver1234567890abcdefghijklmnopqrstuvwxyz'),
 })
 ```
 
@@ -1435,6 +1440,7 @@ const transaction = await client.creator.claimCreatorTradingFee({
 
 - The creator of the pool must be the same as the creator in the `ClaimTradingFeeParam` params.
 - You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
+- If you indicated a receiver, the receiver **is not** required to sign the transaction.
 
 ---
 
