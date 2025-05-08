@@ -32,6 +32,7 @@
     "@types/bn.js": "^5.1.6",
     "@types/bun": "latest",
     "eslint": "^9.24.0",
+    "solana-bankrun": "^0.4.0",
     "tsup": "^8.4.0",
     "tsx": "^4.19.3"
   },
@@ -43,7 +44,6 @@
     "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.0",
     "bn.js": "^5.2.1",
-    "decimal.js": "^10.5.0",
-    "solana-bankrun": "^0.4.0"
+    "decimal.js": "^10.5.0"
   }
 }
