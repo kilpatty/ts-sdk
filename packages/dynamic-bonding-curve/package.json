@@ -13,6 +13,9 @@
     "damm-v2",
     "dynamic-vaults"
   ],
+  "files": [
+    "dist"
+  ],
   "description": "A Typescript SDK for interacting with the Dynamic Bonding Curve on Meteora.",
   "license": "MIT",
   "type": "module",
