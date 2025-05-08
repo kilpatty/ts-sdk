@@ -68,8 +68,14 @@ export class CreatorService extends DynamicBondingCurveProgram {
     async claimCreatorTradingFee(
         claimCreatorTradingFeeParam: ClaimCreatorTradingFeeParam
     ): Promise<Transaction> {
-        const { creator, pool, maxBaseAmount, maxQuoteAmount } =
-            claimCreatorTradingFeeParam
+        const {
+            creator,
+            pool,
+            maxBaseAmount,
+            maxQuoteAmount,
+            receiver,
+            payer,
+        } = claimCreatorTradingFeeParam
 
         const poolState = await this.state.getPool(pool)
 
@@ -95,8 +101,8 @@ export class CreatorService extends DynamicBondingCurveProgram {
             ataTokenB: tokenQuoteAccount,
             instructions: preInstructions,
         } = await this.prepareTokenAccounts(
-            claimCreatorTradingFeeParam.creator,
-            claimCreatorTradingFeeParam.payer,
+            receiver ? receiver : creator,
+            payer,
             poolState.baseMint,
             poolConfigState.quoteMint,
             tokenBaseProgram,
@@ -106,7 +112,9 @@ export class CreatorService extends DynamicBondingCurveProgram {
         const isSOLQuoteMint = isNativeSol(poolConfigState.quoteMint)
 
         if (isSOLQuoteMint) {
-            const unwrapSolIx = unwrapSOLInstruction(creator)
+            const unwrapSolIx = unwrapSOLInstruction(
+                receiver ? receiver : creator
+            )
             unwrapSolIx && postInstructions.push(unwrapSolIx)
         }
 
