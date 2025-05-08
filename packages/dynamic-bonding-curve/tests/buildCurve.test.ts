@@ -199,6 +199,7 @@ describe('buildCurve tests', () => {
 
         const curveGraphParams = {
             ...baseParams,
+            totalTokenSupply: 1000000000,
             initialMarketCap: 15,
             migrationMarketCap: 255,
             liquidityWeights,
