@@ -2,45 +2,6 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
-## [1.1.5] - 2025-05-19
-
-### Added
-
-- New curve building functions:
-    - `buildCurveWithTwoSegments`
-    - `buildCurveWithCreatorFirstBuy`
-- New utility functions:
-    - `getPoolByBaseMint`
-    - `calculateInitialPriceFromSqrtStartPrice`
-    - `calculateFeeScheduler`
-    - `calculateLockedVesting`
-
-### Changed
-
-- Updated documentation in `docs.md`
-- Optimized client-side filtering in `getPoolsQuoteFeesByConfig` and `getPoolsBaseFeesByConfig`
-- `buildCurveByMarketCap` now renamed to `buildCurveWithMarketCap`
-
-### Removed
-
-- Deprecated curve building functions:
-    - `buildCurveAndCreateConfig`
-    - `buildCurveAndCreateConfigByMarketCap`
-    - `buildCurveGraphAndCreateConfig`
-- Removed `getTokenDecimal` state function from client.state
-
-### Breaking Changes
-
-- Curve building functions are now split into two steps:
-    1. Use helper functions to build curve config:
-        - `buildCurve`
-        - `buildCurveWithMarketCap`
-        - `buildCurveWithTwoSegments`
-        - `buildCurveWithLiquidityWeights`
-        - `buildCurveWithCreatorFirstBuy`
-    2. Call `createConfig` with the built config
-- Added required `tempWSolAcc` parameter to fee claiming functions when receiver differs from creator/feeClaimer
-
 ## [1.1.4] - 2025-05-09
 
 ### Added
