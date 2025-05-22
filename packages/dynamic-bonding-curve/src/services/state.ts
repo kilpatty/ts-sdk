@@ -16,11 +16,6 @@ import {
     VirtualPool,
     VirtualPoolMetadata,
 } from '../types'
-import {
-    getMint,
-    TOKEN_2022_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-} from '@solana/spl-token'
 import { ProgramAccount } from '@coral-xyz/anchor'
 import BN from 'bn.js'
 
@@ -238,7 +233,7 @@ export class StateService extends DynamicBondingCurveProgram {
      * @param poolAddress - The address of the pool
      * @returns Object containing current and total fee metrics
      */
-    async getPoolFeeMetrics(poolAddress: PublicKey): Promise<{
+    async getPoolFeeMetrics(poolAddress: PublicKey | string): Promise<{
         current: {
             partnerBaseFee: BN
             partnerQuoteFee: BN
@@ -274,7 +269,7 @@ export class StateService extends DynamicBondingCurveProgram {
      * @param poolAddress - The address of the pool
      * @returns Object containing current and total fee metrics
      */
-    async getPoolCreatorFeeMetrics(poolAddress: PublicKey): Promise<{
+    async getPoolCreatorFeeMetrics(poolAddress: PublicKey | string): Promise<{
         creatorBaseFee: BN
         creatorQuoteFee: BN
     }> {
@@ -294,7 +289,7 @@ export class StateService extends DynamicBondingCurveProgram {
      * @param poolAddress - The address of the pool
      * @returns Object containing current and total fee metrics
      */
-    async getPoolPartnerFeeMetrics(poolAddress: PublicKey): Promise<{
+    async getPoolPartnerFeeMetrics(poolAddress: PublicKey | string): Promise<{
         partnerBaseFee: BN
         partnerQuoteFee: BN
     }> {
@@ -314,7 +309,7 @@ export class StateService extends DynamicBondingCurveProgram {
      * @param configAddress - The address of the pool config
      * @returns Array of pools with their quote fees
      */
-    async getPoolsQuoteFeesByConfig(configAddress: PublicKey): Promise<
+    async getPoolsQuoteFeesByConfig(configAddress: PublicKey | string): Promise<
         Array<{
             poolAddress: PublicKey
             partnerQuoteFee: BN
@@ -337,7 +332,7 @@ export class StateService extends DynamicBondingCurveProgram {
      * @param configAddress - The address of the pool config
      * @returns Array of pools with their base fees
      */
-    async getPoolsBaseFeesByConfig(configAddress: PublicKey): Promise<
+    async getPoolsBaseFeesByConfig(configAddress: PublicKey | string): Promise<
         Array<{
             poolAddress: PublicKey
             partnerBaseFee: BN
