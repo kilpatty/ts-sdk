@@ -3,7 +3,7 @@ import {
     PublicKey,
     TransactionInstruction,
     type Connection,
-    type Transaction,
+    Transaction,
 } from '@solana/web3.js'
 import { DynamicBondingCurveProgram } from './program'
 import {
@@ -225,7 +225,8 @@ export class PoolService extends DynamicBondingCurveProgram {
         const configKey = new PublicKey(config)
         const quoteMintToken = new PublicKey(createConfigAndPoolParam.quoteMint)
         const payerAddress = new PublicKey(payer)
-        const poolCreatorAddress = new PublicKey(poolCreator)
+
+        const tx = new Transaction()
 
         // create config transaction
         const configTx = await this.program.methods
@@ -238,6 +239,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 payer,
             })
             .transaction()
+        tx.add(configTx)
 
         const pool = deriveDbcPoolAddress(quoteMintToken, baseMint, configKey)
         const baseVault = deriveDbcTokenVaultAddress(pool, baseMint)
@@ -250,7 +252,7 @@ export class PoolService extends DynamicBondingCurveProgram {
             pool,
             config: configKey,
             payer: payerAddress,
-            poolCreator: poolCreatorAddress,
+            poolCreator,
             baseMint,
             baseVault,
             quoteVault,
@@ -263,13 +265,13 @@ export class PoolService extends DynamicBondingCurveProgram {
                 ...baseParams,
                 mintMetadata,
             })
-            configTx.add(poolTx)
+            tx.add(poolTx)
         } else {
             const poolTx = await this.initializeToken2022Pool(baseParams)
-            configTx.add(poolTx)
+            tx.add(poolTx)
         }
 
-        return configTx
+        return tx
     }
 
     /**
