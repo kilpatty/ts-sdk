@@ -216,16 +216,6 @@ export type CreateConfigParam = Omit<
 > &
     ConfigParameters
 
-export type CreateConfigAndPoolParam = CreateConfigParam & {
-    createPoolParam: {
-        name: string
-        symbol: string
-        uri: string
-        poolCreator: PublicKey
-        baseMint: PublicKey
-    }
-}
-
 export type CreateDammV1MigrationMetadataParam = {
     payer: PublicKey
     virtualPool: PublicKey
@@ -303,22 +293,91 @@ export type BuildCurveWithCreatorFirstBuyParam = BuildCurveBaseParam & {
     }
 }
 
+export type InitializePoolBaseParam = {
+    name: string
+    symbol: string
+    uri: string
+    pool: PublicKey
+    config: PublicKey
+    payer: PublicKey
+    poolCreator: PublicKey
+    baseMint: PublicKey
+    baseVault: PublicKey
+    quoteVault: PublicKey
+    quoteMint: PublicKey
+    mintMetadata?: PublicKey
+}
+
+export type CreatePoolParam = {
+    name: string
+    symbol: string
+    uri: string
+    payer: PublicKey
+    poolCreator: PublicKey
+    config: PublicKey
+    baseMint: PublicKey
+}
+
+export type CreateConfigAndPoolParam = CreateConfigParam & {
+    createPoolParam: {
+        name: string
+        symbol: string
+        uri: string
+        poolCreator: PublicKey
+        baseMint: PublicKey
+    }
+}
+
+export type CreatePoolAndBuyParam = {
+    createPoolParam: CreatePoolParam
+    buyAmount: BN
+    minimumAmountOut: BN
+    referralTokenAccount: PublicKey | null
+}
+
+export type SwapParam = {
+    owner: PublicKey
+    pool: PublicKey
+    amountIn: BN
+    minimumAmountOut: BN
+    swapBaseForQuote: boolean
+    referralTokenAccount: PublicKey | null
+}
+
+export type SwapQuoteParam = {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    swapBaseForQuote: boolean
+    amountIn: BN
+    slippageBps?: number
+    hasReferral: boolean
+    currentPoint: BN
+}
+
 export type MigrateToDammV1Param = {
     payer: PublicKey
     virtualPool: PublicKey
     dammConfig: PublicKey
 }
 
-export type MigrateToDammV2Param = {
-    payer: PublicKey
-    virtualPool: PublicKey
-    dammConfig: PublicKey
-}
+export type MigrateToDammV2Param = MigrateToDammV1Param
 
 export type MigrateToDammV2Response = {
     transaction: Transaction
     firstPositionNftKeypair: Keypair
     secondPositionNftKeypair: Keypair
+}
+
+export type DammLpTokenParam = {
+    payer: PublicKey
+    virtualPool: PublicKey
+    dammConfig: PublicKey
+    isPartner: boolean
+}
+
+export type CreateLockerParam = {
+    payer: PublicKey
+    virtualPool: PublicKey
 }
 
 export type ClaimTradingFeeParam = {
@@ -348,96 +407,6 @@ export type ClaimPartnerTradingFeeWithQuoteMintSolParam =
         tempWSolAcc: PublicKey
     }
 
-export type CreateVirtualPoolMetadataParam = {
-    virtualPool: PublicKey
-    name: string
-    website: string
-    logo: string
-    creator: PublicKey
-    payer: PublicKey
-}
-
-export type CreatePartnerMetadataParam = {
-    name: string
-    website: string
-    logo: string
-    feeClaimer: PublicKey
-    payer: PublicKey
-}
-
-export type InitializePoolBaseParam = {
-    name: string
-    symbol: string
-    uri: string
-    pool: PublicKey
-    config: PublicKey
-    payer: PublicKey
-    poolCreator: PublicKey
-    baseMint: PublicKey
-    baseVault: PublicKey
-    quoteVault: PublicKey
-    quoteMint: PublicKey
-    mintMetadata?: PublicKey
-}
-
-export type CreatePoolParam = {
-    name: string
-    symbol: string
-    uri: string
-    payer: PublicKey
-    poolCreator: PublicKey
-    config: PublicKey
-    baseMint: PublicKey
-}
-
-export type CreatePoolAndBuyParam = {
-    createPoolParam: CreatePoolParam
-    buyAmount: BN
-    minimumAmountOut: BN
-    referralTokenAccount: PublicKey | null
-}
-
-export type SwapParam = {
-    owner: PublicKey
-    pool: PublicKey
-    amountIn: BN
-    minimumAmountOut: BN
-    swapBaseForQuote: boolean
-    referralTokenAccount: PublicKey | null
-}
-
-export type SwapQuoteParam = {
-    virtualPool: VirtualPool
-    config: PoolConfig
-    swapBaseForQuote: boolean
-    amountIn: BN
-    slippageBps?: number
-    hasReferral: boolean
-    currentPoint: BN
-}
-
-export type DammLpTokenParam = {
-    payer: PublicKey
-    virtualPool: PublicKey
-    dammConfig: PublicKey
-    isPartner: boolean
-}
-
-export type PartnerWithdrawSurplusParam = {
-    feeClaimer: PublicKey
-    virtualPool: PublicKey
-}
-
-export type WithdrawLeftoverParam = {
-    payer: PublicKey
-    virtualPool: PublicKey
-}
-
-export type CreateLockerParam = {
-    payer: PublicKey
-    virtualPool: PublicKey
-}
-
 export type ClaimCreatorTradingFeeParam = {
     creator: PublicKey
     payer: PublicKey
@@ -464,9 +433,36 @@ export type ClaimCreatorTradingFeeWithQuoteMintSolParam =
         tempWSolAcc: PublicKey
     }
 
+export type PartnerWithdrawSurplusParam = {
+    feeClaimer: PublicKey
+    virtualPool: PublicKey
+}
+
 export type CreatorWithdrawSurplusParam = {
     creator: PublicKey
     virtualPool: PublicKey
+}
+
+export type WithdrawLeftoverParam = {
+    payer: PublicKey
+    virtualPool: PublicKey
+}
+
+export type CreateVirtualPoolMetadataParam = {
+    virtualPool: PublicKey
+    name: string
+    website: string
+    logo: string
+    creator: PublicKey
+    payer: PublicKey
+}
+
+export type CreatePartnerMetadataParam = {
+    name: string
+    website: string
+    logo: string
+    feeClaimer: PublicKey
+    payer: PublicKey
 }
 
 ////////////////

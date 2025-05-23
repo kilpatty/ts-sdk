@@ -55,7 +55,7 @@ export class StateService extends DynamicBondingCurveProgram {
     async getPoolConfigsByOwner(
         owner: PublicKey | string
     ): Promise<ProgramAccount<PoolConfig>[]> {
-        const filters = owner ? createProgramAccountFilter(owner, 72) : []
+        const filters = createProgramAccountFilter(owner, 72)
         return this.program.account.poolConfig.all(filters)
     }
 
