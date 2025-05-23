@@ -6,9 +6,20 @@ All notable changes to the Dynamic Bonding Curve SDK will be documented in this 
 
 ### Added
 
+- `getPoolByBaseMint` function
+
+### Changed
+
+- Optimised `getPoolsQuoteFeesByConfig` and `getPoolsBaseFeesByConfig` functions
+- Fixed `getDammV1MigrationMetadata` and `getDammV2MigrationMetadata` functions to derive the metadata address from the pool address
+
+## [1.1.5] - 2025-05-23
+
+### Added
+
 - `createConfigAndPool` function
 
-### Changed 
+### Changed
 
 - `docs.md` updated with the correct createPool format
 - `CHANGELOG.md` switched to DES format
