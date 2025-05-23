@@ -222,6 +222,16 @@ export type CreateConfigParam = Omit<
 > &
     ConfigParameters
 
+export type CreateConfigAndPoolParam = CreateConfigParam & {
+    createPoolParam: {
+        name: string
+        symbol: string
+        uri: string
+        poolCreator: PublicKey
+        baseMint: PublicKey
+    }
+}
+
 export type CreateDammV1MigrationMetadataParam = {
     payer: PublicKey
     virtualPool: PublicKey
