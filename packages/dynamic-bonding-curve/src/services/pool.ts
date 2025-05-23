@@ -223,7 +223,7 @@ export class PoolService extends DynamicBondingCurveProgram {
         validateConfigParameters({ ...configParam, leftoverReceiver })
 
         const configKey = new PublicKey(config)
-        const quoteMintToken = new PublicKey(createConfigAndPoolParam.quoteMint)
+        const quoteMintToken = new PublicKey(quoteMint)
         const payerAddress = new PublicKey(payer)
 
         const tx = new Transaction()
