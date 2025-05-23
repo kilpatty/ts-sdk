@@ -7,6 +7,7 @@ import {
 } from '@solana/web3.js'
 import { DynamicBondingCurveProgram } from './program'
 import {
+    CreateConfigAndPoolParam,
     CreatePoolAndBuyParam,
     InitializePoolBaseParam,
     PrepareSwapParams,
@@ -28,7 +29,10 @@ import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { METAPLEX_PROGRAM_ID } from '../constants'
 import { swapQuote } from '../math/swapQuote'
 import { StateService } from './state'
-import { validateSwapAmount } from '../helpers/validation'
+import {
+    validateConfigParameters,
+    validateSwapAmount,
+} from '../helpers/validation'
 
 export class PoolService extends DynamicBondingCurveProgram {
     private state: StateService
@@ -193,6 +197,79 @@ export class PoolService extends DynamicBondingCurveProgram {
         } else {
             return this.initializeToken2022Pool(baseParams)
         }
+    }
+
+    /**
+     * Create a new config and pool
+     * @param createConfigAndPoolParam - The parameters for the config and pool
+     * @returns A new config and pool
+     */
+    async createConfigAndPool(
+        createConfigAndPoolParam: CreateConfigAndPoolParam
+    ): Promise<Transaction> {
+        const {
+            config,
+            feeClaimer,
+            leftoverReceiver,
+            quoteMint,
+            payer,
+            ...configParam
+        } = createConfigAndPoolParam
+
+        const { baseMint, name, symbol, uri, poolCreator } =
+            createConfigAndPoolParam.createPoolParam
+
+        // error checks
+        validateConfigParameters({ ...configParam, leftoverReceiver })
+
+        const configKey = new PublicKey(config)
+        const quoteMintToken = new PublicKey(createConfigAndPoolParam.quoteMint)
+        const payerAddress = new PublicKey(payer)
+        const poolCreatorAddress = new PublicKey(poolCreator)
+
+        // create config transaction
+        const configTx = await this.program.methods
+            .createConfig(configParam)
+            .accountsPartial({
+                config,
+                feeClaimer,
+                leftoverReceiver,
+                quoteMint,
+                payer,
+            })
+            .transaction()
+
+        const pool = deriveDbcPoolAddress(quoteMintToken, baseMint, configKey)
+        const baseVault = deriveDbcTokenVaultAddress(pool, baseMint)
+        const quoteVault = deriveDbcTokenVaultAddress(pool, quoteMintToken)
+
+        const baseParams: InitializePoolBaseParam = {
+            name,
+            symbol,
+            uri,
+            pool,
+            config: configKey,
+            payer: payerAddress,
+            poolCreator: poolCreatorAddress,
+            baseMint,
+            baseVault,
+            quoteVault,
+            quoteMint: quoteMintToken,
+        }
+
+        if (createConfigAndPoolParam.tokenType === TokenType.SPL) {
+            const mintMetadata = deriveMintMetadata(baseMint)
+            const poolTx = await this.initializeSplPool({
+                ...baseParams,
+                mintMetadata,
+            })
+            configTx.add(poolTx)
+        } else {
+            const poolTx = await this.initializeToken2022Pool(baseParams)
+            configTx.add(poolTx)
+        }
+
+        return configTx
     }
 
     /**
