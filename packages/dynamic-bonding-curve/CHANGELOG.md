@@ -2,6 +2,17 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.1.5] - 2025-05-23
+
+### Added
+
+- `createConfigAndPool` function
+
+### Changed 
+
+- `docs.md` updated with the correct createPool format
+- `CHANGELOG.md` switched to DES format
+
 ## [1.1.4] - 2025-05-09
 
 ### Added
