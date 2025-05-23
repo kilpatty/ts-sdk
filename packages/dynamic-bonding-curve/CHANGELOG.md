@@ -12,7 +12,7 @@ All notable changes to the Dynamic Bonding Curve SDK will be documented in this 
 - `getLockedVestingParams` function
 - `getBaseFeeParams` function
 - `DAMM_V1_MIGRATION_FEE_ADDRESS` and `DAMM_V2_MIGRATION_FEE_ADDRESS` fee address array
-- `getPriceFromSqrtStartPrice` function
+- `getPriceFromSqrtPrice` function
 
 ### Changed
 

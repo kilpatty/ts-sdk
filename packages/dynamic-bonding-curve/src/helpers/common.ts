@@ -181,7 +181,7 @@ export function getTotalTokenSupply(
  * @param tokenQuoteDecimal - The quote token decimal
  * @returns The initial price
  */
-export function getPriceFromSqrtStartPrice(
+export function getPriceFromSqrtPrice(
     sqrtStartPrice: BN,
     tokenBaseDecimal: TokenDecimal,
     tokenQuoteDecimal: TokenDecimal

@@ -726,8 +726,12 @@ export function buildCurveWithCreatorFirstBuy(
     )
 
     // find p0 (initial price of curve)
-    let firstBuyQuoteAmount = new BN(quoteAmount * 10 ** tokenQuoteDecimal)
-    let firstBuyBaseAmount = new BN(baseAmount * 10 ** tokenBaseDecimal)
+    let firstBuyQuoteAmount = new BN(quoteAmount).mul(
+        new BN(10).pow(new BN(tokenQuoteDecimal))
+    )
+    let firstBuyBaseAmount = new BN(baseAmount).mul(
+        new BN(10).pow(new BN(tokenBaseDecimal))
+    )
 
     const cliffFeeNumerator = bpsToFeeNumerator(startingFeeBps)
     let quoteAmountAfterFee = firstBuyQuoteAmount
