@@ -1,5 +1,5 @@
 import { expect, test, describe } from 'bun:test'
-import { buildCurve } from '../src/helpers'
+import { buildCurveWithCreatorFirstBuy } from '../src/helpers'
 import BN from 'bn.js'
 import {
     ActivationType,
@@ -10,9 +10,10 @@ import {
     TokenDecimal,
     TokenType,
 } from '../src'
+import Decimal from 'decimal.js'
 import { convertBNToDecimal } from './utils/common'
 
-describe('buildCurve tests', () => {
+describe('buildCurveWithCreatorFirstBuy tests', () => {
     const baseParams = {
         totalTokenSupply: 1000000000,
         migrationOption: MigrationOption.MET_DAMM_V2,
@@ -45,15 +46,38 @@ describe('buildCurve tests', () => {
         leftover: 10000,
     }
 
-    test('build curve with percentage and threshold parameters', () => {
-        console.log(
-            '\n testing build curve with percentage and threshold parameters...'
-        )
-        const config = buildCurve({
+    test('build curve with creator first buy', () => {
+        console.log('\n testing build curve with creator first buy...')
+
+        let liquidityWeights: number[] = []
+        for (let i = 0; i < 16; i++) {
+            if (i < 15) {
+                liquidityWeights[i] = new Decimal(1.45)
+                    .pow(new Decimal(i))
+                    .toNumber()
+            } else {
+                liquidityWeights[i] = 90
+            }
+        }
+        console.log('liquidityWeights:', liquidityWeights)
+
+        const curveGraphParams = {
             ...baseParams,
-            percentageSupplyOnMigration: 2.983257229832572,
-            migrationQuoteThreshold: 95.07640791476408,
-        })
+            totalTokenSupply: 1000000000,
+            initialMarketCap: 200000,
+            migrationMarketCap: 1000000,
+            tokenQuoteDecimal: TokenDecimal.NINE,
+            tokenBaseDecimal: TokenDecimal.SIX,
+            leftover: 200000000,
+            liquidityWeights,
+            migrationOption: MigrationOption.MET_DAMM,
+            creatorFirstBuyOption: {
+                quoteAmount: 0.01,
+                baseAmount: 10000000,
+            },
+        }
+
+        const config = buildCurveWithCreatorFirstBuy(curveGraphParams)
 
         console.log(
             'migrationQuoteThreshold: %d',

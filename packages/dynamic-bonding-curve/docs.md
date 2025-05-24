@@ -83,7 +83,7 @@
 
 ### createConfig
 
-Creates a new configuration key that will dictate the behavior of all pools created with this key. This is where you set the pool fees, migration options, the bonding curve shape, and more.
+Creates a new config key that will dictate the behavior of all pools created with this key. This is where you set the pool fees, migration options, the bonding curve shape, and more.
 
 #### Function
 
@@ -126,18 +126,18 @@ interface CreateConfigParam {
     tokenType: number // 0: SPL, 1: Token2022
     tokenDecimal: number // The number of decimals for the token
     migrationQuoteThreshold: BN // The quote threshold for migration
-    partnerLpPercentage: number // The percentage of the pool that will be allocated to the partner (0-100)
-    creatorLpPercentage: number // The percentage of the pool that will be allocated to the creator (0-100)
-    partnerLockedLpPercentage: number // The percentage of the pool that will be allocated to the partner locked (0-100)
-    creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked (0-100)
+    partnerLpPercentage: number // The percentage of the LP that will be allocated to the partner in the graduated pool (0-100)
+    creatorLpPercentage: number // The percentage of the LP that will be allocated to the creator in the graduated pool (0-100)
+    partnerLockedLpPercentage: number // The percentage of the locked LP that will be allocated to the partner in the graduated pool (0-100)
+    creatorLockedLpPercentage: number // The percentage of the locked LP that will be allocated to the creator in the graduated pool (0-100)
     sqrtStartPrice: BN // The starting price of the pool
     lockedVesting: {
         // Optional locked vesting (BN (0) for all fields for no vesting)
         amountPerPeriod: BN // The amount of tokens that will be vested per period
-        cliffDurationFromMigrationTime: BN // The duration of the cliff period
+        cliffDurationFromMigrationTime: BN // The duration of the waiting time before the vesting starts
         frequency: BN // The frequency of the vesting
-        numberOfPeriod: BN // The number of periods
-        cliffUnlockAmount: BN // The amount of tokens that will be unlocked at the cliff
+        numberOfPeriod: BN // The number of periods of the vesting
+        cliffUnlockAmount: BN // The amount of tokens that will be unlocked when vesting starts
     }
     migrationFeeOption: number // 0: Fixed 25bps, 1: Fixed 30bps, 2: Fixed 100bps, 3: Fixed 200bps, 4: Fixed 400bps, 5: Fixed 600bps
     tokenSupply: {
@@ -419,7 +419,7 @@ const transaction = await client.partner.partnerWithdrawSurplus({
 
 ### buildCurve
 
-Builds a new constant product curve.
+Builds a new constant product curve. Does the math for you.
 
 #### Function
 
@@ -438,19 +438,22 @@ interface BuildCurveParam {
     tokenBaseDecimal: number // The number of decimals for the base token
     tokenQuoteDecimal: number // The number of decimals for the quote token
     lockedVesting: {
-        // Optional locked vesting (BN (0) for all fields for no vesting)
-        amountPerPeriod: BN // The amount of tokens that will be vested per period
-        cliffDurationFromMigrationTime: BN // The duration of the cliff period
-        frequency: BN // The frequency of the vesting
-        numberOfPeriod: BN // The number of periods
-        cliffUnlockAmount: BN // The amount of tokens that will be unlocked at the cliff
+        // Optional locked vesting (0 for all fields for no vesting)
+        totalLockedVestingAmount: number // The total locked vesting amount
+        numberOfVestingPeriod: number // The number of vesting periods
+        cliffUnlockAmount: number // The amount of tokens that will be unlocked when vesting starts
+        totalVestingDuration: number // The total vesting duration in seconds
+        cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
+        tokenBaseDecimal: number // The number of decimals for the base token
+        activationType: number // 0: Slot, 1: Timestamp
     }
     feeSchedulerParam: {
-        // Optional fee scheduler (BN (0) for all fields for no fee scheduler)
-        numberOfPeriod: number // The number of periods
-        reductionFactor: number // The reduction factor
-        periodFrequency: number // The frequency of the fee reduction
+        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
+        startingFeeBps: number // The starting fee in basis points
+        endingFeeBps: number // The ending fee in basis points
         feeSchedulerMode: number // 0: Linear, 1: Exponential
+        numberOfPeriod: number // The number of periods
+        totalDuration: number // The total duration of the fee scheduler
     }
     baseFeeBps: number // The base fee in bps
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
@@ -476,34 +479,34 @@ A `ConfigParameters` object.
 ```typescript
 const curveConfig = buildCurve({
     totalTokenSupply: 1000000000,
-    percentageSupplyOnMigration: 3,
-    migrationQuoteThreshold: 0.5,
-    migrationOption: 0,
-    tokenBaseDecimal: 9,
-    tokenQuoteDecimal: 9,
-    lockedVesting: {
-        amountPerPeriod: new BN(1000000),
-        cliffDurationFromMigrationTime: new BN(0),
-        frequency: new BN(30 * 24 * 60 * 60),
-        numberOfPeriod: new BN(12),
-        cliffUnlockAmount: new BN(5000000),
+    percentageSupplyOnMigration: 10,
+    migrationQuoteThreshold: 300,
+    migrationOption: MigrationOption.MET_DAMM,
+    tokenBaseDecimal: TokenDecimal.SIX,
+    tokenQuoteDecimal: TokenDecimal.NINE,
+    lockedVestingParam: {
+        totalLockedVestingAmount: 0,
+        numberOfVestingPeriod: 0,
+        cliffUnlockAmount: 0,
+        totalVestingDuration: 0,
+        cliffDurationFromMigrationTime: 0,
     },
     feeSchedulerParam: {
+        startingFeeBps: 100,
+        endingFeeBps: 100,
         numberOfPeriod: 0,
-        reductionFactor: 0,
-        periodFrequency: 0,
-        feeSchedulerMode: 0,
+        totalDuration: 0,
+        feeSchedulerMode: FeeSchedulerMode.Linear,
     },
-    baseFeeBps: 100,
     dynamicFeeEnabled: true,
-    activationType: 0,
-    collectFeeMode: 0,
-    migrationFeeOption: 0,
-    tokenType: 0,
-    partnerLpPercentage: 25,
-    creatorLpPercentage: 25,
-    partnerLockedLpPercentage: 25,
-    creatorLockedLpPercentage: 25,
+    activationType: ActivationType.Slot,
+    collectFeeMode: CollectFeeMode.OnlyQuote,
+    migrationFeeOption: MigrationFeeOption.FixedBps100,
+    tokenType: TokenType.SPL,
+    partnerLpPercentage: 0,
+    creatorLpPercentage: 0,
+    partnerLockedLpPercentage: 100,
+    creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
     leftover: 10000,
 })
@@ -545,19 +548,22 @@ interface BuildCurveWithMarketCapParam {
     tokenBaseDecimal: number // The number of decimals for the base token
     tokenQuoteDecimal: number // The number of decimals for the quote token
     lockedVesting: {
-        // Optional locked vesting (BN (0) for all fields for no vesting)
-        amountPerPeriod: BN // The amount of tokens that will be vested per period
-        cliffDurationFromMigrationTime: BN // The duration of the cliff period
-        frequency: BN // The frequency of the vesting
-        numberOfPeriod: BN // The number of periods
-        cliffUnlockAmount: BN // The amount of tokens that will be unlocked at the cliff
+        // Optional locked vesting (0 for all fields for no vesting)
+        totalLockedVestingAmount: number // The total locked vesting amount
+        numberOfVestingPeriod: number // The number of vesting periods
+        cliffUnlockAmount: number // The amount of tokens that will be unlocked when vesting starts
+        totalVestingDuration: number // The total vesting duration in seconds
+        cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
+        tokenBaseDecimal: number // The number of decimals for the base token
+        activationType: number // 0: Slot, 1: Timestamp
     }
     feeSchedulerParam: {
-        // Optional fee scheduler (BN (0) for all fields for no fee scheduler)
-        numberOfPeriod: number // The number of periods
-        reductionFactor: number // The reduction factor
-        periodFrequency: number // The frequency of the fee reduction
+        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
+        startingFeeBps: number // The starting fee in basis points
+        endingFeeBps: number // The ending fee in basis points
         feeSchedulerMode: number // 0: Linear, 1: Exponential
+        numberOfPeriod: number // The number of periods
+        totalDuration: number // The total duration of the fee scheduler
     }
     baseFeeBps: number // The base fee in bps
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
@@ -583,36 +589,36 @@ A `ConfigParameters` object.
 ```typescript
 const curveConfig = buildCurveWithMarketCap({
     totalTokenSupply: 1000000000,
-    initialMarketCap: 98.58,
-    migrationMarketCap: 3187.61,
-    migrationOption: 0,
-    tokenBaseDecimal: 9,
-    tokenQuoteDecimal: 9,
-    lockedVesting: {
-        amountPerPeriod: new BN(0),
-        cliffDurationFromMigrationTime: new BN(0),
-        frequency: new BN(0),
-        numberOfPeriod: new BN(0),
-        cliffUnlockAmount: new BN(0),
+    initialMarketCap: 100,
+    migrationMarketCap: 3000,
+    migrationOption: MigrationOption.MET_DAMM,
+    tokenBaseDecimal: TokenDecimal.SIX,
+    tokenQuoteDecimal: TokenDecimal.NINE,
+    lockedVestingParam: {
+        totalLockedVestingAmount: 0,
+        numberOfVestingPeriod: 0,
+        cliffUnlockAmount: 0,
+        totalVestingDuration: 0,
+        cliffDurationFromMigrationTime: 0,
     },
     feeSchedulerParam: {
+        startingFeeBps: 100,
+        endingFeeBps: 100,
         numberOfPeriod: 0,
-        reductionFactor: 0,
-        periodFrequency: 0,
-        feeSchedulerMode: 0,
+        totalDuration: 0,
+        feeSchedulerMode: FeeSchedulerMode.Linear,
     },
-    baseFeeBps: 100,
     dynamicFeeEnabled: true,
-    activationType: 0,
-    collectFeeMode: 0,
-    migrationFeeOption: 0,
+    activationType: ActivationType.Slot,
+    collectFeeMode: CollectFeeMode.OnlyQuote,
+    migrationFeeOption: MigrationFeeOption.FixedBps100,
     tokenType: TokenType.SPL,
-    partnerLpPercentage: 25,
-    creatorLpPercentage: 25,
-    partnerLockedLpPercentage: 25,
-    creatorLockedLpPercentage: 25,
+    partnerLpPercentage: 0,
+    creatorLpPercentage: 0,
+    partnerLockedLpPercentage: 100,
+    creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
-    leftover: 10000,
+    leftover: 0,
 })
 
 const transaction = await client.partner.createConfig({
@@ -627,7 +633,7 @@ const transaction = await client.partner.createConfig({
 
 #### Notes
 
-- `buildCurveByMarketCap` when you want to create a curve structure based on initial market cap and migration market cap.
+- `buildCurveWithMarketCap` when you want to create a curve structure based on initial market cap and migration market cap.
 
 ---
 
@@ -653,19 +659,22 @@ interface BuildCurveWithTwoSegmentsParam {
     tokenBaseDecimal: number // The number of decimals for the base token
     tokenQuoteDecimal: number // The number of decimals for the quote token
     lockedVesting: {
-        // Optional locked vesting (BN (0) for all fields for no vesting)
-        amountPerPeriod: BN // The amount of tokens that will be vested per period
-        cliffDurationFromMigrationTime: BN // The duration of the cliff period
-        frequency: BN // The frequency of the vesting
-        numberOfPeriod: BN // The number of periods
-        cliffUnlockAmount: BN // The amount of tokens that will be unlocked at the cliff
+        // Optional locked vesting (0 for all fields for no vesting)
+        totalLockedVestingAmount: number // The total locked vesting amount
+        numberOfVestingPeriod: number // The number of vesting periods
+        cliffUnlockAmount: number // The amount of tokens that will be unlocked when vesting starts
+        totalVestingDuration: number // The total vesting duration in seconds
+        cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
+        tokenBaseDecimal: number // The number of decimals for the base token
+        activationType: number // 0: Slot, 1: Timestamp
     }
     feeSchedulerParam: {
-        // Optional fee scheduler (BN (0) for all fields for no fee scheduler)
-        numberOfPeriod: number // The number of periods
-        reductionFactor: number // The reduction factor
-        periodFrequency: number // The frequency of the fee reduction
+        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
+        startingFeeBps: number // The starting fee in basis points
+        endingFeeBps: number // The ending fee in basis points
         feeSchedulerMode: number // 0: Linear, 1: Exponential
+        numberOfPeriod: number // The number of periods
+        totalDuration: number // The total duration of the fee scheduler
     }
     baseFeeBps: number // The base fee in bps
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
@@ -691,37 +700,37 @@ A `ConfigParameters` object.
 ```typescript
 const curveConfig = buildCurveWithTwoSegments({
     totalTokenSupply: 1000000000,
-    initialMarketCap: 98.58,
-    migrationMarketCap: 3187.61,
-    percentageSupplyOnMigration: 20,
-    migrationOption: 0,
-    tokenBaseDecimal: 9,
-    tokenQuoteDecimal: 9,
-    lockedVesting: {
-        amountPerPeriod: new BN(0),
-        cliffDurationFromMigrationTime: new BN(0),
-        frequency: new BN(0),
-        numberOfPeriod: new BN(0),
-        cliffUnlockAmount: new BN(0),
+    initialMarketCap: 5000,
+    migrationMarketCap: 1000000,
+    percentageSupplyOnMigration: 10,
+    migrationOption: MigrationOption.MET_DAMM_V2,
+    tokenBaseDecimal: TokenDecimal.SIX,
+    tokenQuoteDecimal: TokenDecimal.SIX,
+    lockedVestingParam: {
+        totalLockedVestingAmount: 0,
+        numberOfVestingPeriod: 0,
+        cliffUnlockAmount: 0,
+        totalVestingDuration: 0,
+        cliffDurationFromMigrationTime: 0,
     },
     feeSchedulerParam: {
+        startingFeeBps: 100,
+        endingFeeBps: 100,
         numberOfPeriod: 0,
-        reductionFactor: 0,
-        periodFrequency: 0,
-        feeSchedulerMode: 0,
+        totalDuration: 0,
+        feeSchedulerMode: FeeSchedulerMode.Linear,
     },
-    baseFeeBps: 100,
     dynamicFeeEnabled: true,
-    activationType: 0,
-    collectFeeMode: 0,
-    migrationFeeOption: 0,
+    activationType: ActivationType.Slot,
+    collectFeeMode: CollectFeeMode.OnlyQuote,
+    migrationFeeOption: MigrationFeeOption.FixedBps100,
     tokenType: TokenType.SPL,
-    partnerLpPercentage: 25,
-    creatorLpPercentage: 25,
-    partnerLockedLpPercentage: 25,
-    creatorLockedLpPercentage: 25,
+    partnerLpPercentage: 100,
+    creatorLpPercentage: 0,
+    partnerLockedLpPercentage: 0,
+    creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
-    leftover: 10000,
+    leftover: 1000000,
 })
 
 const transaction = await client.partner.createConfig({
@@ -761,19 +770,22 @@ interface BuildCurveWithLiquidityWeightsParam {
     tokenBaseDecimal: number // The number of decimals for the base token
     tokenQuoteDecimal: number // The number of decimals for the quote token
     lockedVesting: {
-        // Optional locked vesting (BN (0) for all fields for no vesting)
-        amountPerPeriod: BN // The amount of tokens that will be vested per period
-        cliffDurationFromMigrationTime: BN // The duration of the cliff period
-        frequency: BN // The frequency of the vesting
-        numberOfPeriod: BN // The number of periods
-        cliffUnlockAmount: BN // The amount of tokens that will be unlocked at the cliff
+        // Optional locked vesting (0 for all fields for no vesting)
+        totalLockedVestingAmount: number // The total locked vesting amount
+        numberOfVestingPeriod: number // The number of vesting periods
+        cliffUnlockAmount: number // The amount of tokens that will be unlocked when vesting starts
+        totalVestingDuration: number // The total vesting duration in seconds
+        cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
+        tokenBaseDecimal: number // The number of decimals for the base token
+        activationType: number // 0: Slot, 1: Timestamp
     }
     feeSchedulerParam: {
-        // Optional fee scheduler (BN (0) for all fields for no fee scheduler)
-        numberOfPeriod: number // The number of periods
-        reductionFactor: number // The reduction factor
-        periodFrequency: number // The frequency of the fee reduction
+        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
+        startingFeeBps: number // The starting fee in basis points
+        endingFeeBps: number // The ending fee in basis points
         feeSchedulerMode: number // 0: Linear, 1: Exponential
+        numberOfPeriod: number // The number of periods
+        totalDuration: number // The total duration of the fee scheduler
     }
     baseFeeBps: number // The base fee in bps
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
@@ -805,36 +817,36 @@ for (let i = 0; i < 16; i++) {
 
 const curveConfig = buildCurveWithLiquidityWeights({
     totalTokenSupply: 1000000000,
-    initialMarketCap: 98.58,
-    migrationMarketCap: 3187.61,
-    migrationOption: 0,
-    tokenBaseDecimal: 9,
-    tokenQuoteDecimal: 9,
-    lockedVesting: {
-        amountPerPeriod: new BN(0),
-        cliffDurationFromMigrationTime: new BN(0),
-        frequency: new BN(0),
-        numberOfPeriod: new BN(0),
-        cliffUnlockAmount: new BN(0),
+    initialMarketCap: 5000,
+    migrationMarketCap: 1000000,
+    migrationOption: MigrationOption.MET_DAMM_V2,
+    tokenBaseDecimal: TokenDecimal.SIX,
+    tokenQuoteDecimal: TokenDecimal.SIX,
+    lockedVestingParam: {
+        totalLockedVestingAmount: 0,
+        numberOfVestingPeriod: 0,
+        cliffUnlockAmount: 0,
+        totalVestingDuration: 0,
+        cliffDurationFromMigrationTime: 0,
     },
     feeSchedulerParam: {
+        startingFeeBps: 100,
+        endingFeeBps: 100,
         numberOfPeriod: 0,
-        reductionFactor: 0,
-        periodFrequency: 0,
-        feeSchedulerMode: 0,
+        totalDuration: 0,
+        feeSchedulerMode: FeeSchedulerMode.Linear,
     },
-    baseFeeBps: 100,
     dynamicFeeEnabled: true,
-    activationType: 0,
-    collectFeeMode: 0,
-    migrationFeeOption: 0,
+    activationType: ActivationType.Slot,
+    collectFeeMode: CollectFeeMode.OnlyQuote,
+    migrationFeeOption: MigrationFeeOption.FixedBps100,
     tokenType: TokenType.SPL,
-    partnerLpPercentage: 25,
-    creatorLpPercentage: 25,
-    partnerLockedLpPercentage: 25,
-    creatorLockedLpPercentage: 25,
+    partnerLpPercentage: 100,
+    creatorLpPercentage: 0,
+    partnerLockedLpPercentage: 0,
+    creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
-    leftover: 10000,
+    leftover: 1000000,
     liquidityWeights,
 })
 
@@ -858,7 +870,7 @@ const transaction = await client.partner.createConfig({
     - For each segment of the curve, the liquidity is scaled by liquidityWeights[i] (where `i` is the liquidityWeight index).
     - This means that as you move along the curve (from lower to higher price ranges), the liquidity in each curve segment can be controlled.
 - Effects of changing liquidity weights
-    1. `All liquidityWeights[i] === 1`: All segments have the same liquidity. The curve is "flat".
+    1. `All liquidityWeights[i] === 1`: All segments have the same liquidity. The curve is linear.
     2. `liquidityWeights[i] < liquidityWeights[i+1]`: Lower liquidity at lower prices.
         - This means that the price will move more for a given trade at lower prices (less resistance), and price will move less for a given trade at higher prices (more resistance).
     3. `liquidityWeights[i] > liquidityWeights[i+1]`: Higher liquidity at lower prices.
@@ -887,19 +899,22 @@ interface BuildCurveWithCreatorFirstBuyParam {
     tokenBaseDecimal: number // The number of decimals for the base token
     tokenQuoteDecimal: number // The number of decimals for the quote token
     lockedVesting: {
-        // Optional locked vesting (BN (0) for all fields for no vesting)
-        amountPerPeriod: BN // The amount of tokens that will be vested per period
-        cliffDurationFromMigrationTime: BN // The duration of the cliff period
-        frequency: BN // The frequency of the vesting
-        numberOfPeriod: BN // The number of periods
-        cliffUnlockAmount: BN // The amount of tokens that will be unlocked at the cliff
+        // Optional locked vesting (0 for all fields for no vesting)
+        totalLockedVestingAmount: number // The total locked vesting amount
+        numberOfVestingPeriod: number // The number of vesting periods
+        cliffUnlockAmount: number // The amount of tokens that will be unlocked when vesting starts
+        totalVestingDuration: number // The total vesting duration in seconds
+        cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
+        tokenBaseDecimal: number // The number of decimals for the base token
+        activationType: number // 0: Slot, 1: Timestamp
     }
     feeSchedulerParam: {
-        // Optional fee scheduler (BN (0) for all fields for no fee scheduler)
-        numberOfPeriod: number // The number of periods
-        reductionFactor: number // The reduction factor
-        periodFrequency: number // The frequency of the fee reduction
+        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
+        startingFeeBps: number // The starting fee in basis points
+        endingFeeBps: number // The ending fee in basis points
         feeSchedulerMode: number // 0: Linear, 1: Exponential
+        numberOfPeriod: number // The number of periods
+        totalDuration: number // The total duration of the fee scheduler
     }
     baseFeeBps: number // The base fee in bps
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
@@ -933,38 +948,38 @@ for (let i = 0; i < 16; i++) {
     liquidityWeights[i] = new Decimal(1.2).pow(new Decimal(i)).toNumber()
 }
 
-const curveConfig = buildCurveWithLiquidityWeights({
+const curveConfig = buildCurveWithCreatorFirstBuy({
     totalTokenSupply: 1000000000,
-    initialMarketCap: 98.58,
-    migrationMarketCap: 3187.61,
-    migrationOption: 0,
-    tokenBaseDecimal: 9,
-    tokenQuoteDecimal: 9,
-    lockedVesting: {
-        amountPerPeriod: new BN(0),
-        cliffDurationFromMigrationTime: new BN(0),
-        frequency: new BN(0),
-        numberOfPeriod: new BN(0),
-        cliffUnlockAmount: new BN(0),
+    initialMarketCap: 5000,
+    migrationMarketCap: 1000000,
+    migrationOption: MigrationOption.MET_DAMM_V2,
+    tokenBaseDecimal: TokenDecimal.SIX,
+    tokenQuoteDecimal: TokenDecimal.SIX,
+    lockedVestingParam: {
+        totalLockedVestingAmount: 0,
+        numberOfVestingPeriod: 0,
+        cliffUnlockAmount: 0,
+        totalVestingDuration: 0,
+        cliffDurationFromMigrationTime: 0,
     },
     feeSchedulerParam: {
+        startingFeeBps: 100,
+        endingFeeBps: 100,
         numberOfPeriod: 0,
-        reductionFactor: 0,
-        periodFrequency: 0,
-        feeSchedulerMode: 0,
+        totalDuration: 0,
+        feeSchedulerMode: FeeSchedulerMode.Linear,
     },
-    baseFeeBps: 100,
     dynamicFeeEnabled: true,
-    activationType: 0,
-    collectFeeMode: 0,
-    migrationFeeOption: 0,
+    activationType: ActivationType.Slot,
+    collectFeeMode: CollectFeeMode.OnlyQuote,
+    migrationFeeOption: MigrationFeeOption.FixedBps100,
     tokenType: TokenType.SPL,
-    partnerLpPercentage: 25,
-    creatorLpPercentage: 25,
-    partnerLockedLpPercentage: 25,
-    creatorLockedLpPercentage: 25,
+    partnerLpPercentage: 100,
+    creatorLpPercentage: 0,
+    partnerLockedLpPercentage: 0,
+    creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
-    leftover: 10000,
+    leftover: 1000000,
     liquidityWeights,
     creatorFirstBuyOption: {
         quoteAmount: 0.01,
@@ -1134,7 +1149,7 @@ A transaction that requires signatures from the payer, the baseMint keypair, and
 
 ```typescript
 const transaction = await client.pool.createConfigAndPool({
-     payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
     feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     leftoverReceiver: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
@@ -2597,7 +2612,7 @@ function getBaseFeeParams(
 ```typescript
 startingFeeBps: number // The starting fee in basis points
 endingFeeBps: number // The ending fee in basis points
-feeSchedulerMode: number // The fee scheduler mode
+feeSchedulerMode: number // 0: Linear, 1: Exponential
 numberOfPeriod: number // The number of periods
 totalDuration: number // The total duration of the fee scheduler
 ```
@@ -2678,10 +2693,10 @@ function getLockedVestingParams(
 ```typescript
 totalLockedVestingAmount: number // The total locked vesting amount
 numberOfVestingPeriod: number // The number of vesting periods
-cliffUnlockAmount: number // The cliff unlock amount
+cliffUnlockAmount: number // The amount of tokens that will be unlocked when vesting starts
 totalVestingDuration: number // The total vesting duration in seconds
-cliffDurationFromMigrationTime: number // The cliff duration from migration time
-tokenBaseDecimal: TokenDecimal // The token base decimal
+cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
+tokenBaseDecimal: TokenDecimal // The number of decimals for the base token
 activationType: ActivationType // The activation type
 ```
 

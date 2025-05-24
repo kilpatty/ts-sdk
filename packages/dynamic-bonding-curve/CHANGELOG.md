@@ -2,16 +2,37 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
-## [1.1.5] - 2025-05-23
+## [1.1.6] - 2025-05-23
 
 ### Added
 
 - `getPoolByBaseMint` function
+- `buildCurveWithCreatorFirstBuy` function
+- `buildCurveWithTwoSegments` function
+- `getLockedVestingParams` function
+- `getBaseFeeParams` function
+- `DAMM_V1_MIGRATION_FEE_ADDRESS` and `DAMM_V2_MIGRATION_FEE_ADDRESS` fee address array
+- `getPriceFromSqrtPrice` function
 
 ### Changed
 
 - Optimised `getPoolsQuoteFeesByConfig` and `getPoolsBaseFeesByConfig` functions
 - Fixed `getDammV1MigrationMetadata` and `getDammV2MigrationMetadata` functions to derive the metadata address from the pool address
+- Removed `buildCurveAndCreateConfig`, `buildCurveAndCreateConfigByMarketCap` and `buildCurveGraphAndCreateConfig` functions
+- Added `tempWSolAcc` parameter to `claimPartnerTradingFee` and `claimCreatorTradingFee` functions
+- Removed `getTokenDecimal` state function
+
+### Breaking Changes
+
+- Curve building functions are now split into two steps:
+    1. Use helper functions to build curve config:
+        - `buildCurve`
+        - `buildCurveWithMarketCap`
+        - `buildCurveWithTwoSegments`
+        - `buildCurveWithLiquidityWeights`
+        - `buildCurveWithCreatorFirstBuy`
+    2. Call `createConfig` with the built config
+- Added required `tempWSolAcc` parameter to fee claiming functions when receiver !== creator || feeClaimer
 
 ## [1.1.5] - 2025-05-23
 
