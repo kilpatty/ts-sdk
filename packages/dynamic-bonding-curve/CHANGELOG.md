@@ -32,7 +32,7 @@ All notable changes to the Dynamic Bonding Curve SDK will be documented in this 
         - `buildCurveWithLiquidityWeights`
         - `buildCurveWithCreatorFirstBuy`
     2. Call `createConfig` with the built config
-- Added required `tempWSolAcc` parameter to fee claiming functions when receiver !== creator/feeClaimer
+- Added required `tempWSolAcc` parameter to fee claiming functions when receiver !== creator || feeClaimer
 
 ## [1.1.5] - 2025-05-23
 

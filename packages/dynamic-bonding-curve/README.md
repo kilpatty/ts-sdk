@@ -47,6 +47,10 @@ bun install
 bun test
 ```
 
+### Manual Migrator
+
+We have created a [Manual Migrator UI](https://migrator.meteora.ag) that allows you to manually migrate a pool to either DAMM V1 or DAMM V2. Compatible with both Mainnet and Devnet pools.
+
 ### Program Address
 
 - Mainnet-beta: dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN
@@ -56,6 +60,8 @@ bun test
 
 #### DAMM V1:
 
+Accessible via `DAMM_V1_MIGRATION_FEE_ADDRESS[i]` in the SDK.
+
 - MigrationFeeOption.FixedBps25 == 0: 8f848CEy8eY6PhJ3VcemtBDzPPSD4Vq7aJczLZ3o8MmX
 - MigrationFeeOption.FixedBps30 == 1: HBxB8Lf14Yj8pqeJ8C4qDb5ryHL7xwpuykz31BLNYr7S
 - MigrationFeeOption.FixedBps100 == 2: 7v5vBdUQHTNeqk1HnduiXcgbvCyVEZ612HLmYkQoAkik
@@ -64,6 +70,8 @@ bun test
 - MigrationFeeOption.FixedBps600 == 5: 8cdKo87jZU2R12KY1BUjjRPwyjgdNjLGqSGQyrDshhud
 
 #### DAMM V2:
+
+Accessible via `DAMM_V2_MIGRATION_FEE_ADDRESS[i]` in the SDK.
 
 - MigrationFeeOption.FixedBps25 == 0: 7F6dnUcRuyM2TwR8myT1dYypFXpPSxqwKNSFNkxyNESd
 - MigrationFeeOption.FixedBps30 == 1: 2nHK1kju6XjphBLbNxpM5XRGFj7p9U8vvNzyZiha1z6k
