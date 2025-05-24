@@ -182,14 +182,14 @@ export function getTotalTokenSupply(
  * @returns The initial price
  */
 export function getPriceFromSqrtPrice(
-    sqrtStartPrice: BN,
+    sqrtPrice: BN,
     tokenBaseDecimal: TokenDecimal,
     tokenQuoteDecimal: TokenDecimal
 ): Decimal {
     // lamport price = sqrtStartPrice * sqrtStartPrice / 2^128
-    const sqrtStartPriceDecimal = new Decimal(sqrtStartPrice.toString())
-    const lamportPrice = sqrtStartPriceDecimal
-        .mul(sqrtStartPriceDecimal)
+    const sqrtPriceDecimal = new Decimal(sqrtPrice.toString())
+    const lamportPrice = sqrtPriceDecimal
+        .mul(sqrtPriceDecimal)
         .div(new Decimal(2).pow(128))
 
     // token price = lamport price * 10^(base_decimal - quote_decimal)
