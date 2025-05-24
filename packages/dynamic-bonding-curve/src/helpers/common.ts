@@ -423,6 +423,7 @@ export const getFirstCurve = (
  * @param curve - The curve
  * @param lockedVesting - The locked vesting
  * @param migrationOption - The migration option
+ * @param leftover - The leftover
  * @returns The total supply
  */
 export const getTotalSupplyFromCurve = (

@@ -64,8 +64,8 @@ describe('buildCurveWithCreatorFirstBuy tests', () => {
         const curveGraphParams = {
             ...baseParams,
             totalTokenSupply: 1000000000,
-            initialMarketCap: 15,
-            migrationMarketCap: 255,
+            initialMarketCap: 200000,
+            migrationMarketCap: 1000000,
             tokenQuoteDecimal: TokenDecimal.NINE,
             tokenBaseDecimal: TokenDecimal.SIX,
             leftover: 200000000,

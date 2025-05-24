@@ -725,9 +725,15 @@ export function buildCurveWithCreatorFirstBuy(
         tokenQuoteDecimal
     )
 
+    if (quoteAmount === 0 && baseAmount > 0) {
+        throw new Error('quoteAmount must be greater than 0')
+    }
+
     // find p0 (initial price of curve)
-    let firstBuyQuoteAmount = new BN(quoteAmount).mul(
-        new BN(10).pow(new BN(tokenQuoteDecimal))
+    let firstBuyQuoteAmount = new BN(
+        new Decimal(quoteAmount)
+            .mul(new Decimal(10).pow(tokenQuoteDecimal))
+            .toNumber()
     )
     let firstBuyBaseAmount = new BN(baseAmount).mul(
         new BN(10).pow(new BN(tokenBaseDecimal))
@@ -775,6 +781,7 @@ export function buildCurveWithCreatorFirstBuy(
     let totalLeftover = new BN(leftover).mul(
         new BN(10).pow(new BN(tokenBaseDecimal))
     )
+
     let totalVestingAmount = getTotalVestingAmount(lockedVesting)
 
     let totalSwapAndMigrationAmount = totalSupply
@@ -809,6 +816,7 @@ export function buildCurveWithCreatorFirstBuy(
             liquidity,
         })
     }
+
     // reverse to calculate swap amount and migration amount
     let swapBaseAmount = getBaseTokenForSwap(p0, pMax, curve)
     let swapBaseAmountBuffer = getSwapAmountWithBuffer(

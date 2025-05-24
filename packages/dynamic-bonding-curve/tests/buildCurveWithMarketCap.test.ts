@@ -106,7 +106,12 @@ describe('buildCurveWithMarketCap tests', () => {
             lockedVestingParams.activationType
         )
 
+        console.log('lockedVesting', convertBNToDecimal(lockedVesting))
+
         const totalVestingAmount = getTotalVestingAmount(lockedVesting)
+
+        console.log('totalVestingAmount', totalVestingAmount.toString())
+
         const vestingPercentage = totalVestingAmount
             .mul(new BN(100))
             .div(
@@ -129,5 +134,10 @@ describe('buildCurveWithMarketCap tests', () => {
 
             expect(migrationPercentage).toBeLessThan(100 - vestingPercentage)
         }
+
+        expect(totalVestingAmount.toNumber()).toBe(
+            lockedVestingParams.lockedVestingParam.totalLockedVestingAmount *
+                10 ** lockedVestingParams.tokenBaseDecimal
+        )
     })
 })

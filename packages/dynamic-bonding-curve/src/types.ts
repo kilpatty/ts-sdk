@@ -202,14 +202,6 @@ export enum Rounding {
 // TYPES //
 ///////////
 
-export type BaseFee = {
-    cliffFeeNumerator: BN
-    numberOfPeriod: number
-    periodFrequency: BN
-    reductionFactor: BN
-    feeSchedulerMode: FeeSchedulerMode
-}
-
 export type CreateConfigParam = Omit<
     CreateConfigAccounts,
     'program' | 'eventAuthority' | 'systemProgram'
@@ -224,6 +216,14 @@ export type CreateDammV1MigrationMetadataParam = {
 
 export type CreateDammV2MigrationMetadataParam =
     CreateDammV1MigrationMetadataParam
+
+export type BaseFee = {
+    cliffFeeNumerator: BN
+    numberOfPeriod: number
+    periodFrequency: BN
+    reductionFactor: BN
+    feeSchedulerMode: FeeSchedulerMode
+}
 
 export type FeeSchedulerParams = {
     startingFeeBps: number
