@@ -856,14 +856,7 @@ export function getLockedVestingParams(
     // add the remainder to cliffUnlockAmount to maintain total amount
     const adjustedCliffUnlockAmount = cliffUnlockAmount + remainder
 
-    let periodFrequency: BN
-    if (activationType == ActivationType.Slot) {
-        periodFrequency = new BN(totalVestingDuration / numberOfVestingPeriod)
-            .div(new BN(TIMESTAMP_DURATION))
-            .mul(new BN(SLOT_DURATION))
-    } else {
-        periodFrequency = new BN(totalVestingDuration / numberOfVestingPeriod)
-    }
+    const periodFrequency = new BN(totalVestingDuration / numberOfVestingPeriod)
 
     return {
         amountPerPeriod: new BN(roundedAmountPerPeriod.toString()).mul(
