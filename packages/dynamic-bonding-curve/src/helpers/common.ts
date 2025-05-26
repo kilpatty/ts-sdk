@@ -593,16 +593,15 @@ export const getPercentageSupplyOnMigration = (
  * @returns The migration quote threshold
  */
 export const getMigrationQuoteThreshold = (
-    migrationMarketCap: BN,
+    migrationMarketCap: Decimal,
     percentageSupplyOnMigration: number
 ): number => {
-    const migrationMarketCapDecimal = new Decimal(migrationMarketCap.toString())
     const percentageDecimal = new Decimal(
         percentageSupplyOnMigration.toString()
     )
 
     // migrationMC * x / 100
-    return migrationMarketCapDecimal
+    return migrationMarketCap
         .mul(percentageDecimal)
         .div(new Decimal(100))
         .toNumber()

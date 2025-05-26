@@ -238,7 +238,7 @@ export function buildCurveWithMarketCap(
     )
 
     const migrationQuoteThreshold = getMigrationQuoteThreshold(
-        new BN(migrationMarketCap),
+        new Decimal(migrationMarketCap),
         percentageSupplyOnMigration
     )
 

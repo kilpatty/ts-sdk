@@ -49,7 +49,7 @@ describe('buildCurveWithMarketCap tests', () => {
         leftover: 10000,
     }
 
-    test('build curve by market cap', () => {
+    test('build curve by market cap 1', () => {
         console.log('\n testing build curve by market cap...')
         const config = buildCurveWithMarketCap({
             ...baseParams,
@@ -63,6 +63,24 @@ describe('buildCurveWithMarketCap tests', () => {
                 .div(new BN(10 ** TokenDecimal.NINE))
                 .toString()
         )
+        console.log('sqrtStartPrice', convertBNToDecimal(config.sqrtStartPrice))
+        console.log('curve', convertBNToDecimal(config.curve))
+        expect(config).toBeDefined()
+    })
+
+    test('build curve by market cap 2', () => {
+        console.log('\n testing build curve by market cap...')
+        const config = buildCurveWithMarketCap({
+            ...baseParams,
+            initialMarketCap: 0.1,
+            migrationMarketCap: 0.5,
+        })
+
+        console.log(
+            'migrationQuoteThreshold: %d',
+            config.migrationQuoteThreshold.toString()
+        )
+
         console.log('sqrtStartPrice', convertBNToDecimal(config.sqrtStartPrice))
         console.log('curve', convertBNToDecimal(config.curve))
         expect(config).toBeDefined()
