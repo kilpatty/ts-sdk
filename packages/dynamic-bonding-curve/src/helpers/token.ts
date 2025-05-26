@@ -200,10 +200,10 @@ export function getTokenProgram(tokenType: TokenType): PublicKey {
 export async function getTokenType(
     connection: Connection,
     tokenMint: PublicKey
-): Promise<TokenType> {
+): Promise<TokenType | null> {
     const accountInfo = await connection.getAccountInfo(tokenMint)
     if (!accountInfo) {
-        throw new Error(`Token mint not found: ${tokenMint.toString()}`)
+        return null
     }
 
     return accountInfo.owner.equals(TOKEN_PROGRAM_ID)
@@ -218,6 +218,7 @@ export async function getTokenType(
  * @param payer - The payer of the token account
  * @param tokenMint - The mint of the token account
  * @param amount - The amount of the token account
+ * @param tokenProgram - Optional token program ID. If not provided, will be fetched from the mint
  * @returns The transaction and token account public key
  */
 export async function prepareTokenAccountTx(
@@ -225,67 +226,36 @@ export async function prepareTokenAccountTx(
     owner: PublicKey,
     payer: PublicKey,
     tokenMint: PublicKey,
-    amount: bigint
+    amount: bigint,
+    tokenProgram: PublicKey
 ): Promise<{
     tokenAccount: PublicKey
     transaction: Transaction
 }> {
-    const transaction = new Transaction()
     const instructions: TransactionInstruction[] = []
-
-    // get token type and program
-    const tokenType = await getTokenType(connection, tokenMint)
-    const tokenProgram = getTokenProgram(tokenType)
-
-    if (tokenMint.equals(NATIVE_MINT)) {
-        const wrappedSOLAccount = getAssociatedTokenAddressSync(
-            NATIVE_MINT,
-            owner,
-            true,
-            tokenProgram
-        )
-
-        const { ix: createAtaIx } = await getOrCreateATAInstruction(
+    const { ataPubkey: tokenAccount, ix: createAtaIx } =
+        await getOrCreateATAInstruction(
             connection,
-            NATIVE_MINT,
+            tokenMint,
             owner,
             payer,
             true,
             tokenProgram
         )
-        if (createAtaIx) {
-            instructions.push(createAtaIx)
-        }
 
-        const wrapIx = wrapSOLInstruction(owner, wrappedSOLAccount, amount)
+    createAtaIx && instructions.push(createAtaIx)
+
+    if (tokenMint.equals(NATIVE_MINT)) {
+        const wrapIx = wrapSOLInstruction(owner, tokenAccount, amount)
         instructions.push(...wrapIx)
-
-        if (instructions.length > 0) {
-            transaction.add(...instructions)
-        }
-
-        return { tokenAccount: wrappedSOLAccount, transaction }
-    } else {
-        const { ataPubkey: tokenAccount, ix: createAtaIx } =
-            await getOrCreateATAInstruction(
-                connection,
-                tokenMint,
-                owner,
-                payer,
-                true,
-                tokenProgram
-            )
-
-        if (createAtaIx) {
-            instructions.push(createAtaIx)
-        }
-
-        if (instructions.length > 0) {
-            transaction.add(...instructions)
-        }
-
-        return { tokenAccount, transaction }
     }
+
+    const transaction = new Transaction()
+    if (instructions.length > 0) {
+        transaction.add(...instructions)
+    }
+
+    return { tokenAccount, transaction }
 }
 
 /**
@@ -307,10 +277,10 @@ export async function cleanUpTokenAccountTx(
 
     if (tokenMint.equals(NATIVE_MINT)) {
         const unwrapIx = unwrapSOLInstruction(owner, receiver)
-        unwrapIx && instructions.push(unwrapIx)
+        if (unwrapIx) {
+            return { transaction: new Transaction().add(unwrapIx) }
+        }
     }
 
-    transaction.add(...instructions)
-
-    return { transaction }
+    return null
 }
