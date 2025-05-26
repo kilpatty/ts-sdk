@@ -2,6 +2,7 @@ import {
     Connection,
     PublicKey,
     SystemProgram,
+    Transaction,
     TransactionInstruction,
 } from '@solana/web3.js'
 
@@ -208,4 +209,108 @@ export async function getTokenType(
     return accountInfo.owner.equals(TOKEN_PROGRAM_ID)
         ? TokenType.SPL
         : TokenType.Token2022
+}
+
+/**
+ * Prepare the token account instruction
+ * @param connection - The connection
+ * @param owner - The owner of the token account
+ * @param payer - The payer of the token account
+ * @param tokenMint - The mint of the token account
+ * @param amount - The amount of the token account
+ * @returns The transaction and token account public key
+ */
+export async function prepareTokenAccountTx(
+    connection: Connection,
+    owner: PublicKey,
+    payer: PublicKey,
+    tokenMint: PublicKey,
+    amount: bigint
+): Promise<{
+    tokenAccount: PublicKey
+    transaction: Transaction
+}> {
+    const transaction = new Transaction()
+    const instructions: TransactionInstruction[] = []
+
+    // get token type and program
+    const tokenType = await getTokenType(connection, tokenMint)
+    const tokenProgram = getTokenProgram(tokenType)
+
+    if (tokenMint.equals(NATIVE_MINT)) {
+        const wrappedSOLAccount = getAssociatedTokenAddressSync(
+            NATIVE_MINT,
+            owner,
+            true,
+            tokenProgram
+        )
+
+        const { ix: createAtaIx } = await getOrCreateATAInstruction(
+            connection,
+            NATIVE_MINT,
+            owner,
+            payer,
+            true,
+            tokenProgram
+        )
+        if (createAtaIx) {
+            instructions.push(createAtaIx)
+        }
+
+        const wrapIx = wrapSOLInstruction(owner, wrappedSOLAccount, amount)
+        instructions.push(...wrapIx)
+
+        if (instructions.length > 0) {
+            transaction.add(...instructions)
+        }
+
+        return { tokenAccount: wrappedSOLAccount, transaction }
+    } else {
+        const { ataPubkey: tokenAccount, ix: createAtaIx } =
+            await getOrCreateATAInstruction(
+                connection,
+                tokenMint,
+                owner,
+                payer,
+                true,
+                tokenProgram
+            )
+
+        if (createAtaIx) {
+            instructions.push(createAtaIx)
+        }
+
+        if (instructions.length > 0) {
+            transaction.add(...instructions)
+        }
+
+        return { tokenAccount, transaction }
+    }
+}
+
+/**
+ * Clean up the token account instruction
+ * @param owner - The owner of the token account
+ * @param receiver - The receiver of the token account
+ * @param tokenAMint - The mint of the token account
+ * @returns The transaction
+ */
+export async function cleanUpTokenAccountTx(
+    owner: PublicKey,
+    receiver: PublicKey,
+    tokenAMint: PublicKey
+): Promise<{
+    transaction: Transaction
+}> {
+    const transaction = new Transaction()
+    const instructions: TransactionInstruction[] = []
+
+    if (tokenAMint.equals(NATIVE_MINT)) {
+        const unwrapIx = unwrapSOLInstruction(owner, receiver)
+        unwrapIx && instructions.push(unwrapIx)
+    }
+
+    transaction.add(...instructions)
+
+    return { transaction }
 }
