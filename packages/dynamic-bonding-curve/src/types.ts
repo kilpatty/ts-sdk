@@ -328,6 +328,15 @@ export type CreateConfigAndPoolParam = CreateConfigParam & {
     }
 }
 
+export type CreateConfigAndPoolAndBuyParam = CreateConfigAndPoolParam & {
+    swapBuyParam: {
+        buyAmount: BN
+        minimumAmountOut: BN
+        quoteMintTokenAccount: PublicKey
+        referralTokenAccount: PublicKey | null
+    }
+}
+
 export type CreatePoolAndBuyParam = {
     createPoolParam: CreatePoolParam
     buyAmount: BN

@@ -7,6 +7,7 @@ import {
 } from '@solana/web3.js'
 import { DynamicBondingCurveProgram } from './program'
 import {
+    CreateConfigAndPoolAndBuyParam,
     CreateConfigAndPoolParam,
     CreatePoolAndBuyParam,
     InitializePoolBaseParam,
@@ -23,8 +24,14 @@ import {
     unwrapSOLInstruction,
     wrapSOLInstruction,
     deriveDbcTokenVaultAddress,
+    getTokenType,
+    findAssociatedTokenAddress,
 } from '../helpers'
-import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
+import {
+    createAssociatedTokenAccountIdempotentInstruction,
+    NATIVE_MINT,
+    TOKEN_2022_PROGRAM_ID,
+} from '@solana/spl-token'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { METAPLEX_PROGRAM_ID } from '../constants'
 import { swapQuote } from '../math/swapQuote'
@@ -279,6 +286,163 @@ export class PoolService extends DynamicBondingCurveProgram {
         } else {
             const poolTx = await this.initializeToken2022Pool(baseParams)
             tx.add(poolTx)
+        }
+
+        return tx
+    }
+
+    /**
+     * Create a new config and pool
+     * @param createConfigAndPoolParam - The parameters for the config and pool
+     * @returns A new config and pool
+     */
+    async createConfigAndPoolAndBuy(
+        createConfigAndPoolAndBuyParam: CreateConfigAndPoolAndBuyParam
+    ): Promise<Transaction> {
+        const {
+            config,
+            feeClaimer,
+            leftoverReceiver,
+            quoteMint,
+            payer,
+            ...configParam
+        } = createConfigAndPoolAndBuyParam
+
+        const { baseMint, name, symbol, uri, poolCreator } =
+            createConfigAndPoolAndBuyParam.createPoolParam
+
+        const {
+            buyAmount,
+            minimumAmountOut,
+            quoteMintTokenAccount,
+            referralTokenAccount,
+        } = createConfigAndPoolAndBuyParam.swapBuyParam
+
+        // error checks
+        validateConfigParameters({ ...configParam, leftoverReceiver })
+
+        const configKey = new PublicKey(config)
+        const quoteMintToken = new PublicKey(quoteMint)
+        const payerAddress = new PublicKey(payer)
+
+        const tx = new Transaction()
+
+        // create config transaction
+        const configTx = await this.program.methods
+            .createConfig(configParam)
+            .accountsPartial({
+                config,
+                feeClaimer,
+                leftoverReceiver,
+                quoteMint,
+                payer,
+            })
+            .transaction()
+        tx.add(configTx)
+
+        const pool = deriveDbcPoolAddress(quoteMintToken, baseMint, configKey)
+        const baseVault = deriveDbcTokenVaultAddress(pool, baseMint)
+        const quoteVault = deriveDbcTokenVaultAddress(pool, quoteMintToken)
+
+        const baseParams: InitializePoolBaseParam = {
+            name,
+            symbol,
+            uri,
+            pool,
+            config: configKey,
+            payer: payerAddress,
+            poolCreator,
+            baseMint,
+            baseVault,
+            quoteVault,
+            quoteMint: quoteMintToken,
+        }
+
+        if (createConfigAndPoolAndBuyParam.tokenType === TokenType.SPL) {
+            const mintMetadata = deriveMintMetadata(baseMint)
+            const poolTx = await this.initializeSplPool({
+                ...baseParams,
+                mintMetadata,
+            })
+            tx.add(poolTx)
+        } else {
+            const poolTx = await this.initializeToken2022Pool(baseParams)
+            tx.add(poolTx)
+        }
+
+        // Add buy instructions if buyAmount is provided
+        if (buyAmount) {
+            // Validate swap amount
+            validateSwapAmount(buyAmount)
+
+            const quoteTokenFlag = await getTokenType(
+                this.connection,
+                quoteMintToken
+            )
+
+            const { outputMint, outputTokenProgram } = this.prepareSwapParams(
+                false,
+                {
+                    baseMint,
+                    poolType: createConfigAndPoolAndBuyParam.tokenType,
+                },
+                {
+                    quoteMint: quoteMintToken,
+                    quoteTokenFlag,
+                }
+            )
+
+            const preInstructions: TransactionInstruction[] = []
+
+            const outputTokenAccount = findAssociatedTokenAddress(
+                poolCreator,
+                outputMint,
+                outputTokenProgram
+            )
+
+            const createOutputTokenAccountIx =
+                createAssociatedTokenAccountIdempotentInstruction(
+                    payerAddress,
+                    outputTokenAccount,
+                    poolCreator,
+                    outputMint
+                )
+
+            createOutputTokenAccountIx &&
+                preInstructions.push(createOutputTokenAccountIx)
+
+            // Add the swap instruction
+            const swapIx = await this.program.methods
+                .swap({
+                    amountIn: buyAmount,
+                    minimumAmountOut,
+                })
+                .accountsPartial({
+                    baseMint,
+                    quoteMint,
+                    pool,
+                    baseVault,
+                    quoteVault,
+                    config,
+                    poolAuthority: this.poolAuthority,
+                    referralTokenAccount,
+                    inputTokenAccount: quoteMintTokenAccount,
+                    outputTokenAccount,
+                    payer: poolCreator,
+                    tokenBaseProgram:
+                        createConfigAndPoolAndBuyParam.tokenType ===
+                        TokenType.SPL
+                            ? TOKEN_PROGRAM_ID
+                            : TOKEN_2022_PROGRAM_ID,
+                    tokenQuoteProgram:
+                        quoteTokenFlag === TokenType.SPL
+                            ? TOKEN_PROGRAM_ID
+                            : TOKEN_2022_PROGRAM_ID,
+                })
+                .instruction()
+
+            // Add all instructions to the transaction
+            tx.add(...preInstructions, swapIx)
         }
 
         return tx
