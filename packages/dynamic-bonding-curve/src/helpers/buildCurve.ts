@@ -368,28 +368,20 @@ export function buildCurveWithTwoSegments(
         .sqrt()
     let midSqrtPrice1 = new BN(midSqrtPriceDecimal1.floor().toFixed())
 
-    // weight for midpoint2 (closer to migrateSqrtPrice, e.g., 70%)
-    const w1 = new Decimal(0.7)
-    const oneMinusW1 = new Decimal(1).minus(w1)
+    // mid_price2 = (p1 * p2^3)^(1/4)
+    let midSqrtPriceDecimal2 = new Decimal(initialSqrtPrice.toString())
+        .mul(new Decimal(migrateSqrtPrice.toString()).pow(3))
+        .pow(new Decimal(0.25))
+    let midSqrtPrice2 = new BN(midSqrtPriceDecimal2.floor().toFixed())
 
-    // weight for midpoint3 (closer to initialSqrtPrice, e.g., 30%)
-    const w2 = new Decimal(0.3)
-    const oneMinusW2 = new Decimal(1).minus(w2)
-
-    // instantiate midSqrtPriceDecimal2
-    const midSqrtPriceDecimal2 = new Decimal(initialSqrtPrice.toString())
-        .pow(oneMinusW1)
-        .mul(new Decimal(migrateSqrtPrice.toString()).pow(w1))
-    const midSqrtPrice2 = new BN(midSqrtPriceDecimal2.floor().toFixed())
-
-    // instantiate midSqrtPriceDecimal3
-    const midSqrtPriceDecimal3 = new Decimal(initialSqrtPrice.toString())
-        .pow(oneMinusW2)
-        .mul(new Decimal(migrateSqrtPrice.toString()).pow(w2))
-    const midSqrtPrice3 = new BN(midSqrtPriceDecimal3.floor().toFixed())
+    // mid_price3 = (p1^3 * p2)^(1/4)
+    let midSqrtPriceDecimal3 = new Decimal(initialSqrtPrice.toString())
+        .pow(3)
+        .mul(new Decimal(migrateSqrtPrice.toString()))
+        .pow(new Decimal(0.25))
+    let midSqrtPrice3 = new BN(midSqrtPriceDecimal3.floor().toFixed())
 
     let midPrices = [midSqrtPrice1, midSqrtPrice2, midSqrtPrice3]
-
     let sqrtStartPrice = new BN(0)
     let curve: { sqrtPrice: BN; liquidity: BN }[] = []
     for (let i = 0; i < midPrices.length; i++) {
