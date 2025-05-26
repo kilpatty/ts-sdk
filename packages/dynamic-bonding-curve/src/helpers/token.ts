@@ -292,20 +292,20 @@ export async function prepareTokenAccountTx(
  * Clean up the token account instruction
  * @param owner - The owner of the token account
  * @param receiver - The receiver of the token account
- * @param tokenAMint - The mint of the token account
+ * @param tokenMint - The mint of the token account
  * @returns The transaction
  */
 export async function cleanUpTokenAccountTx(
     owner: PublicKey,
     receiver: PublicKey,
-    tokenAMint: PublicKey
+    tokenMint: PublicKey
 ): Promise<{
     transaction: Transaction
 }> {
     const transaction = new Transaction()
     const instructions: TransactionInstruction[] = []
 
-    if (tokenAMint.equals(NATIVE_MINT)) {
+    if (tokenMint.equals(NATIVE_MINT)) {
         const unwrapIx = unwrapSOLInstruction(owner, receiver)
         unwrapIx && instructions.push(unwrapIx)
     }
