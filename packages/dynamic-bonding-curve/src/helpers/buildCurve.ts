@@ -362,25 +362,39 @@ export function buildCurveWithTwoSegments(
         tokenQuoteDecimal
     )
 
+    console.log('initialSqrtPrice', initialSqrtPrice.toString())
+    console.log('migrateSqrtPrice', migrateSqrtPrice.toString())
+
     // instantiate midSqrtPriceDecimal1
     let midSqrtPriceDecimal1 = new Decimal(migrateSqrtPrice.toString())
         .mul(new Decimal(initialSqrtPrice.toString()))
         .sqrt()
     let midSqrtPrice1 = new BN(midSqrtPriceDecimal1.floor().toFixed())
 
+    // weight for midpoint2 (closer to migrateSqrtPrice, e.g., 70%)
+    const w1 = new Decimal(0.7)
+    const oneMinusW1 = new Decimal(1).minus(w1)
+
+    // weight for midpoint3 (closer to initialSqrtPrice, e.g., 30%)
+    const w2 = new Decimal(0.3)
+    const oneMinusW2 = new Decimal(1).minus(w2)
+
     // instantiate midSqrtPriceDecimal2
-    let midSqrtPriceDecimal2 = new Decimal(migrateSqrtPrice.toString())
-        .pow(new Decimal(3))
-        .mul(new Decimal(initialSqrtPrice.toString()).pow(0.25))
-    let midSqrtPrice2 = new BN(midSqrtPriceDecimal2.floor().toFixed())
+    const midSqrtPriceDecimal2 = new Decimal(initialSqrtPrice.toString())
+        .pow(oneMinusW1)
+        .mul(new Decimal(migrateSqrtPrice.toString()).pow(w1))
+    const midSqrtPrice2 = new BN(midSqrtPriceDecimal2.floor().toFixed())
 
     // instantiate midSqrtPriceDecimal3
-    let midSqrtPriceDecimal3 = new Decimal(migrateSqrtPrice.toString()).mul(
-        new Decimal(initialSqrtPrice.toString()).pow(new Decimal(3)).pow(0.25)
-    )
-    let midSqrtPrice3 = new BN(midSqrtPriceDecimal3.floor().toFixed())
+    const midSqrtPriceDecimal3 = new Decimal(initialSqrtPrice.toString())
+        .pow(oneMinusW2)
+        .mul(new Decimal(migrateSqrtPrice.toString()).pow(w2))
+    const midSqrtPrice3 = new BN(midSqrtPriceDecimal3.floor().toFixed())
 
     let midPrices = [midSqrtPrice1, midSqrtPrice2, midSqrtPrice3]
+    console.log('midPrices1', midPrices[0].toString())
+    console.log('midPrices2', midPrices[1].toString())
+    console.log('midPrices3', midPrices[2].toString())
     let sqrtStartPrice = new BN(0)
     let curve: { sqrtPrice: BN; liquidity: BN }[] = []
     for (let i = 0; i < midPrices.length; i++) {
