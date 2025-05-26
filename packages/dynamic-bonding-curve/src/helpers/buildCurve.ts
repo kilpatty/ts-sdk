@@ -362,9 +362,6 @@ export function buildCurveWithTwoSegments(
         tokenQuoteDecimal
     )
 
-    console.log('initialSqrtPrice', initialSqrtPrice.toString())
-    console.log('migrateSqrtPrice', migrateSqrtPrice.toString())
-
     // instantiate midSqrtPriceDecimal1
     let midSqrtPriceDecimal1 = new Decimal(migrateSqrtPrice.toString())
         .mul(new Decimal(initialSqrtPrice.toString()))
@@ -392,9 +389,7 @@ export function buildCurveWithTwoSegments(
     const midSqrtPrice3 = new BN(midSqrtPriceDecimal3.floor().toFixed())
 
     let midPrices = [midSqrtPrice1, midSqrtPrice2, midSqrtPrice3]
-    console.log('midPrices1', midPrices[0].toString())
-    console.log('midPrices2', midPrices[1].toString())
-    console.log('midPrices3', midPrices[2].toString())
+
     let sqrtStartPrice = new BN(0)
     let curve: { sqrtPrice: BN; liquidity: BN }[] = []
     for (let i = 0; i < midPrices.length; i++) {
