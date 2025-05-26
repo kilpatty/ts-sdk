@@ -189,3 +189,23 @@ export function getTokenProgram(tokenType: TokenType): PublicKey {
         ? TOKEN_PROGRAM_ID
         : TOKEN_2022_PROGRAM_ID
 }
+
+/**
+ * Get the token type based on the token mint's program owner
+ * @param connection - The connection
+ * @param tokenMint - The token mint
+ * @returns The token type (SPL or Token2022)
+ */
+export async function getTokenType(
+    connection: Connection,
+    tokenMint: PublicKey
+): Promise<TokenType> {
+    const accountInfo = await connection.getAccountInfo(tokenMint)
+    if (!accountInfo) {
+        throw new Error(`Token mint not found: ${tokenMint.toString()}`)
+    }
+
+    return accountInfo.owner.equals(TOKEN_PROGRAM_ID)
+        ? TokenType.SPL
+        : TokenType.Token2022
+}
