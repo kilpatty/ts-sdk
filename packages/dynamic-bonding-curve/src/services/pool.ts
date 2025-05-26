@@ -292,9 +292,9 @@ export class PoolService extends DynamicBondingCurveProgram {
     }
 
     /**
-     * Create a new config and pool
-     * @param createConfigAndPoolParam - The parameters for the config and pool
-     * @returns A new config and pool
+     * Create a new config and pool and buy tokens
+     * @param createConfigAndPoolAndBuyParam - The parameters for the config and pool and buy
+     * @returns A transaction containing a new config key, a new token pool and the first initial buy of tokens
      */
     async createConfigAndPoolAndBuy(
         createConfigAndPoolAndBuyParam: CreateConfigAndPoolAndBuyParam
@@ -370,9 +370,9 @@ export class PoolService extends DynamicBondingCurveProgram {
             tx.add(poolTx)
         }
 
-        // Add buy instructions if buyAmount is provided
+        // add buy instructions if buyAmount is provided
         if (buyAmount) {
-            // Validate swap amount
+            // error checks
             validateSwapAmount(buyAmount)
 
             const quoteTokenFlag = await getTokenType(
@@ -411,7 +411,6 @@ export class PoolService extends DynamicBondingCurveProgram {
             createOutputTokenAccountIx &&
                 preInstructions.push(createOutputTokenAccountIx)
 
-            // Add the swap instruction
             const swapIx = await this.program.methods
                 .swap({
                     amountIn: buyAmount,
@@ -441,7 +440,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 })
                 .instruction()
 
-            // Add all instructions to the transaction
+            // add preinstructions and swap instruction
             tx.add(...preInstructions, swapIx)
         }
 
@@ -484,7 +483,7 @@ export class PoolService extends DynamicBondingCurveProgram {
             quoteMint,
         }
 
-        // Create the pool transaction
+        // create pool transaction
         let tx: Transaction
         if (tokenType === TokenType.SPL) {
             const mintMetadata = deriveMintMetadata(baseMint)
@@ -493,9 +492,9 @@ export class PoolService extends DynamicBondingCurveProgram {
             tx = await this.initializeToken2022Pool(baseParams)
         }
 
-        // Add buy instructions if buyAmount is provided
+        // add buy instructions if buyAmount is provided
         if (buyAmount) {
-            // Validate swap amount
+            // error checks
             validateSwapAmount(buyAmount)
 
             const {
@@ -509,7 +508,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 poolConfigState
             )
 
-            // Add preInstructions for ATA creation and SOL wrapping
+            // add preInstructions for ATA creation and SOL wrapping
             const {
                 ataTokenA: inputTokenAccount,
                 ataTokenB: outputTokenAccount,
@@ -523,7 +522,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 outputTokenProgram
             )
 
-            // Add SOL wrapping instructions if needed
+            // add SOL wrapping instructions if needed
             if (inputMint.equals(NATIVE_MINT)) {
                 preInstructions.push(
                     ...wrapSOLInstruction(
@@ -534,7 +533,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 )
             }
 
-            // Add postInstructions for SOL unwrapping
+            // add postInstructions for SOL unwrapping
             const postInstructions: TransactionInstruction[] = []
             if (
                 [inputMint.toBase58(), outputMint.toBase58()].includes(
@@ -545,7 +544,6 @@ export class PoolService extends DynamicBondingCurveProgram {
                 unwrapIx && postInstructions.push(unwrapIx)
             }
 
-            // Add the swap instruction
             const swapIx = await this.program.methods
                 .swap({
                     amountIn: buyAmount,
@@ -574,7 +572,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 })
                 .instruction()
 
-            // Add all instructions to the transaction
+            // add preinstructions, swap instruction and postinstructions to the transaction
             tx.add(...preInstructions, swapIx, ...postInstructions)
         }
 
@@ -599,13 +597,13 @@ export class PoolService extends DynamicBondingCurveProgram {
         const { amountIn, minimumAmountOut, swapBaseForQuote, owner } =
             swapParam
 
-        // Validate swap amount
+        // error checks
         validateSwapAmount(amountIn)
 
         const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
             this.prepareSwapParams(swapBaseForQuote, poolState, poolConfigState)
 
-        // Add preInstructions for ATA creation and SOL wrapping
+        // add preInstructions for ATA creation and SOL wrapping
         const {
             ataTokenA: inputTokenAccount,
             ataTokenB: outputTokenAccount,
@@ -619,7 +617,7 @@ export class PoolService extends DynamicBondingCurveProgram {
             outputTokenProgram
         )
 
-        // Add SOL wrapping instructions if needed
+        // add SOL wrapping instructions if needed
         if (inputMint.equals(NATIVE_MINT)) {
             preInstructions.push(
                 ...wrapSOLInstruction(
@@ -630,7 +628,7 @@ export class PoolService extends DynamicBondingCurveProgram {
             )
         }
 
-        // Add postInstructions for SOL unwrapping
+        // add postInstructions for SOL unwrapping
         const postInstructions: TransactionInstruction[] = []
         if (
             [inputMint.toBase58(), outputMint.toBase58()].includes(

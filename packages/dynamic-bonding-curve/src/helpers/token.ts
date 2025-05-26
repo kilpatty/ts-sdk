@@ -194,7 +194,7 @@ export function getTokenProgram(tokenType: TokenType): PublicKey {
  * Get the token type based on the token mint's program owner
  * @param connection - The connection
  * @param tokenMint - The token mint
- * @returns The token type (SPL or Token2022)
+ * @returns The token type (SPL [0] or Token2022 [1])
  */
 export async function getTokenType(
     connection: Connection,
