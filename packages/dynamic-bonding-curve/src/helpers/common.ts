@@ -593,17 +593,12 @@ export const getPercentageSupplyOnMigration = (
  * @returns The migration quote threshold
  */
 export const getMigrationQuoteThreshold = (
-    migrationMarketCap: BN,
-    percentageSupplyOnMigration: number
+    migrationMarketCap: Decimal,
+    percentageSupplyOnMigration: Decimal
 ): number => {
-    const migrationMarketCapDecimal = new Decimal(migrationMarketCap.toString())
-    const percentageDecimal = new Decimal(
-        percentageSupplyOnMigration.toString()
-    )
-
     // migrationMC * x / 100
-    return migrationMarketCapDecimal
-        .mul(percentageDecimal)
+    return migrationMarketCap
+        .mul(percentageSupplyOnMigration)
         .div(new Decimal(100))
         .toNumber()
 }
@@ -856,14 +851,7 @@ export function getLockedVestingParams(
     // add the remainder to cliffUnlockAmount to maintain total amount
     const adjustedCliffUnlockAmount = cliffUnlockAmount + remainder
 
-    let periodFrequency: BN
-    if (activationType == ActivationType.Slot) {
-        periodFrequency = new BN(totalVestingDuration / numberOfVestingPeriod)
-            .div(new BN(TIMESTAMP_DURATION))
-            .mul(new BN(SLOT_DURATION))
-    } else {
-        periodFrequency = new BN(totalVestingDuration / numberOfVestingPeriod)
-    }
+    const periodFrequency = new BN(totalVestingDuration / numberOfVestingPeriod)
 
     return {
         amountPerPeriod: new BN(roundedAmountPerPeriod.toString()).mul(

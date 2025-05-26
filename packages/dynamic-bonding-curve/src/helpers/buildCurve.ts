@@ -238,8 +238,8 @@ export function buildCurveWithMarketCap(
     )
 
     const migrationQuoteThreshold = getMigrationQuoteThreshold(
-        new BN(migrationMarketCap),
-        percentageSupplyOnMigration
+        new Decimal(migrationMarketCap),
+        new Decimal(percentageSupplyOnMigration)
     )
 
     return buildCurve({
@@ -368,16 +368,18 @@ export function buildCurveWithTwoSegments(
         .sqrt()
     let midSqrtPrice1 = new BN(midSqrtPriceDecimal1.floor().toFixed())
 
-    // instantiate midSqrtPriceDecimal2
-    let midSqrtPriceDecimal2 = new Decimal(migrateSqrtPrice.toString())
-        .pow(new Decimal(3))
-        .mul(new Decimal(initialSqrtPrice.toString()).pow(0.25))
+    // mid_price2 = (p1 * p2^3)^(1/4)
+    let numerator1 = new Decimal(initialSqrtPrice.toString())
+    let numerator2 = Decimal.pow(migrateSqrtPrice.toString(), 3)
+    let product1 = numerator1.mul(numerator2)
+    let midSqrtPriceDecimal2 = Decimal.pow(product1, 0.25)
     let midSqrtPrice2 = new BN(midSqrtPriceDecimal2.floor().toFixed())
 
-    // instantiate midSqrtPriceDecimal3
-    let midSqrtPriceDecimal3 = new Decimal(migrateSqrtPrice.toString()).mul(
-        new Decimal(initialSqrtPrice.toString()).pow(new Decimal(3)).pow(0.25)
-    )
+    // mid_price3 = (p1^3 * p2)^(1/4)
+    let numerator3 = Decimal.pow(initialSqrtPrice.toString(), 3)
+    let numerator4 = new Decimal(migrateSqrtPrice.toString())
+    let product2 = numerator3.mul(numerator4)
+    let midSqrtPriceDecimal3 = Decimal.pow(product2, 0.25)
     let midSqrtPrice3 = new BN(midSqrtPriceDecimal3.floor().toFixed())
 
     let midPrices = [midSqrtPrice1, midSqrtPrice2, midSqrtPrice3]

@@ -50,9 +50,12 @@ describe('buildCurveWithTwoSegments tests', () => {
 
         const config = buildCurveWithTwoSegments({
             ...baseParams,
-            initialMarketCap: 200000,
+            totalTokenSupply: 1000000000,
+            initialMarketCap: 20000,
             migrationMarketCap: 1000000,
             percentageSupplyOnMigration: 20,
+            tokenBaseDecimal: TokenDecimal.NINE,
+            tokenQuoteDecimal: TokenDecimal.NINE,
             lockedVestingParam: {
                 totalLockedVestingAmount: 0,
                 numberOfVestingPeriod: 0,
