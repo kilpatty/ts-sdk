@@ -444,8 +444,6 @@ interface BuildCurveParam {
         cliffUnlockAmount: number // The amount of tokens that will be unlocked when vesting starts
         totalVestingDuration: number // The total vesting duration in seconds
         cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
-        tokenBaseDecimal: number // The number of decimals for the base token
-        activationType: number // 0: Slot, 1: Timestamp
     }
     feeSchedulerParam: {
         // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
@@ -455,7 +453,6 @@ interface BuildCurveParam {
         numberOfPeriod: number // The number of periods
         totalDuration: number // The total duration of the fee scheduler
     }
-    baseFeeBps: number // The base fee in bps
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
     activationType: number // 0: Slot, 1: Timestamp
     collectFeeMode: number // 0: Only Quote, 1: Both
