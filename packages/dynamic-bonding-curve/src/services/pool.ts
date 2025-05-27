@@ -585,7 +585,6 @@ export class PoolService extends DynamicBondingCurveProgram {
                 poolConfigState
             )
 
-            // add preInstructions for ATA creation and SOL wrapping
             const {
                 ataTokenA: inputTokenAccount,
                 ataTokenB: outputTokenAccount,
@@ -610,7 +609,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 )
             }
 
-            // add postInstructions for SOL unwrapping
+            // add postInstructions for SOL unwrapping if needed
             const postInstructions: TransactionInstruction[] = []
             if (
                 [inputMint.toBase58(), outputMint.toBase58()].includes(
@@ -621,7 +620,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 unwrapIx && postInstructions.push(unwrapIx)
             }
 
-            const swapIx = await this.program.methods
+            const swapTx = await this.program.methods
                 .swap({
                     amountIn: buyAmount,
                     minimumAmountOut,
@@ -647,10 +646,11 @@ export class PoolService extends DynamicBondingCurveProgram {
                             ? TOKEN_PROGRAM_ID
                             : TOKEN_2022_PROGRAM_ID,
                 })
-                .instruction()
+                .preInstructions(preInstructions)
+                .postInstructions(postInstructions)
+                .transaction()
 
-            // add preinstructions, swap instruction and postinstructions to the transaction
-            tx.add(...preInstructions, swapIx, ...postInstructions)
+            tx.add(...swapTx.instructions)
         }
 
         return tx

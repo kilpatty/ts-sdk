@@ -272,9 +272,6 @@ export async function cleanUpTokenAccountTx(
 ): Promise<{
     transaction: Transaction
 }> {
-    const transaction = new Transaction()
-    const instructions: TransactionInstruction[] = []
-
     if (tokenMint.equals(NATIVE_MINT)) {
         const unwrapIx = unwrapSOLInstruction(owner, receiver)
         if (unwrapIx) {
