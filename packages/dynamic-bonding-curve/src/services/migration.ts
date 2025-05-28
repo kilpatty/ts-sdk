@@ -76,7 +76,7 @@ export class MigrationService extends DynamicBondingCurveProgram {
     }
 
     /**
-     * Get the vault program instance
+     * Get vault program instance
      * @returns The vault program instance
      */
     private getVaultProgram(): Program<DynamicVault> {
@@ -84,7 +84,7 @@ export class MigrationService extends DynamicBondingCurveProgram {
     }
 
     /**
-     * Get the DAMM V1 program instance
+     * Get DAMM V1 program instance
      * @returns The DAMM V1 program instance
      */
     private getDammV1Program(): Program<DammV1> {
@@ -92,9 +92,9 @@ export class MigrationService extends DynamicBondingCurveProgram {
     }
 
     /**
-     * Create lock escrow
-     * @param createLockerParam - The parameters for the lock escrow
-     * @returns A create lock escrow transaction
+     * Create Locker (if there is lockedVesting)
+     * @param createLockerParam - The parameters for the locker
+     * @returns A create locker transaction
      */
     async createLocker(
         createLockerParam: CreateLockerParam

@@ -2,6 +2,15 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.1.8] - 2025-05-28
+
+### Added
+
+- `createConfigAndPoolWithFirstBuy` function
+- `getTokenType` helper function
+- `prepareTokenAccountTx` helper function
+- `cleanUpTokenAccountTx` helper function
+
 ## [1.1.7] - 2025-05-27
 
 ### Changed
