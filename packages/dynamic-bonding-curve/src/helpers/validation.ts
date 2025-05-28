@@ -7,6 +7,7 @@ import {
     MigrationOption,
     TokenDecimal,
     TokenType,
+    TokenUpdateAuthorityOption,
     type CreateConfigParam,
     type PoolConfig,
 } from '../types'
@@ -233,6 +234,20 @@ export function validateTokenSupply(
 }
 
 /**
+ * Validate the update authority option
+ * @param option  - The update authority option
+ * @returns true if the token update authority option is valid, false otherwise
+ */
+export function validateTokenUpdateAuthorityOptions(
+    option: TokenUpdateAuthorityOption
+): boolean {
+    return [
+        TokenUpdateAuthorityOption.Mutable,
+        TokenUpdateAuthorityOption.Immutable,
+    ].includes(option)
+}
+
+/**
  * Validate the config parameters
  * @param configParam - The config parameters
  */
@@ -253,6 +268,13 @@ export function validateConfigParameters(
     // Collect fee mode validation
     if (!validateCollectFeeMode(configParam.collectFeeMode)) {
         throw new Error('Invalid collect fee mode')
+    }
+
+    // Update token authority option validation
+    if (
+        !validateTokenUpdateAuthorityOptions(configParam.tokenUpdateAuthority)
+    ) {
+        throw new Error('Invalid option for token update authority')
     }
 
     // Migration and token type validation

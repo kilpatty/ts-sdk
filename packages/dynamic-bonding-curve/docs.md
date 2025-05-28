@@ -146,6 +146,11 @@ interface CreateConfigParam {
         postMigrationTokenSupply: BN // The token supply after migration
     } | null
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
+    tokenUpdateAuthority: number, // 0 - Mutable, 1 - Immutable,
+    migrationFee: {
+        feePercentage: number,
+        creatorFeePercentage: number,
+    }
     padding0: []
     padding1: []
     curve: {

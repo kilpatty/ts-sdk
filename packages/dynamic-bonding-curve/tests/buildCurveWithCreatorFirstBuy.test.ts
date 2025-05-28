@@ -3,6 +3,7 @@ import { buildCurveWithCreatorFirstBuy } from '../src/helpers'
 import BN from 'bn.js'
 import {
     ActivationType,
+    BuildCurveBaseParam,
     CollectFeeMode,
     FeeSchedulerMode,
     MigrationFeeOption,
@@ -14,7 +15,7 @@ import Decimal from 'decimal.js'
 import { convertBNToDecimal } from './utils/common'
 
 describe('buildCurveWithCreatorFirstBuy tests', () => {
-    const baseParams = {
+    const baseParams: BuildCurveBaseParam = {
         totalTokenSupply: 1000000000,
         migrationOption: MigrationOption.MET_DAMM_V2,
         tokenBaseDecimal: TokenDecimal.SIX,
@@ -44,6 +45,11 @@ describe('buildCurveWithCreatorFirstBuy tests', () => {
         creatorLockedLpPercentage: 0,
         creatorTradingFeePercentage: 0,
         leftover: 10000,
+        tokenUpdateAuthority: 0,
+        migrationFee: {
+            feePercentage: 0,
+            creatorFeePercentage: 0,
+        },
     }
 
     test('build curve with creator first buy', () => {

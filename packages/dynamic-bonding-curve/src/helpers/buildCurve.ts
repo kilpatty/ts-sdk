@@ -34,7 +34,7 @@ import { bpsToFeeNumerator, convertDecimalToBN } from './utils'
  * @returns The build custom constant product curve
  */
 export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
-    const {
+    let {
         totalTokenSupply,
         percentageSupplyOnMigration,
         migrationQuoteThreshold,
@@ -52,6 +52,8 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         creatorLockedLpPercentage,
         creatorTradingFeePercentage,
         leftover,
+        tokenUpdateAuthority,
+        migrationFee,
     } = buildCurveParam
 
     const {
@@ -94,6 +96,11 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
     const totalSupply = new BN(totalTokenSupply).mul(
         new BN(10).pow(new BN(tokenBaseDecimal))
     )
+
+    if (migrationFee.feePercentage > 0) {
+        migrationQuoteThreshold =
+            (migrationQuoteThreshold * 100) / (100 - migrationFee.feePercentage)
+    }
 
     const migrationQuoteThresholdWithDecimals = new BN(
         migrationQuoteThreshold * 10 ** tokenQuoteDecimal
@@ -184,6 +191,8 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
             postMigrationTokenSupply: totalSupply,
         },
         creatorTradingFeePercentage,
+        tokenUpdateAuthority,
+        migrationFee,
         padding0: [],
         padding1: [],
         curve,
@@ -204,6 +213,7 @@ export function buildCurveWithMarketCap(
         migrationMarketCap,
         totalTokenSupply,
         tokenBaseDecimal,
+        migrationFee,
     } = buildCurveWithMarketCapParam
 
     const {
@@ -273,6 +283,8 @@ export function buildCurveWithTwoSegments(
         activationType,
         dynamicFeeEnabled,
         migrationFeeOption,
+        migrationFee,
+        tokenUpdateAuthority,
     } = buildCurveWithTwoSegmentsParam
 
     const {
@@ -316,9 +328,13 @@ export function buildCurveWithTwoSegments(
         new BN(10).pow(new BN(tokenBaseDecimal))
     )
 
-    // migrationMarketCap * migrationBaseSupply / totalTokenSupply
-    let migrationQuoteThreshold =
-        (migrationMarketCap * percentageSupplyOnMigration) / 100
+    const quoteAmountWithMC = getMigrationQuoteThreshold(
+        new Decimal(migrationMarketCap),
+        new Decimal(percentageSupplyOnMigration)
+    )
+    // quoteAmountWithMC = migrationQuoteThreshold * (100 - fee_percentage) / 100
+    const migrationQuoteThreshold =
+        (quoteAmountWithMC * 100) / (100 - migrationFee.feePercentage)
 
     let migrationQuoteThresholdWithDecimals = new BN(
         migrationQuoteThreshold * 10 ** tokenQuoteDecimal
@@ -443,6 +459,8 @@ export function buildCurveWithTwoSegments(
         padding0: [],
         padding1: [],
         curve,
+        tokenUpdateAuthority,
+        migrationFee,
     }
     return instructionParams
 }
@@ -638,6 +656,8 @@ export function buildCurveWithLiquidityWeights(
         padding0: [],
         padding1: [],
         curve,
+        migrationFee,
+        tokenUpdateAuthority,
     }
     return instructionParams
 }
