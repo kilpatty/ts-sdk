@@ -57,7 +57,7 @@ export function isDefaultLockedVesting(lockedVesting: {
 }
 
 /**
- * Convert a decimal to a BN
+ * Convert decimal to a BN
  * @param value - The value
  * @returns The BN
  */
@@ -66,7 +66,7 @@ export function convertDecimalToBN(value: Decimal): BN {
 }
 
 /**
- * Converts basis points (bps) to a fee numerator
+ * Converts basis points (bps) to fee numerator
  * 1 bps = 0.01% = 0.0001 in decimal
  *
  * @param bps - The value in basis points [1-10_000]
@@ -77,7 +77,7 @@ export function bpsToFeeNumerator(bps: number): BN {
 }
 
 /**
- * Converts a fee numerator back to basis points (bps)
+ * Converts fee numerator back to basis points (bps)
  *
  * @param feeNumerator - The fee numerator to convert
  * @returns The equivalent value in basis points [1-10_000]

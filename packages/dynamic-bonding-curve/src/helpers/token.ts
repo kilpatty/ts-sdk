@@ -72,7 +72,7 @@ export const getOrCreateATAInstruction = async (
 }
 
 /**
- * Create an unwrap SOL instruction
+ * Unwrap SOL instruction
  * @param owner - The owner of the SOL
  * @param receiver - The receiver of the SOL
  * @param allowOwnerOffCurve - Whether to allow the owner to be off curve
@@ -102,7 +102,7 @@ export function unwrapSOLInstruction(
 }
 
 /**
- * Create a wrap SOL instruction
+ * Wrap SOL instruction
  * @param from - The from address
  * @param to - The to address
  * @param amount - The amount to wrap
@@ -157,6 +157,7 @@ export function findAssociatedTokenAddress(
 
 /**
  * Get token decimals for a particular mint
+ * @param connection - The connection
  * @param mintAddress - The mint address to get decimals for
  * @returns The number of decimals for the token
  */
@@ -212,13 +213,13 @@ export async function getTokenType(
 }
 
 /**
- * Prepare the token account instruction
+ * Prepare token accounts instruction
  * @param connection - The connection
  * @param owner - The owner of the token account
  * @param payer - The payer of the token account
  * @param tokenMint - The mint of the token account
  * @param amount - The amount of the token account
- * @param tokenProgram - Optional token program ID. If not provided, will be fetched from the mint
+ * @param tokenProgram - The token program ID.
  * @returns The transaction and token account public key
  */
 export async function prepareTokenAccountTx(
@@ -259,7 +260,7 @@ export async function prepareTokenAccountTx(
 }
 
 /**
- * Clean up the token account instruction
+ * Clean up token account instruction
  * @param owner - The owner of the token account
  * @param receiver - The receiver of the token account
  * @param tokenMint - The mint of the token account

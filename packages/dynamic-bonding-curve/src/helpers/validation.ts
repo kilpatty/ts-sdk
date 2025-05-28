@@ -174,7 +174,7 @@ export function validateCurve(
 }
 
 /**
- * Validate the token supply
+ * Validate token supply
  * @param tokenSupply - The token supply
  * @param leftoverReceiver - The leftover receiver
  * @param swapBaseAmount - The swap base amount

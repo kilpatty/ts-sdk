@@ -26,14 +26,9 @@ import {
     wrapSOLInstruction,
     deriveDbcTokenVaultAddress,
     getTokenType,
-    findAssociatedTokenAddress,
     prepareTokenAccountTx,
 } from '../helpers'
-import {
-    createAssociatedTokenAccountIdempotentInstruction,
-    NATIVE_MINT,
-    TOKEN_2022_PROGRAM_ID,
-} from '@solana/spl-token'
+import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { METAPLEX_PROGRAM_ID } from '../constants'
 import { swapQuote } from '../math/swapQuote'
