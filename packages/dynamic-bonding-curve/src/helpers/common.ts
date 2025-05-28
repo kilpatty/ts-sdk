@@ -787,8 +787,7 @@ export function getLockedVestingParams(
     cliffUnlockAmount: number,
     totalVestingDuration: number,
     cliffDurationFromMigrationTime: number,
-    tokenBaseDecimal: TokenDecimal,
-    activationType: ActivationType
+    tokenBaseDecimal: TokenDecimal
 ): {
     amountPerPeriod: BN
     cliffDurationFromMigrationTime: BN

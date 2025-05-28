@@ -84,8 +84,7 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         cliffUnlockAmount,
         totalVestingDuration,
         cliffDurationFromMigrationTime,
-        tokenBaseDecimal,
-        activationType
+        tokenBaseDecimal
     )
 
     const migrationBaseSupply = new BN(totalTokenSupply)
@@ -204,7 +203,6 @@ export function buildCurveWithMarketCap(
         initialMarketCap,
         migrationMarketCap,
         totalTokenSupply,
-        activationType,
         tokenBaseDecimal,
     } = buildCurveWithMarketCapParam
 
@@ -222,8 +220,7 @@ export function buildCurveWithMarketCap(
         cliffUnlockAmount,
         totalVestingDuration,
         cliffDurationFromMigrationTime,
-        tokenBaseDecimal,
-        activationType
+        tokenBaseDecimal
     )
 
     const totalSupply = new BN(totalTokenSupply).mul(
@@ -308,8 +305,7 @@ export function buildCurveWithTwoSegments(
         cliffUnlockAmount,
         totalVestingDuration,
         cliffDurationFromMigrationTime,
-        tokenBaseDecimal,
-        activationType
+        tokenBaseDecimal
     )
 
     let migrationBaseSupply = new BN(totalTokenSupply)
@@ -510,8 +506,7 @@ export function buildCurveWithLiquidityWeights(
         cliffUnlockAmount,
         totalVestingDuration,
         cliffDurationFromMigrationTime,
-        tokenBaseDecimal,
-        activationType
+        tokenBaseDecimal
     )
 
     // 1. finding Pmax and Pmin
@@ -709,8 +704,7 @@ export function buildCurveWithCreatorFirstBuy(
         cliffUnlockAmount,
         totalVestingDuration,
         cliffDurationFromMigrationTime,
-        tokenBaseDecimal,
-        activationType
+        tokenBaseDecimal
     )
 
     // find Pmax and Pmin

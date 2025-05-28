@@ -2913,7 +2913,6 @@ const lockedVestingParams = getLockedVestingParams(
     totalVestingDuration: 600,
     cliffDurationFromMigrationTime: 600,
     tokenBaseDecimal: 6,
-    activationType: 0
 )
 ```
 
