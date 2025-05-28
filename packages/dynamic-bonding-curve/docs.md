@@ -1402,7 +1402,9 @@ const transaction = await client.pool.createConfigAndPoolWithFirstBuy({
 - The baseMint token type must be the same as the config key's token type.
 - The poolCreator will be the buyer for the first buy.
 - You can use any of the build curve functions to create the curve configuration.
-- This function does not handle wrapping or unwrapping of SOL, as well as ATA creation for the quote mint. So you will need to use `prepareTokenAccountTx` if your quoteMint is SOL or if you require quoteMint ATA creation, and use `cleanUpTokenAccountTx` to unwrap SOL and close the ATA.
+- This function does not handle wrapping or unwrapping of SOL, as well as ATA creation for the quote mint. So you will need to
+    - Use `prepareTokenAccountTx` if your quoteMint is SOL or if you require quoteMint ATA creation
+    - Use `cleanUpTokenAccountTx` to unwrap SOL and close the ATA.
 
 ---
 
