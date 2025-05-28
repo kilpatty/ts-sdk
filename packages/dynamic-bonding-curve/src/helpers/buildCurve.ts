@@ -98,6 +98,9 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
     )
 
     if (migrationFee.feePercentage > 0) {
+        // buffer migration fee for migration quote threshold
+        // migrationQuoteThreshold = migrationQuoteThresholdWithBuffer * (100 - fee_percentage) / 100
+        // migrationQuoteThresholdWithBuffer = migrationQuoteThreshold * 100 / (100 - fee_percentage)
         migrationQuoteThreshold =
             (migrationQuoteThreshold * 100) / (100 - migrationFee.feePercentage)
     }
@@ -213,7 +216,6 @@ export function buildCurveWithMarketCap(
         migrationMarketCap,
         totalTokenSupply,
         tokenBaseDecimal,
-        migrationFee,
     } = buildCurveWithMarketCapParam
 
     const {
@@ -332,7 +334,10 @@ export function buildCurveWithTwoSegments(
         new Decimal(migrationMarketCap),
         new Decimal(percentageSupplyOnMigration)
     )
+
+    // buffer migration fee for migration quote threshold
     // quoteAmountWithMC = migrationQuoteThreshold * (100 - fee_percentage) / 100
+    // migrationQuoteThreshold = quoteAmountWithMC * 100 /  (100 - fee_percentage)
     const migrationQuoteThreshold =
         (quoteAmountWithMC * 100) / (100 - migrationFee.feePercentage)
 
@@ -473,7 +478,7 @@ export function buildCurveWithTwoSegments(
 export function buildCurveWithLiquidityWeights(
     buildCurveWithLiquidityWeightsParam: BuildCurveWithLiquidityWeightsParam
 ): ConfigParameters {
-    const {
+    let {
         totalTokenSupply,
         migrationOption,
         tokenBaseDecimal,
@@ -492,6 +497,8 @@ export function buildCurveWithLiquidityWeights(
         initialMarketCap,
         migrationMarketCap,
         liquidityWeights,
+        migrationFee,
+        tokenUpdateAuthority,
     } = buildCurveWithLiquidityWeightsParam
 
     const {
@@ -526,6 +533,14 @@ export function buildCurveWithLiquidityWeights(
         cliffDurationFromMigrationTime,
         tokenBaseDecimal
     )
+
+    if (migrationFee.feePercentage > 0) {
+        // buffer for migration fee
+        // migrationMarketCap = migrationMarketCapWithBuffer * (100 - fee_percentage) / 100
+        // migrationMarketCapWithBuffer = migrationMarketCap * 100 / (100 - fee_percentage)
+        migrationMarketCap =
+            (migrationMarketCap * 100) / (100 - migrationFee.feePercentage)
+    }
 
     // 1. finding Pmax and Pmin
     let pMin = getSqrtPriceFromMarketCap(
@@ -670,7 +685,7 @@ export function buildCurveWithLiquidityWeights(
 export function buildCurveWithCreatorFirstBuy(
     buildCurveWithCreatorFirstBuyParam: BuildCurveWithCreatorFirstBuyParam
 ): ConfigParameters {
-    const {
+    let {
         totalTokenSupply,
         migrationOption,
         tokenBaseDecimal,
@@ -689,6 +704,8 @@ export function buildCurveWithCreatorFirstBuy(
         initialMarketCap,
         migrationMarketCap,
         liquidityWeights,
+        migrationFee,
+        tokenUpdateAuthority,
     } = buildCurveWithCreatorFirstBuyParam
 
     const { quoteAmount, baseAmount } =
@@ -726,6 +743,14 @@ export function buildCurveWithCreatorFirstBuy(
         cliffDurationFromMigrationTime,
         tokenBaseDecimal
     )
+
+    if (migrationFee.feePercentage > 0) {
+        // buffer for migration fee
+        // migrationMarketCap = migrationMarketCapWithBuffer * (100 - fee_percentage) / 100
+        // migrationMarketCapWithBuffer = migrationMarketCap * 100 / (100 - fee_percentage)
+        migrationMarketCap =
+            (migrationMarketCap * 100) / (100 - migrationFee.feePercentage)
+    }
 
     // find Pmax and Pmin
     let pMin = getSqrtPriceFromMarketCap(
@@ -895,6 +920,8 @@ export function buildCurveWithCreatorFirstBuy(
         padding0: [],
         padding1: [],
         curve,
+        migrationFee,
+        tokenUpdateAuthority,
     }
     return instructionParams
 }
