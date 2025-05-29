@@ -341,12 +341,6 @@ export function buildCurveWithTwoSegments(
         new Decimal(migrationBaseSupply.toString())
     )
 
-    // buffer migration fee for migration quote threshold
-    // migrationQuoteThreshold = migrationQuoteThresholdWithBuffer * (100 - fee_percentage) / 100
-    // migrationQuoteThresholdWithBuffer = migrationQuoteThreshold * 100 /  (100 - fee_percentage)
-    migrationQuoteThreshold =
-        (migrationQuoteThreshold * 100) / (100 - migrationFee.feePercentage)
-
     let migrationQuoteThresholdWithDecimals = new BN(
         migrationQuoteThreshold * 10 ** tokenQuoteDecimal
     )
