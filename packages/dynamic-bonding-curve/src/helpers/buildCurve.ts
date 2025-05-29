@@ -102,15 +102,7 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         new Decimal(migrationBaseSupply.toString())
     )
 
-    if (migrationFee.feePercentage > 0) {
-        // buffer migration fee for migration quote threshold
-        // migrationQuoteThreshold = migrationQuoteThresholdWithBuffer * (100 - fee_percentage) / 100
-        // migrationQuoteThresholdWithBuffer = migrationQuoteThreshold * 100 / (100 - fee_percentage)
-        migrationQuoteThreshold =
-            (migrationQuoteThreshold * 100) / (100 - migrationFee.feePercentage)
-    }
-
-    const migrationQuoteThresholdWithDecimals = new BN(
+    let migrationQuoteThresholdWithDecimals = new BN(
         migrationQuoteThreshold * 10 ** tokenQuoteDecimal
     )
 
@@ -137,6 +129,15 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         .sub(totalVestingAmount)
         .sub(totalLeftover)
 
+    if (migrationFee.feePercentage > 0) {
+        // buffer migration fee for migration quote threshold
+        // migrationQuoteThreshold = migrationQuoteThresholdWithBuffer * (100 - fee_percentage) / 100
+        // migrationQuoteThresholdWithBuffer = migrationQuoteThreshold * 100 / (100 - fee_percentage)
+        migrationQuoteThresholdWithDecimals =
+            migrationQuoteThresholdWithDecimals
+                .muln(100)
+                .divn(100 - migrationFee.feePercentage)
+    }
     const { sqrtStartPrice, curve } = getFirstCurve(
         migrateSqrtPrice,
         migrationBaseAmount,
@@ -380,6 +381,16 @@ export function buildCurveWithTwoSegments(
         tokenQuoteDecimal
     )
 
+    if (migrationFee.feePercentage > 0) {
+        // buffer migration fee for migration quote threshold
+        // migrationQuoteThreshold = migrationQuoteThresholdWithBuffer * (100 - fee_percentage) / 100
+        // migrationQuoteThresholdWithBuffer = migrationQuoteThreshold * 100 / (100 - fee_percentage)
+        migrationQuoteThresholdWithDecimals =
+            migrationQuoteThresholdWithDecimals
+                .muln(100)
+                .divn(100 - migrationFee.feePercentage)
+    }
+
     // instantiate midSqrtPriceDecimal1
     let midSqrtPriceDecimal1 = new Decimal(migrateSqrtPrice.toString())
         .mul(new Decimal(initialSqrtPrice.toString()))
@@ -403,6 +414,7 @@ export function buildCurveWithTwoSegments(
     let midPrices = [midSqrtPrice1, midSqrtPrice2, midSqrtPrice3]
     let sqrtStartPrice = new BN(0)
     let curve: { sqrtPrice: BN; liquidity: BN }[] = []
+
     for (let i = 0; i < midPrices.length; i++) {
         const result = getTwoCurve(
             migrateSqrtPrice,
@@ -534,14 +546,6 @@ export function buildCurveWithLiquidityWeights(
         cliffDurationFromMigrationTime,
         tokenBaseDecimal
     )
-
-    if (migrationFee.feePercentage > 0) {
-        // buffer for migration fee
-        // migrationMarketCap = migrationMarketCapWithBuffer * (100 - fee_percentage) / 100
-        // migrationMarketCapWithBuffer = migrationMarketCap * 100 / (100 - fee_percentage)
-        migrationMarketCap =
-            (migrationMarketCap * 100) / (100 - migrationFee.feePercentage)
-    }
 
     // 1. finding Pmax and Pmin
     let pMin = getSqrtPriceFromMarketCap(
