@@ -27,6 +27,7 @@ import {
 } from './common'
 import { getInitialLiquidityFromDeltaBase } from '../math/curve'
 import { bpsToFeeNumerator, convertDecimalToBN } from './utils'
+import { mulDiv } from '../math/utilsMath'
 
 /**
  * Build a custom constant product curve
@@ -97,6 +98,10 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         new BN(10).pow(new BN(tokenBaseDecimal))
     )
 
+    const migrationPrice = new Decimal(migrationQuoteThreshold.toString()).div(
+        new Decimal(migrationBaseSupply.toString())
+    )
+
     if (migrationFee.feePercentage > 0) {
         // buffer migration fee for migration quote threshold
         // migrationQuoteThreshold = migrationQuoteThresholdWithBuffer * (100 - fee_percentage) / 100
@@ -107,10 +112,6 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
 
     const migrationQuoteThresholdWithDecimals = new BN(
         migrationQuoteThreshold * 10 ** tokenQuoteDecimal
-    )
-
-    const migrationPrice = new Decimal(migrationQuoteThreshold.toString()).div(
-        new Decimal(migrationBaseSupply.toString())
     )
 
     const totalLeftover = new BN(leftover).mul(
@@ -330,23 +331,23 @@ export function buildCurveWithTwoSegments(
         new BN(10).pow(new BN(tokenBaseDecimal))
     )
 
-    const quoteAmountWithMC = getMigrationQuoteThreshold(
+    let migrationQuoteThreshold = getMigrationQuoteThreshold(
         new Decimal(migrationMarketCap),
         new Decimal(percentageSupplyOnMigration)
     )
 
+    let migrationPrice = new Decimal(migrationQuoteThreshold.toString()).div(
+        new Decimal(migrationBaseSupply.toString())
+    )
+
     // buffer migration fee for migration quote threshold
-    // quoteAmountWithMC = migrationQuoteThreshold * (100 - fee_percentage) / 100
-    // migrationQuoteThreshold = quoteAmountWithMC * 100 /  (100 - fee_percentage)
-    const migrationQuoteThreshold =
-        (quoteAmountWithMC * 100) / (100 - migrationFee.feePercentage)
+    // migrationQuoteThreshold = migrationQuoteThresholdWithBuffer * (100 - fee_percentage) / 100
+    // migrationQuoteThresholdWithBuffer = migrationQuoteThreshold * 100 /  (100 - fee_percentage)
+    migrationQuoteThreshold =
+        (migrationQuoteThreshold * 100) / (100 - migrationFee.feePercentage)
 
     let migrationQuoteThresholdWithDecimals = new BN(
         migrationQuoteThreshold * 10 ** tokenQuoteDecimal
-    )
-
-    let migrationPrice = new Decimal(migrationQuoteThreshold.toString()).div(
-        new Decimal(migrationBaseSupply.toString())
     )
 
     let migrateSqrtPrice = getSqrtPriceFromPrice(
