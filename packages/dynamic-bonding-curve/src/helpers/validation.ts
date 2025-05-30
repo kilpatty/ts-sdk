@@ -297,6 +297,20 @@ export function validateConfigParameters(
         throw new Error('Invalid migration fee option')
     }
 
+    // Migration fee percentages validation
+    if (
+        configParam.migrationFee.feePercentage < 0 ||
+        configParam.migrationFee.feePercentage > 50
+    ) {
+        throw new Error('Migration fee percentage must be between 0 and 50')
+    }
+    if (
+        configParam.migrationFee.creatorFeePercentage < 0 ||
+        configParam.migrationFee.creatorFeePercentage > 100
+    ) {
+        throw new Error('Creator fee percentage must be between 0 and 100')
+    }
+
     // Token decimals validation
     if (!validateTokenDecimals(configParam.tokenDecimal)) {
         throw new Error('Token decimal must be between 6 and 9')
