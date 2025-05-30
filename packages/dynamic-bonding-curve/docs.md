@@ -145,10 +145,11 @@ interface CreateConfigParam {
         postMigrationTokenSupply: BN // The token supply after migration
     } | null
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
-    tokenUpdateAuthority: number, // 0 - Mutable, 1 - Immutable,
+    tokenUpdateAuthority: number // 0 - Mutable, 1 - Immutable,
     migrationFee: {
-        feePercentage: number,
-        creatorFeePercentage: number,
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
     }
     padding0: []
     padding1: []
@@ -215,6 +216,11 @@ const transaction = await client.partner.createConfig({
         postMigrationTokenSupply: new BN('10000000000000000000'),
     },
     creatorTradingFeePercentage: 0,
+    tokenUpdateAuthority: 0,
+    migrationFee: {
+        feePercentage: 25,
+        creatorFeePercentage: 50,
+    },
     padding0: [],
     padding1: [],
     curve: [
@@ -468,6 +474,12 @@ interface BuildCurveParam {
     creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
     leftover: number // The leftover amount that can be withdrawn by leftover receiver
+    tokenUpdateAuthority: number // 0 - Mutable, 1 - Immutable,
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
 }
 ```
 
@@ -510,6 +522,11 @@ const curveConfig = buildCurve({
     creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
     leftover: 10000,
+    tokenUpdateAuthority: 0,
+    migrationFee: {
+        feePercentage: 25,
+        creatorFeePercentage: 50,
+    },
 })
 
 const transaction = await client.partner.createConfig({
@@ -578,6 +595,12 @@ interface BuildCurveWithMarketCapParam {
     creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
     leftover: number // The leftover amount that can be withdrawn by leftover receiver
+    tokenUpdateAuthority: number // 0 - Mutable, 1 - Immutable,
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
 }
 ```
 
@@ -620,6 +643,11 @@ const curveConfig = buildCurveWithMarketCap({
     creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
     leftover: 0,
+    tokenUpdateAuthority: 0,
+    migrationFee: {
+        feePercentage: 25,
+        creatorFeePercentage: 50,
+    },
 })
 
 const transaction = await client.partner.createConfig({
@@ -689,6 +717,12 @@ interface BuildCurveWithTwoSegmentsParam {
     creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
     leftover: number // The leftover amount that can be withdrawn by leftover receiver
+    tokenUpdateAuthority: number // 0 - Mutable, 1 - Immutable,
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
 }
 ```
 
@@ -732,6 +766,11 @@ const curveConfig = buildCurveWithTwoSegments({
     creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
     leftover: 1000000,
+    tokenUpdateAuthority: 0,
+    migrationFee: {
+        feePercentage: 25,
+        creatorFeePercentage: 50,
+    },
 })
 
 const transaction = await client.partner.createConfig({
@@ -801,6 +840,12 @@ interface BuildCurveWithLiquidityWeightsParam {
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
     leftover: number // The leftover amount that can be withdrawn by leftover receiver
     liquidityWeights: number[] // The liquidity weights for each liquidity segment in the curve
+    tokenUpdateAuthority: number // 0 - Mutable, 1 - Immutable,
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
 }
 ```
 
@@ -849,6 +894,11 @@ const curveConfig = buildCurveWithLiquidityWeights({
     creatorTradingFeePercentage: 0,
     leftover: 1000000,
     liquidityWeights,
+    tokenUpdateAuthority: 0,
+    migrationFee: {
+        feePercentage: 25,
+        creatorFeePercentage: 50,
+    },
 })
 
 const transaction = await client.partner.createConfig({
@@ -998,6 +1048,12 @@ interface CreateConfigAndPoolParam {
         postMigrationTokenSupply: BN // The token supply after migration
     } | null
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
+    tokenUpdateAuthority: number // 0 - Mutable, 1 - Immutable,
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
     padding0: []
     padding1: []
     curve: {
@@ -1070,6 +1126,11 @@ const transaction = await client.pool.createConfigAndPool({
         postMigrationTokenSupply: new BN('10000000000000000000'),
     },
     creatorTradingFeePercentage: 0,
+    tokenUpdateAuthority: 0,
+    migrationFee: {
+        feePercentage: 25,
+        creatorFeePercentage: 50,
+    },
     padding0: [],
     padding1: [],
     curve: [
@@ -1165,6 +1226,12 @@ interface CreateConfigAndPoolWithFirstBuyParam {
         postMigrationTokenSupply: BN // The token supply after migration
     } | null
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
+    tokenUpdateAuthority: number // 0 - Mutable, 1 - Immutable,
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
     padding0: []
     padding1: []
     curve: {
@@ -1243,6 +1310,11 @@ const transaction = await client.pool.createConfigAndPoolWithFirstBuy({
         postMigrationTokenSupply: new BN('10000000000000000000'),
     },
     creatorTradingFeePercentage: 0,
+    tokenUpdateAuthority: 0,
+    migrationFee: {
+        feePercentage: 25,
+        creatorFeePercentage: 50,
+    },
     padding0: [],
     padding1: [],
     curve: [

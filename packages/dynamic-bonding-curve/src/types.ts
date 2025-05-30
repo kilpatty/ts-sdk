@@ -203,8 +203,8 @@ export enum Rounding {
 }
 
 export enum TokenUpdateAuthorityOption {
-    Mutable,
-    Immutable,
+    Mutable = 0,
+    Immutable = 1,
 }
 
 ///////////

@@ -1,5 +1,4 @@
 import {
-    ActivationType,
     BaseFee,
     DynamicFeeParameters,
     FeeSchedulerMode,
@@ -22,8 +21,6 @@ import {
     MAX_SQRT_PRICE,
     MIN_SQRT_PRICE,
     ONE_Q64,
-    SLOT_DURATION,
-    TIMESTAMP_DURATION,
 } from '../constants'
 import BN from 'bn.js'
 import Decimal from 'decimal.js'
@@ -303,7 +300,7 @@ export function getDeltaAmountBase(
 }
 
 /**
- * Get MigrationQuoteAmount from MigrationQuoteThreshol and migrationFeePercent
+ * Get migrationQuoteAmount from migrationQuoteThreshold and migrationFeePercent
  * @param migrationQuoteThreshold - The migration quote threshold
  * @param migrationFeePercent - The migration fee percent
  * @returns migration quote amount to deposit to pool
@@ -319,7 +316,7 @@ export const getMigrationQuoteAmountFromMigrationQuoteThreshold = (
 }
 
 /**
- * Get MigrationQuoteThreshold from migrationQuoteAmount and migrationFeePercent
+ * Get migrationQuoteThreshold from migrationQuoteAmount and migrationFeePercent
  * @param migrationQuoteAmount - The migration quote amount
  * @param migrationFeePercent - The migration fee percent
  * @returns migration quote threshold on bonding curve
