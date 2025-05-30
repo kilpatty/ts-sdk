@@ -37,7 +37,7 @@ import { pow } from '../math/safeMath'
 import { Connection, PublicKey } from '@solana/web3.js'
 import type { DynamicBondingCurve } from '../idl/dynamic-bonding-curve/idl'
 import { Program } from '@coral-xyz/anchor'
-import { bpsToFeeNumerator, feeNumeratorToBps } from './utils'
+import { bpsToFeeNumerator, feeNumeratorToBps, fromDecimalToBN } from './utils'
 
 /**
  * Get the first key
@@ -473,7 +473,7 @@ export const getFirstCurve = (
  * @returns The total supply
  */
 export const getTotalSupplyFromCurve = (
-    migrationQuoteThresholdInLamport: BN,
+    migrationQuoteThreshold: BN,
     sqrtStartPrice: BN,
     curve: Array<LiquidityDistributionParameters>,
     lockedVesting: LockedVestingParameters,
@@ -482,7 +482,7 @@ export const getTotalSupplyFromCurve = (
     migrationFeePercent: number
 ): BN => {
     const sqrtMigrationPrice = getMigrationThresholdPrice(
-        migrationQuoteThresholdInLamport,
+        migrationQuoteThreshold,
         sqrtStartPrice,
         curve
     )
@@ -497,13 +497,13 @@ export const getTotalSupplyFromCurve = (
         curve
     )
 
-    const migrationQuoteAmountInLamport =
+    const migrationQuoteAmount =
         getMigrationQuoteAmountFromMigrationQuoteThreshold(
-            new Decimal(migrationQuoteThresholdInLamport.toString()),
+            new Decimal(migrationQuoteThreshold.toString()),
             migrationFeePercent
         )
     const migrationBaseAmount = getMigrationBaseToken(
-        new BN(migrationQuoteAmountInLamport.floor().toFixed()),
+        fromDecimalToBN(migrationQuoteAmount),
         sqrtMigrationPrice,
         migrationOption
     )
