@@ -394,24 +394,22 @@ export const getFirstCurve = (
     migrationSqrPrice: BN,
     migrationBaseAmount: BN,
     swapAmount: BN,
-    migrationQuoteThreshold: BN,
-    migrationFee: BN
+    migrationQuoteThreshold: BN
+    // add migration fee
 ) => {
+    // andrew:
     // Swap_amount = L *(1/Pmin - 1/Pmax) = L * (Pmax - Pmin) / (Pmax * Pmin)
     // Quote_amount = L * (Pmax - Pmin)
-    // Quote_amount / Migration_amount = Pmax ^ 2
+    // Quote_amount / Migration_base_amount = Pmax ^ 2
     // with migration: (quote_amount - migration fee) / Migration_amount = Pmax ^ 2
 
     // => Quote_amount / Swap_amount = (Pmax * Pmin)
-    // => (Pmax ^ 2 * Migration_amount + migration_fee) / swap_amount = (Pmax * Pmin)
-    // => P_min = (Pmax ^ 2 * Migration_amount + migration_fee) / (swap_amount * Pmax)
+    // => Swap_amount / Migration_amount = Pmax / Pmin
+    // => Pmin = Pmax * Migration_amount / Swap_amount
 
-    const denominator = swapAmount.mul(migrationSqrPrice)
     const sqrtStartPrice = migrationSqrPrice
-        .mul(migrationSqrPrice)
         .mul(migrationBaseAmount)
-        .add(migrationFee)
-        .div(denominator)
+        .div(swapAmount)
 
     const liquidity = getLiquidity(
         swapAmount,
@@ -464,7 +462,8 @@ export const getTotalSupplyFromCurve = (
         sqrtStartPrice,
         curve
     )
-
+    //andrew: calculate from quote amount deposit to pool
+    // quote amount = migrationQuoteThreshold - migration fee
     const migrationBaseAmount = getMigrationBaseToken(
         migrationQuoteAmount,
         sqrtMigrationPrice,

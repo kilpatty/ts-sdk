@@ -16,7 +16,7 @@ import {
     getFirstCurve,
     getTotalSupplyFromCurve,
     getPercentageSupplyOnMigration,
-    getMigrationQuoteAmount,
+    getDepositQuoteAmount,
     getSqrtPriceFromMarketCap,
     getBaseTokenForSwap,
     getSwapAmountWithBuffer,
@@ -38,7 +38,6 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         totalTokenSupply,
         percentageSupplyOnMigration,
         migrationQuoteThreshold,
-        migrationQuoteAmount,
         migrationOption,
         tokenBaseDecimal,
         tokenQuoteDecimal,
@@ -98,16 +97,14 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         new BN(10).pow(new BN(tokenBaseDecimal))
     )
 
-    const migrationPrice = new Decimal(migrationQuoteAmount.toString()).div(
+    // andrew: migration price = quote deposit in pool / migration base amount.
+    // quote deposit in pool = migration quote threshold - migration fee.
+    const migrationPrice = new Decimal(migrationQuoteThreshold.toString()).div(
         new Decimal(migrationBaseSupply.toString())
     )
 
-    const migrationQuoteThresholdWithDecimals = new BN(
-        migrationQuoteThreshold
-    ).mul(new BN(10).pow(new BN(tokenQuoteDecimal)))
-
-    const migrationQuoteAmountWithDecimals = new BN(migrationQuoteAmount).mul(
-        new BN(10).pow(new BN(tokenQuoteDecimal))
+    let migrationQuoteThresholdWithDecimals = new BN(
+        migrationQuoteThreshold * 10 ** tokenQuoteDecimal
     )
 
     const totalLeftover = new BN(leftover).mul(
@@ -119,7 +116,7 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         tokenBaseDecimal,
         tokenQuoteDecimal
     )
-
+    //andrew: same with value migrationBaseSupply
     const migrationBaseAmount = getMigrationBaseToken(
         new BN(migrationQuoteThresholdWithDecimals),
         migrateSqrtPrice,
@@ -137,15 +134,11 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         migrateSqrtPrice,
         migrationBaseAmount,
         swapAmount,
-        migrationQuoteThresholdWithDecimals,
-        migrationQuoteThresholdWithDecimals.sub(
-            migrationQuoteAmountWithDecimals
-        )
+        migrationQuoteThresholdWithDecimals
     )
 
     const totalDynamicSupply = getTotalSupplyFromCurve(
         migrationQuoteThresholdWithDecimals,
-        migrationQuoteAmountWithDecimals,
         sqrtStartPrice,
         curve,
         lockedVesting,
@@ -248,13 +241,13 @@ export function buildCurveWithMarketCap(
         totalSupply
     )
 
-    const migrationQuoteAmount = getMigrationQuoteAmount(
+    //andrew: update name -> get quote amount to deposit to pool
+    // buffer migration fee. -> the real migration quote threshold.
+    const migrationQuoteAmount = getDepositQuoteAmount(
         new Decimal(migrationMarketCap),
         new Decimal(percentageSupplyOnMigration)
     )
 
-    // migrationQuoteAmount = migrationQuoteThreshold * (100 - fee_percentage) / 100
-    // migrationQuoteThreshold = migrationQuoteAmount * 100 / (100 - fee_percentage)
     const migrationQuoteThreshold =
         (migrationQuoteAmount * 100) / (100 - migrationFee.feePercentage)
 
@@ -337,27 +330,21 @@ export function buildCurveWithTwoSegments(
     let totalSupply = new BN(totalTokenSupply).mul(
         new BN(10).pow(new BN(tokenBaseDecimal))
     )
-
-    const migrationQuoteAmount = getMigrationQuoteAmount(
+    // andrew:
+    // udpate getMigrationQuoteThreshold -> getQuoteAmountDepositToPool
+    // or add migration fee -> return migration quote threshold
+    let migrationQuoteThreshold = getMigrationQuoteThreshold(
         new Decimal(migrationMarketCap),
         new Decimal(percentageSupplyOnMigration)
     )
 
-    // migrationQuoteAmount = migrationQuoteThreshold * (100 - fee_percentage) / 100
-    // migrationQuoteThreshold = migrationQuoteAmount * 100 / (100 - fee_percentage)
-    const migrationQuoteThreshold =
-        (migrationQuoteAmount * 100) / (100 - migrationFee.feePercentage)
-
-    let migrationPrice = new Decimal(migrationQuoteAmount.toString()).div(
+    // andrew: migrationPrice = quote deposit to pool / migration base support.
+    let migrationPrice = new Decimal(migrationQuoteThreshold.toString()).div(
         new Decimal(migrationBaseSupply.toString())
     )
 
-    const migrationQuoteThresholdWithDecimals = new BN(
-        migrationQuoteThreshold
-    ).mul(new BN(10).pow(new BN(tokenQuoteDecimal)))
-
-    const migrationQuoteAmountWithDecimals = new BN(migrationQuoteAmount).mul(
-        new BN(10).pow(new BN(tokenQuoteDecimal))
+    let migrationQuoteThresholdWithDecimals = new BN(
+        migrationQuoteThreshold * 10 ** tokenQuoteDecimal
     )
 
     let migrateSqrtPrice = getSqrtPriceFromPrice(
@@ -366,8 +353,9 @@ export function buildCurveWithTwoSegments(
         tokenQuoteDecimal
     )
 
+    // andrew: migrationQuoteThresholdWithDecimals -> quote deposit to pool amount
     let migrationBaseAmount = getMigrationBaseToken(
-        migrationQuoteAmountWithDecimals,
+        new BN(migrationQuoteThresholdWithDecimals),
         migrateSqrtPrice,
         migrationOption
     )
@@ -431,7 +419,6 @@ export function buildCurveWithTwoSegments(
 
     let totalDynamicSupply = getTotalSupplyFromCurve(
         migrationQuoteThresholdWithDecimals,
-        migrationQuoteAmountWithDecimals,
         sqrtStartPrice,
         curve,
         lockedVesting,
@@ -603,22 +590,21 @@ export function buildCurveWithLiquidityWeights(
     // andrew: correct l0
     // Swap_Amount = sum(li * (1/p(i-1) - 1/pi))
     // Quote_Amount = sum(li * (pi-p(i-1)))
-    // Quote_Amount * (100-migrationFee) / Base_Amount = Pmax ^ 2
+    // Quote_Amount * (1-migrationFee) / Base_Amount = Pmax ^ 2
 
     // -> Base_Amount = Quote_Amount * (1-migrationFee) / Pmax ^ 2
-    // -> Swap_Amount + Base_Amount = sum(li * (1/p(i-1) - 1/pi)) + sum(li * (pi-p(i-1))) * (100-migrationFee) / Pmax ^ 2
+    // -> Swap_Amount + Base_Amount = sum(li * (1/p(i-1) - 1/pi)) + sum(li * (pi-p(i-1))) * (1-migrationFee) / Pmax ^ 2
     // l0 * sum_factor = Swap_Amount + Base_Amount
     // => l0 * sum_factor = sum(li * (1/p(i-1) - 1/pi)) + sum(li * (pi-p(i-1))) * (1-migrationFee) / Pmax ^ 2
-    // => l0 * sum_factor = l0 * (sum(liquidityWeights[i] * (1/p(i-1) - 1/pi))) + l0 * sum(liquidityWeights[i] * (pi-p(i-1))) * (100-migrationFee) / Pmax ^2
-    // => l0 * sum_factor
+    // => l0 = (Swap_Amount + Base_Amount ) / sum_factor
     //
-    let l0 = new Decimal(totalSwapAndMigrationAmount.toString()).div(sumFactor)
+    let l1 = new Decimal(totalSwapAndMigrationAmount.toString()).div(sumFactor)
 
     // construct curve
     let curve = []
     for (let i = 0; i < 16; i++) {
         let k = new Decimal(liquidityWeights[i])
-        let liquidity = convertDecimalToBN(l0.mul(k))
+        let liquidity = convertDecimalToBN(l1.mul(k))
         let sqrtPrice = i < 15 ? sqrtPrices[i + 1] : pMax
         curve.push({
             sqrtPrice,
@@ -634,6 +620,7 @@ export function buildCurveWithLiquidityWeights(
     )
 
     let migrationAmount = totalSwapAndMigrationAmount.sub(swapBaseAmountBuffer)
+    // let percentage = migrationAmount.mul(new BN(100)).div(totalSupply)
 
     // calculate migration threshold
     // andrew: quote deposit to pool -> migrationQuotethreshold + migration fee
