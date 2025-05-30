@@ -98,7 +98,12 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         new BN(10).pow(new BN(tokenBaseDecimal))
     )
 
-    const migrationQuoteAmount = getMigrationQuoteAmountFromMigrationQuoteThreshold(new BN(migrationQuoteThreshold), migrationFee.feePercentage);
+    const migrationQuoteAmount =
+        getMigrationQuoteAmountFromMigrationQuoteThreshold(
+            new Decimal(migrationQuoteThreshold),
+            migrationFee.feePercentage
+        )
+
     const migrationPrice = new Decimal(migrationQuoteAmount.toString()).div(
         new Decimal(migrationBaseSupply.toString())
     )
@@ -119,6 +124,7 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
     let migrationQuoteAmountInLamport = new BN(
         migrationQuoteThreshold * 10 ** tokenQuoteDecimal
     )
+
     const migrationBaseAmount = getMigrationBaseToken(
         new BN(migrationQuoteAmountInLamport),
         migrateSqrtPrice,
@@ -138,7 +144,7 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         swapAmount,
         migrationQuoteThresholdInLamport,
         migrationFee.feePercentage
-    );
+    )
 
     const totalDynamicSupply = getTotalSupplyFromCurve(
         migrationQuoteThresholdInLamport,
@@ -249,7 +255,11 @@ export function buildCurveWithMarketCap(
         new Decimal(migrationMarketCap),
         new Decimal(percentageSupplyOnMigration)
     )
-    const migrationQuoteThreshold = getMigrationQuoteThresholdFromMigrationQuoteAmount(migrationQuoteAmount, new Decimal(migrationFee.feePercentage)).toNumber();
+    const migrationQuoteThreshold =
+        getMigrationQuoteThresholdFromMigrationQuoteAmount(
+            migrationQuoteAmount,
+            new Decimal(migrationFee.feePercentage)
+        ).toNumber()
 
     return buildCurve({
         ...buildCurveWithMarketCapParam,
@@ -333,17 +343,22 @@ export function buildCurveWithTwoSegments(
         new Decimal(migrationMarketCap),
         new Decimal(percentageSupplyOnMigration)
     )
-    let migrationQuoteThreshold = getMigrationQuoteThresholdFromMigrationQuoteAmount(migrationQuoteAmount, new Decimal(migrationFee.feePercentage));
+    let migrationQuoteThreshold =
+        getMigrationQuoteThresholdFromMigrationQuoteAmount(
+            migrationQuoteAmount,
+            new Decimal(migrationFee.feePercentage)
+        )
 
     let migrationPrice = migrationQuoteAmount.div(
         new Decimal(migrationBaseSupply.toString())
     )
 
-    let migrationQuoteThresholdInLamport =
-        fromDecimalToBN(migrationQuoteThreshold.mul(new Decimal(10 ** tokenQuoteDecimal)));
-    let migrationQuoteAmountInLamport =
-        fromDecimalToBN(migrationQuoteAmount.mul(new Decimal(10 ** tokenQuoteDecimal)));
-
+    let migrationQuoteThresholdInLamport = fromDecimalToBN(
+        migrationQuoteThreshold.mul(new Decimal(10 ** tokenQuoteDecimal))
+    )
+    let migrationQuoteAmountInLamport = fromDecimalToBN(
+        migrationQuoteAmount.mul(new Decimal(10 ** tokenQuoteDecimal))
+    )
 
     let migrateSqrtPrice = getSqrtPriceFromPrice(
         migrationPrice.toString(),
@@ -574,7 +589,6 @@ export function buildCurveWithLiquidityWeights(
         .sub(totalVestingAmount)
         .sub(totalLeftover)
 
-
     // Swap_Amount = sum(li * (1/p(i-1) - 1/pi))
     // Quote_Amount = sum(li * (pi-p(i-1)))
     // Quote_Amount * (1-migrationFee/100) / Base_Amount = Pmax ^ 2
@@ -586,13 +600,18 @@ export function buildCurveWithLiquidityWeights(
     // => l0 = (Swap_Amount + Base_Amount ) / sum_factor
     let sumFactor = new Decimal(0)
     let pmaxWeight = new Decimal(pMax.toString())
-    let migrationFeeFactor = (new Decimal(100).sub(new Decimal(migrationFee.feePercentage))).div(new Decimal(100));
+    let migrationFeeFactor = new Decimal(100)
+        .sub(new Decimal(migrationFee.feePercentage))
+        .div(new Decimal(100))
     for (let i = 1; i < 17; i++) {
         let pi = new Decimal(sqrtPrices[i].toString())
         let piMinus = new Decimal(sqrtPrices[i - 1].toString())
         let k = new Decimal(liquidityWeights[i - 1])
         let w1 = pi.sub(piMinus).div(pi.mul(piMinus))
-        let w2 = (pi.sub(piMinus)).mul(migrationFeeFactor).div(pmaxWeight.mul(pmaxWeight))
+        let w2 = pi
+            .sub(piMinus)
+            .mul(migrationFeeFactor)
+            .div(pmaxWeight.mul(pmaxWeight))
         let weight = k.mul(w1.add(w2))
         sumFactor = sumFactor.add(weight)
     }
@@ -617,11 +636,17 @@ export function buildCurveWithLiquidityWeights(
         curve
     )
 
-    let migrationAmount = totalSwapAndMigrationAmount.sub(swapBaseAmountBuffer);
+    let migrationAmount = totalSwapAndMigrationAmount.sub(swapBaseAmountBuffer)
 
-    let migrationQuoteAmount = migrationAmount.mul(pMax).mul(pMax).shrn(128);
-    let migrationQuoteThreshold = getMigrationQuoteThresholdFromMigrationQuoteAmount(new Decimal(migrationQuoteAmount.toString()), new Decimal(migrationFee.feePercentage));
-    let migrationQuoteThresholdInLamport = fromDecimalToBN(migrationQuoteThreshold);
+    let migrationQuoteAmount = migrationAmount.mul(pMax).mul(pMax).shrn(128)
+    let migrationQuoteThreshold =
+        getMigrationQuoteThresholdFromMigrationQuoteAmount(
+            new Decimal(migrationQuoteAmount.toString()),
+            new Decimal(migrationFee.feePercentage)
+        )
+    let migrationQuoteThresholdInLamport = fromDecimalToBN(
+        migrationQuoteThreshold
+    )
 
     // sanity check
     let totalDynamicSupply = getTotalSupplyFromCurve(
@@ -632,7 +657,7 @@ export function buildCurveWithLiquidityWeights(
         migrationOption,
         totalLeftover,
         migrationFee.feePercentage
-    );
+    )
 
     if (totalDynamicSupply.gt(totalSupply)) {
         // precision loss is used for leftover

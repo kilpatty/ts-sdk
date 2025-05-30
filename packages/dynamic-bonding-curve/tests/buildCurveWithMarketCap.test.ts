@@ -50,8 +50,8 @@ describe('buildCurveWithMarketCap tests', () => {
         leftover: 10000,
         tokenUpdateAuthority: 0,
         migrationFee: {
-            feePercentage: 0,
-            creatorFeePercentage: 0,
+            feePercentage: 10,
+            creatorFeePercentage: 50,
         },
     }
 
