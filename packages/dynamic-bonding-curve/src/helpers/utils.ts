@@ -5,6 +5,15 @@ import { BASIS_POINT_MAX, FEE_DENOMINATOR } from '../constants'
 import Decimal from 'decimal.js'
 
 /**
+ * Get BN value from decimal value after roundown
+ * @param value - The decimal value
+ * @returns value in BN after roundown
+ */
+export function fromDecimalToBN(value: Decimal): BN {
+    return new BN(value.floor().toFixed());
+}
+
+/**
  * Create a memcmp filter for owner-based filtering
  * @param owner - The owner public key or string
  * @param offset - The offset where the owner field is located in the account data

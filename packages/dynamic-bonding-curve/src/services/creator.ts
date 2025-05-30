@@ -22,6 +22,7 @@ import {
 } from '@solana/spl-token'
 import { DynamicBondingCurveProgram } from './program'
 import {
+    deriveDammV1MigrationMetadataAddress,
     deriveDbcPoolMetadata,
     findAssociatedTokenAddress,
     getOrCreateATAInstruction,
@@ -384,7 +385,7 @@ export class CreatorService extends DynamicBondingCurveProgram {
     ): Promise<Transaction> {
         const { virtualPool, creator, newCreator } = transferPoolCreatorParams
         const virtualPoolState = await this.state.getPool(virtualPool)
-        const migrationMetadata = deriveDbcPoolMetadata(virtualPool)
+        const migrationMetadata = deriveDammV1MigrationMetadataAddress(virtualPool)
         const transaction = await this.program.methods
             .transferPoolCreator()
             .accountsPartial({

@@ -278,7 +278,6 @@ export type BuildCurveBaseParam = {
 export type BuildCurveParam = BuildCurveBaseParam & {
     percentageSupplyOnMigration: number
     migrationQuoteThreshold: number
-    migrationQuoteAmount: number
 }
 
 export type BuildCurveWithMarketCapParam = BuildCurveBaseParam & {
@@ -296,16 +295,6 @@ export type BuildCurveWithLiquidityWeightsParam = BuildCurveBaseParam & {
     initialMarketCap: number
     migrationMarketCap: number
     liquidityWeights: number[]
-}
-
-export type BuildCurveWithCreatorFirstBuyParam = BuildCurveBaseParam & {
-    initialMarketCap: number
-    migrationMarketCap: number
-    liquidityWeights: number[]
-    creatorFirstBuyOption: {
-        quoteAmount: number
-        baseAmount: number
-    }
 }
 
 export type InitializePoolBaseParam = {
