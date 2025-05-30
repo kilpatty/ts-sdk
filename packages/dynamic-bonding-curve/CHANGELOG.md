@@ -2,6 +2,23 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.1.9] - 2025-05-30
+
+### Added
+
+- `transferPoolCreator` function for creator
+- `withdrawMigrationFee` function for creator
+- `withdrawMigrationFee` function for partner
+
+### Changed
+
+- Removed `buildCurveWithCreatorFirstBuy` function
+
+### Breaking Changes
+
+- `createConfig`'s `ConfigParameters` include `migrationFee` and `tokenUpdateAuthority` configurations.
+- All `buildCurve` functions now require `migrationFee` and `tokenUpdateAuthority` configurations.
+
 ## [1.1.8] - 2025-05-28
 
 ### Added
