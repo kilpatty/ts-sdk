@@ -8,6 +8,7 @@
     - [createPartnerMetadata](#createPartnerMetadata)
     - [claimPartnerTradingFee](#claimPartnerTradingFee)
     - [partnerWithdrawSurplus](#partnerWithdrawSurplus)
+    - [partnerWithdrawMigrationFee](#partnerWithdrawMigrationFee)
 
 - [Build Curve Functions](#build-curve-functions)
 
@@ -41,6 +42,8 @@
     - [createPoolMetadata](#createPoolMetadata)
     - [claimCreatorTradingFee](#claimCreatorTradingFee)
     - [creatorWithdrawSurplus](#creatorWithdrawSurplus)
+    - [creatorWithdrawMigrationFee](#creatorWithdrawMigrationFee)
+    - [transferPoolCreator](#transferPoolCreator)
 
 - [State Functions](#state-functions)
 
@@ -384,6 +387,46 @@ const transaction = await client.partner.claimPartnerTradingFee({
 - The feeClaimer of the pool must be the same as the feeClaimer in the `ClaimTradingFeeParam` params.
 - You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
 - If you indicated a `receiver`, the receiver **is not** required to sign the transaction, however, you must provide a `tempWSolAcc` if the receiver != creato and if the quote mint is SOL.
+
+---
+
+### partnerWithdrawMigrationFee
+
+Withdraws the partner's migration fee from the pool.
+
+#### Function
+
+```typescript
+async partnerWithdrawMigrationFee(withdrawMigrationFeeParam: WithdrawMigrationFeeParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface WithdrawMigrationFeeParam {
+    virtualPool: PublicKey // The virtual pool address
+    sender: PublicKey // The wallet that will claim the fee
+    feePayer?: PublicKey // The wallet that will pay for the transaction
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.partner.partnerWithdrawMigrationFee({
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    sender: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    feePayer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+})
+```
+
+#### Notes
+
+- The sender of the pool must be the same as the partner (`feeClaimer`) in the config key.
 
 ---
 
@@ -2035,6 +2078,86 @@ const transaction = await client.creator.creatorWithdrawSurplus({
 #### Notes
 
 - The creator of the pool must be the same as the creator in the `CreatorWithdrawSurplusParam` params.
+
+---
+
+### creatorWithdrawMigrationFee
+
+Withdraws the creator's migration fee from the pool.
+
+#### Function
+
+```typescript
+async creatorWithdrawMigrationFee(withdrawMigrationFeeParam: WithdrawMigrationFeeParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface WithdrawMigrationFeeParam {
+    virtualPool: PublicKey // The virtual pool address
+    sender: PublicKey // The wallet that will claim the fee
+    feePayer?: PublicKey // The wallet that will pay for the transaction
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.creator.creatorWithdrawMigrationFee({
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    sender: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    feePayer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+})
+```
+
+#### Notes
+
+- The sender of the pool must be the same as the creator (`poolCreator`) in the virtual pool.
+
+---
+
+### transferPoolCreator
+
+Transfers the pool creator to a new wallet.
+
+#### Function
+
+```typescript
+async transferPoolCreator(transferPoolCreatorParam: TransferPoolCreatorParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface TransferPoolCreatorParam {
+    virtualPool: PublicKey // The virtual pool address
+    creator: PublicKey // The current creator of the pool
+    newCreator: PublicKey // The new creator of the pool
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.creator.transferPoolCreator({
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    creator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    newCreator: new PublicKey('newCreator1234567890abcdefghijklmnopqrstuvwxyz'),
+})
+```
+
+#### Notes
+
+- The creator of the pool must be the signer of the transaction.
 
 ---
 

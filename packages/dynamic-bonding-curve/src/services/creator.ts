@@ -385,7 +385,8 @@ export class CreatorService extends DynamicBondingCurveProgram {
     ): Promise<Transaction> {
         const { virtualPool, creator, newCreator } = transferPoolCreatorParams
         const virtualPoolState = await this.state.getPool(virtualPool)
-        const migrationMetadata = deriveDammV1MigrationMetadataAddress(virtualPool)
+        const migrationMetadata =
+            deriveDammV1MigrationMetadataAddress(virtualPool)
         const transaction = await this.program.methods
             .transferPoolCreator()
             .accountsPartial({
@@ -406,7 +407,7 @@ export class CreatorService extends DynamicBondingCurveProgram {
         return transaction
     }
 
-    async withdrawMigrationFee(
+    async creatorWithdrawMigrationFee(
         withdrawMigrationFeeParams: WithdrawMigrationFeeParam
     ): Promise<Transaction> {
         const { virtualPool, sender, feePayer } = withdrawMigrationFeeParams
