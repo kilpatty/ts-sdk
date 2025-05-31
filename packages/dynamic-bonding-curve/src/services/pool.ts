@@ -264,10 +264,6 @@ export class PoolService extends DynamicBondingCurveProgram {
         const { buyAmount, minimumAmountOut, referralTokenAccount } =
             createConfigAndPoolWithFirstBuyParam.swapBuyParam
 
-        if (!buyAmount) {
-            return null
-        }
-
         // error checks
         validateSwapAmount(buyAmount)
 
@@ -474,7 +470,7 @@ export class PoolService extends DynamicBondingCurveProgram {
     ): Promise<{
         createConfigTx: Transaction
         createPoolTx: Transaction
-        swapBuyTx: Transaction | null
+        swapBuyTx: Transaction
     }> {
         const {
             config,
@@ -493,8 +489,6 @@ export class PoolService extends DynamicBondingCurveProgram {
         const payerAddress = new PublicKey(payer)
         const feeClaimerAddress = new PublicKey(feeClaimer)
         const leftoverReceiverAddress = new PublicKey(leftoverReceiver)
-
-        const tx = new Transaction()
 
         // create config instruction
         const createConfigTx = await this.createConfigTx(
@@ -576,83 +570,76 @@ export class PoolService extends DynamicBondingCurveProgram {
             tx = await this.initializeToken2022Pool(baseParams)
         }
 
-        // add buy instructions if buyAmount is provided
-        if (buyAmount) {
-            // error checks
-            validateSwapAmount(buyAmount)
+        // error checks
+        validateSwapAmount(buyAmount)
 
-            const {
-                inputMint,
-                outputMint,
-                inputTokenProgram,
-                outputTokenProgram,
-            } = this.prepareSwapParams(
+        const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
+            this.prepareSwapParams(
                 false,
                 { baseMint, poolType: tokenType },
                 poolConfigState
             )
 
-            const {
-                ataTokenA: inputTokenAccount,
-                ataTokenB: outputTokenAccount,
-                instructions: preInstructions,
-            } = await this.prepareTokenAccounts(
-                poolCreator,
-                poolCreator,
-                inputMint,
-                outputMint,
-                inputTokenProgram,
-                outputTokenProgram
-            )
+        const {
+            ataTokenA: inputTokenAccount,
+            ataTokenB: outputTokenAccount,
+            instructions: preInstructions,
+        } = await this.prepareTokenAccounts(
+            poolCreator,
+            poolCreator,
+            inputMint,
+            outputMint,
+            inputTokenProgram,
+            outputTokenProgram
+        )
 
-            // add SOL wrapping instructions if needed
-            if (inputMint.equals(NATIVE_MINT)) {
-                preInstructions.push(
-                    ...wrapSOLInstruction(
-                        poolCreator,
-                        inputTokenAccount,
-                        BigInt(buyAmount.toString())
-                    )
-                )
-            }
-
-            // add postInstructions for SOL unwrapping if needed
-            const postInstructions: TransactionInstruction[] = []
-            if (
-                [inputMint.toBase58(), outputMint.toBase58()].includes(
-                    NATIVE_MINT.toBase58()
-                )
-            ) {
-                const unwrapIx = unwrapSOLInstruction(poolCreator, poolCreator)
-                unwrapIx && postInstructions.push(unwrapIx)
-            }
-
-            const swapTx = await this.program.methods
-                .swap({
-                    amountIn: buyAmount,
-                    minimumAmountOut,
-                })
-                .accountsPartial({
-                    baseMint,
-                    quoteMint,
-                    pool,
-                    baseVault,
-                    quoteVault,
-                    config,
-                    poolAuthority: this.poolAuthority,
-                    referralTokenAccount,
+        // add SOL wrapping instructions if needed
+        if (inputMint.equals(NATIVE_MINT)) {
+            preInstructions.push(
+                ...wrapSOLInstruction(
+                    poolCreator,
                     inputTokenAccount,
-                    outputTokenAccount,
-                    payer: poolCreator,
-                    tokenBaseProgram: outputTokenProgram,
-                    tokenQuoteProgram: inputTokenProgram,
-                })
-                .preInstructions(preInstructions)
-                .postInstructions(postInstructions)
-                .transaction()
-
-            tx.add(...swapTx.instructions)
+                    BigInt(buyAmount.toString())
+                )
+            )
         }
+
+        // add postInstructions for SOL unwrapping if needed
+        const postInstructions: TransactionInstruction[] = []
+        if (
+            [inputMint.toBase58(), outputMint.toBase58()].includes(
+                NATIVE_MINT.toBase58()
+            )
+        ) {
+            const unwrapIx = unwrapSOLInstruction(poolCreator, poolCreator)
+            unwrapIx && postInstructions.push(unwrapIx)
+        }
+
+        const swapTx = await this.program.methods
+            .swap({
+                amountIn: buyAmount,
+                minimumAmountOut,
+            })
+            .accountsPartial({
+                baseMint,
+                quoteMint,
+                pool,
+                baseVault,
+                quoteVault,
+                config,
+                poolAuthority: this.poolAuthority,
+                referralTokenAccount,
+                inputTokenAccount,
+                outputTokenAccount,
+                payer: poolCreator,
+                tokenBaseProgram: outputTokenProgram,
+                tokenQuoteProgram: inputTokenProgram,
+            })
+            .preInstructions(preInstructions)
+            .postInstructions(postInstructions)
+            .transaction()
+
+        tx.add(...swapTx.instructions)
 
         return tx
     }
