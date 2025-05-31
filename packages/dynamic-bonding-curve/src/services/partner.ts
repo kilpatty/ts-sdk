@@ -414,7 +414,7 @@ export class PartnerService extends DynamicBondingCurveProgram {
             .transaction()
     }
 
-    async withdrawMigrationFee(
+    async partnerWithdrawMigrationFee(
         withdrawMigrationFeeParams: WithdrawMigrationFeeParam
     ): Promise<Transaction> {
         const { virtualPool, sender, feePayer } = withdrawMigrationFeeParams
