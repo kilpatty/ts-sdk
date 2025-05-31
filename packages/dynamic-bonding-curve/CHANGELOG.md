@@ -2,6 +2,13 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.2.0] - 2025-05-31
+
+### Changed
+
+- `withdrawMigrationFee` function for partner and creator is now called `partnerWithdrawMigrationFee` and `creatorWithdrawMigrationFee`
+- `createConfigAndPoolWithFirstBuy` function now returns an object containing the new config transaction, new pool transaction, and first buy transaction
+
 ## [1.1.9] - 2025-05-30
 
 ### Added
