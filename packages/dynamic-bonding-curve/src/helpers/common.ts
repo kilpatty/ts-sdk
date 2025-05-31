@@ -859,7 +859,9 @@ export function getLockedVestingParams(
             amountPerPeriod: new BN(1).mul(
                 new BN(10).pow(new BN(tokenBaseDecimal))
             ),
-            cliffDurationFromMigrationTime: new BN(1),
+            cliffDurationFromMigrationTime: new BN(
+                cliffDurationFromMigrationTime
+            ),
             frequency: new BN(1),
             numberOfPeriod: new BN(1),
             cliffUnlockAmount: new BN(totalLockedVestingAmount - 1).mul(
