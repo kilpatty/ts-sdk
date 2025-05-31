@@ -467,11 +467,15 @@ export class PoolService extends DynamicBondingCurveProgram {
     /**
      * Create a new config and pool and buy tokens
      * @param createConfigAndPoolWithFirstBuyParam - The parameters for the config and pool and buy
-     * @returns An array of instructions containing a new config key, a new token pool and the first initial buy of tokens
+     * @returns An object containing the new config transaction, new pool transaction, and first buy transaction
      */
     async createConfigAndPoolWithFirstBuy(
         createConfigAndPoolWithFirstBuyParam: CreateConfigAndPoolWithFirstBuyParam
-    ): Promise<Transaction[]> {
+    ): Promise<{
+        createConfigTx: Transaction
+        createPoolTx: Transaction
+        swapBuyTx: Transaction | null
+    }> {
         const {
             config,
             feeClaimer,
@@ -520,7 +524,11 @@ export class PoolService extends DynamicBondingCurveProgram {
             quoteMintToken
         )
 
-        return [createConfigTx, createPoolTx, swapBuyTx]
+        return {
+            createConfigTx,
+            createPoolTx,
+            swapBuyTx,
+        }
     }
 
     /**

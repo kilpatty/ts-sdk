@@ -1256,7 +1256,7 @@ interface CreateConfigAndPoolWithFirstBuyParam {
 
 #### Returns
 
-An array of transactions that requires signatures before being submitted to the network.
+An object of transactions (containing createConfigTx, createPoolTx, and swapBuyTx) that requires signatures before being submitted to the network.
 
 #### Example
 
@@ -1345,9 +1345,9 @@ const transaction = await client.pool.createConfigAndPoolWithFirstBuy({
 #### Notes
 
 - The payer must be the same as the payer in the `CreateConfigAndPoolWithFirstBuyParam` params.
-- tx[0] is the config creation transaction. Requires the payer and config to sign the transaction.
-- tx[1] is the pool creation transaction. Requires the payer, poolCreator, and baseMint to sign the transaction.
-- tx[2] is the first buy transaction. Requires the poolCreator to sign the transaction.
+- The `createConfigTx` requires the payer and config to sign the transaction.
+- The `createPoolTx` requires the payer, poolCreator, and baseMint to sign the transaction.
+- The `swapBuyTx` requires the poolCreator and payer to sign the transaction.
 
 ---
 
