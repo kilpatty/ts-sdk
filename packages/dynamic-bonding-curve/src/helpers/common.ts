@@ -779,7 +779,7 @@ export function getRateLimiterParams(
     maxFeeBps: number,
     referenceAmount: number,
     maxDuration: number,
-    tokenQuoteDecimal: number,
+    tokenQuoteDecimal: TokenDecimal,
     activationType: ActivationType
 ): BaseFee {
     if (baseFeeBps <= 0 || maxFeeBps <= 0) {
@@ -825,9 +825,10 @@ export function getRateLimiterParams(
         )
     }
 
-    const referenceAmountInLamports = new BN(referenceAmount)
-        .mul(new BN(10).pow(new BN(tokenQuoteDecimal)))
-        .toNumber()
+    const referenceAmountInLamports = convertToLamports(
+        referenceAmount,
+        tokenQuoteDecimal
+    )
 
     // Set max duration based on activation type
     const maxLimiterDuration =

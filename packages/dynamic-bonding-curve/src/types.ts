@@ -247,8 +247,6 @@ export type RateLimiterParams = {
     maxFeeBps: number
     referenceAmount: number
     maxDuration: number
-    tokenQuoteDecimal: TokenDecimal
-    activationType: ActivationType
 }
 
 export type LockedVestingParams = {
