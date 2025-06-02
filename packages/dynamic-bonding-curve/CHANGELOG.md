@@ -2,6 +2,13 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.2.1] - 2025-06-02
+
+### Changed
+
+- Fixed `buildCurveWithMarketCap` function to correctly calculate the `migrationQuoteThreshold`
+- Fixed `validateConfigParameters` function to calculate `migrationBaseAmount` correctly
+
 ## [1.2.0] - 2025-05-31
 
 ### Changed
