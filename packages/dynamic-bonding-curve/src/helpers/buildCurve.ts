@@ -63,14 +63,8 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
     // handle base fee params
     const baseFee = (() => {
         if (baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter) {
-            const {
-                baseFeeBps,
-                maxFeeBps,
-                referenceAmount,
-                maxDuration,
-                tokenQuoteDecimal,
-                activationType,
-            } = baseFeeParams.rateLimiterParam
+            const { baseFeeBps, maxFeeBps, referenceAmount, maxDuration } =
+                baseFeeParams.rateLimiterParam
 
             return getRateLimiterParams(
                 baseFeeBps,
@@ -330,14 +324,8 @@ export function buildCurveWithTwoSegments(
     // handle base fee params
     const baseFee = (() => {
         if (baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter) {
-            const {
-                baseFeeBps,
-                maxFeeBps,
-                referenceAmount,
-                maxDuration,
-                tokenQuoteDecimal,
-                activationType,
-            } = baseFeeParams.rateLimiterParam
+            const { baseFeeBps, maxFeeBps, referenceAmount, maxDuration } =
+                baseFeeParams.rateLimiterParam
 
             return getRateLimiterParams(
                 baseFeeBps,
@@ -571,14 +559,8 @@ export function buildCurveWithLiquidityWeights(
     // handle base fee params
     const baseFee = (() => {
         if (baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter) {
-            const {
-                baseFeeBps,
-                maxFeeBps,
-                referenceAmount,
-                maxDuration,
-                tokenQuoteDecimal,
-                activationType,
-            } = baseFeeParams.rateLimiterParam
+            const { baseFeeBps, maxFeeBps, referenceAmount, maxDuration } =
+                baseFeeParams.rateLimiterParam
 
             return getRateLimiterParams(
                 baseFeeBps,
