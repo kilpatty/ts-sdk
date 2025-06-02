@@ -28,7 +28,8 @@ describe('Rate Limiter tests', () => {
             activationType
         )
 
-        // Verify the parameters
+        console.log(params)
+
         expect(params.baseFeeMode).toBe(BaseFeeMode.RateLimiter)
         expect(params.cliffFeeNumerator.toNumber()).toBe(
             bpsToFeeNumerator(baseFeeBps).toNumber()

@@ -85,9 +85,10 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
                 startingFeeBps,
                 endingFeeBps,
                 numberOfPeriod,
-                baseFeeMode,
                 totalDuration,
             } = baseFeeParams.feeSchedulerParam
+
+            const baseFeeMode = baseFeeParams.baseFeeMode
 
             return getFeeSchedulerParams(
                 startingFeeBps,
@@ -351,9 +352,10 @@ export function buildCurveWithTwoSegments(
                 startingFeeBps,
                 endingFeeBps,
                 numberOfPeriod,
-                baseFeeMode,
                 totalDuration,
             } = baseFeeParams.feeSchedulerParam
+
+            const baseFeeMode = baseFeeParams.baseFeeMode
 
             return getFeeSchedulerParams(
                 startingFeeBps,
@@ -591,9 +593,10 @@ export function buildCurveWithLiquidityWeights(
                 startingFeeBps,
                 endingFeeBps,
                 numberOfPeriod,
-                baseFeeMode,
                 totalDuration,
             } = baseFeeParams.feeSchedulerParam
+
+            const baseFeeMode = baseFeeParams.baseFeeMode
 
             return getFeeSchedulerParams(
                 startingFeeBps,

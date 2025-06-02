@@ -239,7 +239,6 @@ export type FeeSchedulerParams = {
     startingFeeBps: number
     endingFeeBps: number
     numberOfPeriod: number
-    baseFeeMode: BaseFeeMode
     totalDuration: number
 }
 
