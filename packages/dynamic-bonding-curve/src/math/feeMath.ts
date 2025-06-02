@@ -58,14 +58,6 @@ export function getFeeNumeratorInPeriod(
     return SafeMath.div(SafeMath.mul(cliffFeeNumerator, result), ONE_Q64)
 }
 
-/**
- * Get fee numerator from amount for rate limiter
- * @param cliffFeeNumerator Cliff fee numerator
- * @param referenceAmount Reference amount
- * @param feeIncrementBps Fee increment in basis points
- * @param inputAmount Input amount
- * @returns Fee numerator
- */
 export function getFeeNumeratorFromAmount(
     cliffFeeNumerator: BN,
     referenceAmount: BN,
@@ -97,7 +89,7 @@ export function getFeeNumeratorFromAmount(
     const b = diff.mod(referenceAmount)
 
     // calculate fee numerator
-    let feeNumerator: BN
+    let tradingFee: BN
     if (a.lt(maxIndex)) {
         // if a < max_index
         // calculate fee using the formula:
@@ -126,8 +118,8 @@ export function getFeeNumeratorFromAmount(
         // calculate total fee
         const totalFee = referenceAmount.mul(term1.add(term2)).add(b.mul(term3))
 
-        // convert to fee numerator: fee_numerator = total_fee * FEE_DENOMINATOR / input_amount
-        feeNumerator = totalFee.mul(new BN(FEE_DENOMINATOR)).div(inputAmount)
+        // convert to trading fee: trading_fee = total_fee / FEE_DENOMINATOR
+        tradingFee = totalFee.div(new BN(FEE_DENOMINATOR))
     } else {
         // if a >= max_index
         // use MAX_FEE_NUMERATOR for the portion exceeding max_index
@@ -154,9 +146,17 @@ export function getFeeNumeratorFromAmount(
         // calculate total fee
         const totalFee = firstPartFee.add(secondPartFee)
 
-        // convert to fee numerator: fee_numerator = total_fee * FEE_DENOMINATOR / input_amount
-        feeNumerator = totalFee.mul(new BN(FEE_DENOMINATOR)).div(inputAmount)
+        // convert to trading fee: trading_fee = total_fee / FEE_DENOMINATOR
+        tradingFee = totalFee.div(new BN(FEE_DENOMINATOR))
     }
+
+    // convert to fee numerator: fee_numerator = trading_fee * FEE_DENOMINATOR / input_amount
+    const feeNumerator = mulDiv(
+        tradingFee,
+        new BN(FEE_DENOMINATOR),
+        inputAmount,
+        Rounding.Up
+    )
 
     // Cap at MAX_FEE_NUMERATOR
     return BN.min(feeNumerator, new BN(MAX_FEE_NUMERATOR))
