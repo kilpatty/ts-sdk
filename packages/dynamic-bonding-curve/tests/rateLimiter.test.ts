@@ -14,7 +14,7 @@ describe('Rate Limiter tests', () => {
     test('getRateLimiterParams with Slot activation type', () => {
         const baseFeeBps = 100 // 1%
         const maxFeeBps = 500 // 5%
-        const referenceAmount = 1000
+        const referenceAmount = 0.2
         const maxRateLimiterDuration = 100000 // slots
         const tokenQuoteDecimal = 6
         const activationType = ActivationType.Slot
@@ -39,6 +39,15 @@ describe('Rate Limiter tests', () => {
         expect(params.thirdFactor.toNumber()).toBe(
             referenceAmount * 10 ** tokenQuoteDecimal
         )
+
+        const fee = calculateRateLimiterFee(params, new BN(0.4 * 1e9))
+        console.log('0.4 SOL tx fee:', fee.toString())
+
+        const fee2 = calculateRateLimiterFee(params, new BN(0.2 * 1e9))
+        console.log('0.2 SOL tx fee:', fee2.toString())
+
+        const fee3 = calculateRateLimiterFee(params, new BN(0.1 * 1e9))
+        console.log('0.1 SOL tx fee:', fee3.toString())
     })
 
     test('getRateLimiterParams with Timestamp activation type', () => {
@@ -135,9 +144,9 @@ describe('Rate Limiter tests', () => {
     test('calculateRateLimiterFee with different input amounts', () => {
         const baseFeeBps = 100 // 1%
         const maxFeeBps = 500 // 5%
-        const referenceAmount = 1000
+        const referenceAmount = 1
         const maxRateLimiterDuration = 100000
-        const tokenQuoteDecimal = 6
+        const tokenQuoteDecimal = 9
         const activationType = ActivationType.Slot
 
         const params = getRateLimiterParams(
@@ -149,8 +158,8 @@ describe('Rate Limiter tests', () => {
             activationType
         )
 
-        // Test fee calculation for input amount <= reference amount
-        const inputAmount1 = new BN(500)
+        // test fee calculation for input amount <= reference amount
+        const inputAmount1 = new BN(0.5 * 1e9)
         const fee1 = calculateRateLimiterFee(params, inputAmount1)
         expect(fee1.toNumber()).toBe(
             inputAmount1
@@ -158,18 +167,19 @@ describe('Rate Limiter tests', () => {
                 .div(new BN(FEE_DENOMINATOR))
                 .toNumber()
         )
+        console.log('0.5 SOL tx fee:', fee1.toString())
 
-        // Test fee calculation for input amount > reference amount but < 2 * reference amount
-        const inputAmount2 = new BN(1500)
+        // test fee calculation for input amount > reference amount but < 2 * reference amount
+        const inputAmount2 = new BN(1.5 * 1e9)
         const fee2 = calculateRateLimiterFee(params, inputAmount2)
         expect(fee2.toNumber()).toBeGreaterThan(fee1.toNumber())
 
-        // Test fee calculation for input amount >> reference amount
-        const inputAmount3 = new BN(10000)
+        // test fee calculation for input amount >> reference amount
+        const inputAmount3 = new BN(10 * 1e9)
         const fee3 = calculateRateLimiterFee(params, inputAmount3)
         expect(fee3.toNumber()).toBeGreaterThan(fee2.toNumber())
 
-        // Verify that fees are increasing with input amount
+        // verif that fees are increasing with input amount
         expect(fee3.toNumber()).toBeGreaterThan(fee2.toNumber())
         expect(fee2.toNumber()).toBeGreaterThan(fee1.toNumber())
     })
