@@ -861,16 +861,15 @@ export function getLockedVestingParams(
 
     if (totalLockedVestingAmount == cliffUnlockAmount) {
         return {
-            amountPerPeriod: new BN(1).mul(
-                new BN(10).pow(new BN(tokenBaseDecimal))
-            ),
+            amountPerPeriod: convertToLamports(1, tokenBaseDecimal),
             cliffDurationFromMigrationTime: new BN(
                 cliffDurationFromMigrationTime
             ),
             frequency: new BN(1),
             numberOfPeriod: new BN(1),
-            cliffUnlockAmount: new BN(totalLockedVestingAmount - 1).mul(
-                new BN(10).pow(new BN(tokenBaseDecimal))
+            cliffUnlockAmount: convertToLamports(
+                totalLockedVestingAmount - 1,
+                tokenBaseDecimal
             ),
         }
     }
@@ -916,8 +915,9 @@ export function getLockedVestingParams(
         cliffDurationFromMigrationTime: new BN(cliffDurationFromMigrationTime),
         frequency: periodFrequency,
         numberOfPeriod: new BN(numberOfVestingPeriod),
-        cliffUnlockAmount: new BN(adjustedCliffUnlockAmount.toString()).mul(
-            new BN(10).pow(new BN(tokenBaseDecimal))
+        cliffUnlockAmount: convertToLamports(
+            adjustedCliffUnlockAmount,
+            tokenBaseDecimal
         ),
     }
 }
