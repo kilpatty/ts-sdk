@@ -4,9 +4,11 @@ import {
     TransactionInstruction,
     type Connection,
     Transaction,
+    SYSVAR_INSTRUCTIONS_PUBKEY,
 } from '@solana/web3.js'
 import { DynamicBondingCurveProgram } from './program'
 import {
+    BaseFeeMode,
     ConfigParameters,
     CreateConfigAndPoolParam,
     CreateConfigAndPoolWithFirstBuyParam,
@@ -267,6 +269,11 @@ export class PoolService extends DynamicBondingCurveProgram {
         // error checks
         validateSwapAmount(buyAmount)
 
+        // check if rate limiter is applied
+        const isRateLimiterApplied =
+            createConfigAndPoolWithFirstBuyParam.poolFees.baseFee
+                .baseFeeMode === BaseFeeMode.RateLimiter
+
         const quoteTokenFlag = await getTokenType(this.connection, quoteMint)
 
         const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
@@ -321,6 +328,17 @@ export class PoolService extends DynamicBondingCurveProgram {
             unwrapIx && postInstructions.push(unwrapIx)
         }
 
+        // add remaining accounts if rate limiter is applied
+        const remainingAccounts = isRateLimiterApplied
+            ? [
+                  {
+                      isSigner: false,
+                      isWritable: false,
+                      pubkey: SYSVAR_INSTRUCTIONS_PUBKEY,
+                  },
+              ]
+            : []
+
         return this.program.methods
             .swap({
                 amountIn: buyAmount,
@@ -341,6 +359,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 tokenBaseProgram: outputTokenProgram,
                 tokenQuoteProgram: inputTokenProgram,
             })
+            .remainingAccounts(remainingAccounts)
             .preInstructions(preInstructions)
             .postInstructions(postInstructions)
             .transaction()
@@ -573,6 +592,11 @@ export class PoolService extends DynamicBondingCurveProgram {
         // error checks
         validateSwapAmount(buyAmount)
 
+        // check if rate limiter is applied
+        const isRateLimiterApplied =
+            poolConfigState.poolFees.baseFee.baseFeeMode ===
+            BaseFeeMode.RateLimiter
+
         const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
             this.prepareSwapParams(
                 false,
@@ -615,6 +639,17 @@ export class PoolService extends DynamicBondingCurveProgram {
             unwrapIx && postInstructions.push(unwrapIx)
         }
 
+        // add remaining accounts if rate limiter is applied
+        const remainingAccounts = isRateLimiterApplied
+            ? [
+                  {
+                      isSigner: false,
+                      isWritable: false,
+                      pubkey: SYSVAR_INSTRUCTIONS_PUBKEY,
+                  },
+              ]
+            : []
+
         const swapTx = await this.program.methods
             .swap({
                 amountIn: buyAmount,
@@ -635,6 +670,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 tokenBaseProgram: outputTokenProgram,
                 tokenQuoteProgram: inputTokenProgram,
             })
+            .remainingAccounts(remainingAccounts)
             .preInstructions(preInstructions)
             .postInstructions(postInstructions)
             .transaction()
@@ -664,6 +700,11 @@ export class PoolService extends DynamicBondingCurveProgram {
 
         // error checks
         validateSwapAmount(amountIn)
+
+        // check if rate limiter is applied
+        const isRateLimiterApplied =
+            poolConfigState.poolFees.baseFee.baseFeeMode ===
+                BaseFeeMode.RateLimiter && !swapBaseForQuote
 
         const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
             this.prepareSwapParams(swapBaseForQuote, poolState, poolConfigState)
@@ -701,9 +742,19 @@ export class PoolService extends DynamicBondingCurveProgram {
             )
         ) {
             const unwrapIx = unwrapSOLInstruction(owner, owner)
-
             unwrapIx && postInstructions.push(unwrapIx)
         }
+
+        // add remaining accounts if rate limiter is applied
+        const remainingAccounts = isRateLimiterApplied
+            ? [
+                  {
+                      isSigner: false,
+                      isWritable: false,
+                      pubkey: SYSVAR_INSTRUCTIONS_PUBKEY,
+                  },
+              ]
+            : []
 
         return this.program.methods
             .swap({
@@ -729,6 +780,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                     ? outputTokenProgram
                     : inputTokenProgram,
             })
+            .remainingAccounts(remainingAccounts)
             .preInstructions(preInstructions)
             .postInstructions(postInstructions)
             .transaction()

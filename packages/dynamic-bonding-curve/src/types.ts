@@ -171,9 +171,10 @@ export enum GetFeeMode {
     OutputToken = 1,
 }
 
-export enum FeeSchedulerMode {
-    Linear = 0,
-    Exponential = 1,
+export enum BaseFeeMode {
+    FeeSchedulerLinear = 0,
+    FeeSchedulerExponential = 1,
+    RateLimiter = 2,
 }
 
 export enum MigrationFeeOption {
@@ -228,17 +229,17 @@ export type CreateDammV2MigrationMetadataParam =
 
 export type BaseFee = {
     cliffFeeNumerator: BN
-    numberOfPeriod: number
-    periodFrequency: BN
-    reductionFactor: BN
-    feeSchedulerMode: FeeSchedulerMode
+    firstFactor: number // feeScheduler: numberOfPeriod, rateLimiter: feeIncrementBps
+    secondFactor: BN // feeScheduler: reductionFactor, rateLimiter: maxRateLimiterDuration
+    thirdFactor: BN // feeScheduler: periodFrequency, rateLimiter: referenceAmount
+    baseFeeMode: BaseFeeMode
 }
 
 export type FeeSchedulerParams = {
     startingFeeBps: number
     endingFeeBps: number
     numberOfPeriod: number
-    feeSchedulerMode: FeeSchedulerMode
+    baseFeeMode: BaseFeeMode
     totalDuration: number
 }
 

@@ -7,6 +7,7 @@ import {
 } from './curve'
 import { getFeeOnAmount } from './feeMath'
 import {
+    BaseFeeMode,
     GetFeeMode,
     Rounding,
     TradeDirection,
