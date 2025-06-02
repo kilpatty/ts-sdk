@@ -34,7 +34,12 @@ import { pow } from '../math/safeMath'
 import { Connection, PublicKey } from '@solana/web3.js'
 import type { DynamicBondingCurve } from '../idl/dynamic-bonding-curve/idl'
 import { Program } from '@coral-xyz/anchor'
-import { bpsToFeeNumerator, feeNumeratorToBps, fromDecimalToBN } from './utils'
+import {
+    bpsToFeeNumerator,
+    convertToLamports,
+    feeNumeratorToBps,
+    fromDecimalToBN,
+} from './utils'
 
 /**
  * Get the first key
@@ -856,16 +861,15 @@ export function getLockedVestingParams(
 
     if (totalLockedVestingAmount == cliffUnlockAmount) {
         return {
-            amountPerPeriod: new BN(1).mul(
-                new BN(10).pow(new BN(tokenBaseDecimal))
-            ),
+            amountPerPeriod: convertToLamports(1, tokenBaseDecimal),
             cliffDurationFromMigrationTime: new BN(
                 cliffDurationFromMigrationTime
             ),
             frequency: new BN(1),
             numberOfPeriod: new BN(1),
-            cliffUnlockAmount: new BN(totalLockedVestingAmount - 1).mul(
-                new BN(10).pow(new BN(tokenBaseDecimal))
+            cliffUnlockAmount: convertToLamports(
+                totalLockedVestingAmount - 1,
+                tokenBaseDecimal
             ),
         }
     }
@@ -904,14 +908,16 @@ export function getLockedVestingParams(
     const periodFrequency = new BN(totalVestingDuration / numberOfVestingPeriod)
 
     return {
-        amountPerPeriod: new BN(roundedAmountPerPeriod.toString()).mul(
-            new BN(10).pow(new BN(tokenBaseDecimal))
+        amountPerPeriod: convertToLamports(
+            roundedAmountPerPeriod,
+            tokenBaseDecimal
         ),
         cliffDurationFromMigrationTime: new BN(cliffDurationFromMigrationTime),
         frequency: periodFrequency,
         numberOfPeriod: new BN(numberOfVestingPeriod),
-        cliffUnlockAmount: new BN(adjustedCliffUnlockAmount.toString()).mul(
-            new BN(10).pow(new BN(tokenBaseDecimal))
+        cliffUnlockAmount: convertToLamports(
+            adjustedCliffUnlockAmount,
+            tokenBaseDecimal
         ),
     }
 }
