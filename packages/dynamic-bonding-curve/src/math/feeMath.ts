@@ -7,7 +7,7 @@ import {
     MAX_FEE_NUMERATOR,
 } from '../constants'
 import {
-    FeeSchedulerMode,
+    BaseFeeMode,
     Rounding,
     type DynamicFeeConfig,
     type FeeOnAmountResult,
@@ -22,7 +22,7 @@ import {
  * @param period Period
  * @returns Fee numerator
  */
-export function getFeeInPeriod(
+export function getFeeNumeratorInPeriod(
     cliffFeeNumerator: BN,
     reductionFactor: BN,
     period: number
@@ -59,66 +59,229 @@ export function getFeeInPeriod(
 }
 
 /**
+ * Get fee numerator from amount for rate limiter
+ * @param cliffFeeNumerator Cliff fee numerator
+ * @param referenceAmount Reference amount
+ * @param feeIncrementBps Fee increment in basis points
+ * @param inputAmount Input amount
+ * @returns Fee numerator
+ */
+export function getFeeNumeratorFromAmount(
+    cliffFeeNumerator: BN,
+    referenceAmount: BN,
+    feeIncrementBps: BN,
+    inputAmount: BN
+): BN {
+    // if input amount is less than or equal to reference amount, return cliff fee
+    if (inputAmount.lte(referenceAmount)) {
+        return cliffFeeNumerator
+    }
+
+    // calculate fee increment numerator
+    const feeIncrementNumerator = mulDiv(
+        new BN(feeIncrementBps),
+        new BN(FEE_DENOMINATOR),
+        new BN(BASIS_POINT_MAX),
+        Rounding.Down
+    )
+
+    // calculate max index (how many increments until we reach MAX_FEE_NUMERATOR)
+    const deltaNumerator = new BN(MAX_FEE_NUMERATOR).sub(cliffFeeNumerator)
+    const maxIndex = deltaNumerator.div(feeIncrementNumerator)
+
+    // calculate a and b
+    // a = (input_amount - reference_amount) / reference_amount (integer division)
+    // b = (input_amount - reference_amount) % reference_amount (remainder)
+    const diff = inputAmount.sub(referenceAmount)
+    const a = diff.div(referenceAmount)
+    const b = diff.mod(referenceAmount)
+
+    // calculate fee numerator
+    let feeNumerator: BN
+    if (a.lt(maxIndex)) {
+        // if a < max_index
+        // calculate fee using the formula:
+        // fee = x0 * (c + c*a + i*a*(a+1)/2) + b * (c + i*(a+1))
+        // where:
+        // x0 = reference_amount
+        // c = cliff_fee_numerator
+        // i = fee_increment_numerator
+        // a = (input_amount - x0) / x0 (integer division)
+        // b = (input_amount - x0) % x0 (remainder)
+
+        const one = new BN(1)
+        const two = new BN(2)
+
+        // c + c*a
+        const term1 = cliffFeeNumerator.add(cliffFeeNumerator.mul(a))
+
+        // i*a*(a+1)/2
+        const term2 = feeIncrementNumerator.mul(a).mul(a.add(one)).div(two)
+
+        // c + i*(a+1)
+        const term3 = cliffFeeNumerator.add(
+            feeIncrementNumerator.mul(a.add(one))
+        )
+
+        // calculate total fee
+        const totalFee = referenceAmount.mul(term1.add(term2)).add(b.mul(term3))
+
+        // convert to fee numerator: fee_numerator = total_fee * FEE_DENOMINATOR / input_amount
+        feeNumerator = totalFee.mul(new BN(FEE_DENOMINATOR)).div(inputAmount)
+    } else {
+        // if a >= max_index
+        // use MAX_FEE_NUMERATOR for the portion exceeding max_index
+        const one = new BN(1)
+        const two = new BN(2)
+
+        // c + c*max_index
+        const term1 = cliffFeeNumerator.add(cliffFeeNumerator.mul(maxIndex))
+
+        // i*max_index*(max_index+1)/2
+        const term2 = feeIncrementNumerator
+            .mul(maxIndex)
+            .mul(maxIndex.add(one))
+            .div(two)
+
+        // calculate fee for the first part (up to max_index)
+        const firstPartFee = referenceAmount.mul(term1.add(term2))
+
+        // calculate fee for the remaining part (beyond max_index)
+        const d = a.sub(maxIndex)
+        const leftAmount = d.mul(referenceAmount).add(b)
+        const secondPartFee = leftAmount.mul(new BN(MAX_FEE_NUMERATOR))
+
+        // calculate total fee
+        const totalFee = firstPartFee.add(secondPartFee)
+
+        // convert to fee numerator: fee_numerator = total_fee * FEE_DENOMINATOR / input_amount
+        feeNumerator = totalFee.mul(new BN(FEE_DENOMINATOR)).div(inputAmount)
+    }
+
+    // Cap at MAX_FEE_NUMERATOR
+    return BN.min(feeNumerator, new BN(MAX_FEE_NUMERATOR))
+}
+
+/**
  * Get current base fee numerator
  * @param baseFee Base fee parameters
  * @param currentPoint Current point
  * @param activationPoint Activation point
+ * @param inputAmount Input amount (optional, used for rate limiter)
  * @returns Current base fee numerator
  */
 export function getCurrentBaseFeeNumerator(
     baseFee: {
         cliffFeeNumerator: BN
-        feeSchedulerMode: number
-        numberOfPeriod: number
-        periodFrequency: BN
-        reductionFactor: BN
+        firstFactor: number
+        secondFactor: BN
+        thirdFactor: BN
+        baseFeeMode: BaseFeeMode
     },
     currentPoint: BN,
-    activationPoint: BN
+    activationPoint: BN,
+    inputAmount?: BN
 ): BN {
-    if (baseFee.periodFrequency.isZero()) {
-        return baseFee.cliffFeeNumerator
-    }
+    const baseFeeMode = baseFee.baseFeeMode
 
-    let period: number
-    if (currentPoint.lt(activationPoint)) {
-        // before activation point, use max period (min fee)
-        period = baseFee.numberOfPeriod
-    } else {
-        const elapsedPoints = SafeMath.sub(currentPoint, activationPoint)
-        const periodCount = SafeMath.div(elapsedPoints, baseFee.periodFrequency)
-
-        period = Math.min(
-            parseInt(periodCount.toString()),
-            baseFee.numberOfPeriod
-        )
-    }
-
-    const feeSchedulerMode = baseFee.feeSchedulerMode
-
-    if (feeSchedulerMode === FeeSchedulerMode.Linear) {
-        // linear fee calculation: cliffFeeNumerator - period * reductionFactor
-        const reduction = SafeMath.mul(new BN(period), baseFee.reductionFactor)
-
-        if (reduction.gt(baseFee.cliffFeeNumerator)) {
-            return new BN(0)
+    if (baseFeeMode === BaseFeeMode.RateLimiter) {
+        // Check if rate limiter is applied
+        if (currentPoint.lt(activationPoint)) {
+            return baseFee.cliffFeeNumerator
         }
 
-        return SafeMath.sub(baseFee.cliffFeeNumerator, reduction)
-    } else if (feeSchedulerMode === FeeSchedulerMode.Exponential) {
-        // for exponential mode, use the optimized getFeeInPeriod function
-        return getFeeInPeriod(
+        const lastEffectivePoint = activationPoint.add(baseFee.secondFactor)
+        if (currentPoint.gt(lastEffectivePoint)) {
+            return baseFee.cliffFeeNumerator
+        }
+
+        // If no input amount provided, return base fee
+        if (!inputAmount) {
+            return baseFee.cliffFeeNumerator
+        }
+
+        return getFeeNumeratorFromAmount(
             baseFee.cliffFeeNumerator,
-            baseFee.reductionFactor,
-            period
+            baseFee.thirdFactor, // reference amount
+            new BN(baseFee.firstFactor), // fee increment bps
+            inputAmount
         )
     } else {
-        throw new Error('Invalid fee scheduler mode')
+        if (baseFee.thirdFactor.isZero()) {
+            return baseFee.cliffFeeNumerator
+        }
+
+        let period: number
+        if (currentPoint.lt(activationPoint)) {
+            // before activation point, use max period (min fee)
+            period = baseFee.firstFactor
+        } else {
+            const elapsedPoints = SafeMath.sub(currentPoint, activationPoint)
+            const periodCount = SafeMath.div(elapsedPoints, baseFee.thirdFactor)
+
+            period = Math.min(
+                parseInt(periodCount.toString()),
+                baseFee.firstFactor
+            )
+        }
+
+        if (baseFeeMode === BaseFeeMode.FeeSchedulerLinear) {
+            // linear fee calculation: cliffFeeNumerator - period * reductionFactor
+            const reduction = SafeMath.mul(new BN(period), baseFee.secondFactor)
+
+            if (reduction.gt(baseFee.cliffFeeNumerator)) {
+                return new BN(0)
+            }
+
+            return SafeMath.sub(baseFee.cliffFeeNumerator, reduction)
+        } else {
+            // exponential fee calculation: cliff_fee_numerator * (1 - reduction_factor/10_000)^period
+            return getFeeNumeratorInPeriod(
+                baseFee.cliffFeeNumerator,
+                baseFee.secondFactor,
+                period
+            )
+        }
     }
 }
 
 /**
- * Get fee on amount
+ * Get variable fee from dynamic fee
+ * @param dynamicFee Dynamic fee parameters
+ * @param volatilityTracker Volatility tracker
+ * @returns Variable fee
+ */
+export function getVariableFee(
+    dynamicFee: DynamicFeeConfig,
+    volatilityTracker: VolatilityTracker
+): BN {
+    if (dynamicFee.initialized === 0) {
+        return new BN(0)
+    }
+
+    if (volatilityTracker.volatilityAccumulator.isZero()) {
+        return new BN(0)
+    }
+
+    // (volatilityAccumulator * binStep)
+    const volatilityTimesBinStep = SafeMath.mul(
+        volatilityTracker.volatilityAccumulator,
+        new BN(dynamicFee.binStep)
+    )
+
+    // (volatilityAccumulator * binStep)^2
+    const squared = SafeMath.mul(volatilityTimesBinStep, volatilityTimesBinStep)
+
+    // (volatilityAccumulator * binStep)^2 * variableFeeControl
+    const vFee = SafeMath.mul(squared, new BN(dynamicFee.variableFeeControl))
+
+    const scaleFactor = new BN(100_000_000_000)
+    const numerator = SafeMath.add(vFee, SafeMath.sub(scaleFactor, new BN(1)))
+    return SafeMath.div(numerator, scaleFactor)
+}
+
+/**
+ * Get fee on amount for rate limiter
  * @param amount Amount
  * @param poolFees Pool fees
  * @param isReferral Whether referral is used
@@ -139,7 +302,10 @@ export function getFeeOnAmount(
     const baseFeeNumerator = getCurrentBaseFeeNumerator(
         poolFees.baseFee,
         currentPoint,
-        activationPoint
+        activationPoint,
+        poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter
+            ? amount
+            : undefined
     )
 
     // add dynamic fee if enabled
@@ -195,39 +361,4 @@ export function getFeeOnAmount(
         protocolFee: protocolFeeAfterReferral,
         referralFee,
     }
-}
-
-/**
- * Get variable fee from dynamic fee
- * @param dynamicFee Dynamic fee parameters
- * @param volatilityTracker Volatility tracker
- * @returns Variable fee
- */
-export function getVariableFee(
-    dynamicFee: DynamicFeeConfig,
-    volatilityTracker: VolatilityTracker
-): BN {
-    if (dynamicFee.initialized === 0) {
-        return new BN(0)
-    }
-
-    if (volatilityTracker.volatilityAccumulator.isZero()) {
-        return new BN(0)
-    }
-
-    // (volatilityAccumulator * binStep)
-    const volatilityTimesBinStep = SafeMath.mul(
-        volatilityTracker.volatilityAccumulator,
-        new BN(dynamicFee.binStep)
-    )
-
-    // (volatilityAccumulator * binStep)^2
-    const squared = SafeMath.mul(volatilityTimesBinStep, volatilityTimesBinStep)
-
-    // (volatilityAccumulator * binStep)^2 * variableFeeControl
-    const vFee = SafeMath.mul(squared, new BN(dynamicFee.variableFeeControl))
-
-    const scaleFactor = new BN(100_000_000_000)
-    const numerator = SafeMath.add(vFee, SafeMath.sub(scaleFactor, new BN(1)))
-    return SafeMath.div(numerator, scaleFactor)
 }
