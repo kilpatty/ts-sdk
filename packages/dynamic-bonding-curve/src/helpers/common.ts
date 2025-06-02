@@ -34,7 +34,12 @@ import { pow } from '../math/safeMath'
 import { Connection, PublicKey } from '@solana/web3.js'
 import type { DynamicBondingCurve } from '../idl/dynamic-bonding-curve/idl'
 import { Program } from '@coral-xyz/anchor'
-import { bpsToFeeNumerator, feeNumeratorToBps, fromDecimalToBN } from './utils'
+import {
+    bpsToFeeNumerator,
+    convertToLamports,
+    feeNumeratorToBps,
+    fromDecimalToBN,
+} from './utils'
 
 /**
  * Get the first key
@@ -904,8 +909,9 @@ export function getLockedVestingParams(
     const periodFrequency = new BN(totalVestingDuration / numberOfVestingPeriod)
 
     return {
-        amountPerPeriod: new BN(roundedAmountPerPeriod.toString()).mul(
-            new BN(10).pow(new BN(tokenBaseDecimal))
+        amountPerPeriod: convertToLamports(
+            roundedAmountPerPeriod,
+            tokenBaseDecimal
         ),
         cliffDurationFromMigrationTime: new BN(cliffDurationFromMigrationTime),
         frequency: periodFrequency,
