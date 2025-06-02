@@ -6,6 +6,7 @@ import {
     BuildCurveWithMarketCapParam,
     BuildCurveWithLiquidityWeightsParam,
     BuildCurveWithTwoSegmentsParam,
+    BaseFeeMode,
 } from '../types'
 import { MAX_SQRT_PRICE } from '../constants'
 import {
@@ -20,7 +21,8 @@ import {
     getSwapAmountWithBuffer,
     getDynamicFeeParams,
     getTwoCurve,
-    getBaseFeeParams,
+    getFeeSchedulerParams,
+    getRateLimiterParams,
     getLockedVestingParams,
     getMigrationQuoteAmountFromMigrationQuoteThreshold,
     getMigrationQuoteAmount,
@@ -55,23 +57,47 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         leftover,
         tokenUpdateAuthority,
         migrationFee,
+        baseFeeParams,
     } = buildCurveParam
 
-    const {
-        startingFeeBps,
-        endingFeeBps,
-        numberOfPeriod,
-        feeSchedulerMode,
-        totalDuration,
-    } = buildCurveParam.feeSchedulerParam
+    // handle base fee params
+    const baseFee = (() => {
+        if (baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter) {
+            const {
+                baseFeeBps,
+                maxFeeBps,
+                referenceAmount,
+                maxDuration,
+                tokenQuoteDecimal,
+                activationType,
+            } = baseFeeParams.rateLimiterParam
 
-    const baseFeeParams = getBaseFeeParams(
-        startingFeeBps,
-        endingFeeBps,
-        feeSchedulerMode,
-        numberOfPeriod,
-        totalDuration
-    )
+            return getRateLimiterParams(
+                baseFeeBps,
+                maxFeeBps,
+                referenceAmount,
+                maxDuration,
+                tokenQuoteDecimal,
+                activationType
+            )
+        } else {
+            const {
+                startingFeeBps,
+                endingFeeBps,
+                numberOfPeriod,
+                baseFeeMode,
+                totalDuration,
+            } = baseFeeParams.feeSchedulerParam
+
+            return getFeeSchedulerParams(
+                startingFeeBps,
+                endingFeeBps,
+                baseFeeMode,
+                numberOfPeriod,
+                totalDuration
+            )
+        }
+    })()
 
     const {
         totalLockedVestingAmount,
@@ -172,10 +198,14 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
     const instructionParams: ConfigParameters = {
         poolFees: {
             baseFee: {
-                ...baseFeeParams,
+                ...baseFee,
             },
             dynamicFee: dynamicFeeEnabled
-                ? getDynamicFeeParams(endingFeeBps)
+                ? getDynamicFeeParams(
+                      baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter
+                          ? baseFeeParams.rateLimiterParam.baseFeeBps
+                          : baseFeeParams.feeSchedulerParam.endingFeeBps
+                  )
                 : null,
         },
         activationType: activationType,
@@ -293,23 +323,47 @@ export function buildCurveWithTwoSegments(
         migrationFeeOption,
         migrationFee,
         tokenUpdateAuthority,
+        baseFeeParams,
     } = buildCurveWithTwoSegmentsParam
 
-    const {
-        startingFeeBps,
-        endingFeeBps,
-        numberOfPeriod,
-        feeSchedulerMode,
-        totalDuration,
-    } = buildCurveWithTwoSegmentsParam.feeSchedulerParam
+    // handle base fee params
+    const baseFee = (() => {
+        if (baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter) {
+            const {
+                baseFeeBps,
+                maxFeeBps,
+                referenceAmount,
+                maxDuration,
+                tokenQuoteDecimal,
+                activationType,
+            } = baseFeeParams.rateLimiterParam
 
-    const baseFeeParams = getBaseFeeParams(
-        startingFeeBps,
-        endingFeeBps,
-        feeSchedulerMode,
-        numberOfPeriod,
-        totalDuration
-    )
+            return getRateLimiterParams(
+                baseFeeBps,
+                maxFeeBps,
+                referenceAmount,
+                maxDuration,
+                tokenQuoteDecimal,
+                activationType
+            )
+        } else {
+            const {
+                startingFeeBps,
+                endingFeeBps,
+                numberOfPeriod,
+                baseFeeMode,
+                totalDuration,
+            } = baseFeeParams.feeSchedulerParam
+
+            return getFeeSchedulerParams(
+                startingFeeBps,
+                endingFeeBps,
+                baseFeeMode,
+                numberOfPeriod,
+                totalDuration
+            )
+        }
+    })()
 
     const {
         totalLockedVestingAmount,
@@ -443,10 +497,14 @@ export function buildCurveWithTwoSegments(
     const instructionParams: ConfigParameters = {
         poolFees: {
             baseFee: {
-                ...baseFeeParams,
+                ...baseFee,
             },
             dynamicFee: dynamicFeeEnabled
-                ? getDynamicFeeParams(endingFeeBps)
+                ? getDynamicFeeParams(
+                      baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter
+                          ? baseFeeParams.rateLimiterParam.baseFeeBps
+                          : baseFeeParams.feeSchedulerParam.endingFeeBps
+                  )
                 : null,
         },
         activationType,
@@ -505,23 +563,47 @@ export function buildCurveWithLiquidityWeights(
         liquidityWeights,
         migrationFee,
         tokenUpdateAuthority,
+        baseFeeParams,
     } = buildCurveWithLiquidityWeightsParam
 
-    const {
-        startingFeeBps,
-        endingFeeBps,
-        numberOfPeriod,
-        feeSchedulerMode,
-        totalDuration,
-    } = buildCurveWithLiquidityWeightsParam.feeSchedulerParam
+    // handle base fee params
+    const baseFee = (() => {
+        if (baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter) {
+            const {
+                baseFeeBps,
+                maxFeeBps,
+                referenceAmount,
+                maxDuration,
+                tokenQuoteDecimal,
+                activationType,
+            } = baseFeeParams.rateLimiterParam
 
-    const baseFeeParams = getBaseFeeParams(
-        startingFeeBps,
-        endingFeeBps,
-        feeSchedulerMode,
-        numberOfPeriod,
-        totalDuration
-    )
+            return getRateLimiterParams(
+                baseFeeBps,
+                maxFeeBps,
+                referenceAmount,
+                maxDuration,
+                tokenQuoteDecimal,
+                activationType
+            )
+        } else {
+            const {
+                startingFeeBps,
+                endingFeeBps,
+                numberOfPeriod,
+                baseFeeMode,
+                totalDuration,
+            } = baseFeeParams.feeSchedulerParam
+
+            return getFeeSchedulerParams(
+                startingFeeBps,
+                endingFeeBps,
+                baseFeeMode,
+                numberOfPeriod,
+                totalDuration
+            )
+        }
+    })()
 
     const {
         totalLockedVestingAmount,
@@ -659,10 +741,14 @@ export function buildCurveWithLiquidityWeights(
     const instructionParams: ConfigParameters = {
         poolFees: {
             baseFee: {
-                ...baseFeeParams,
+                ...baseFee,
             },
             dynamicFee: dynamicFeeEnabled
-                ? getDynamicFeeParams(endingFeeBps)
+                ? getDynamicFeeParams(
+                      baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter
+                          ? baseFeeParams.rateLimiterParam.baseFeeBps
+                          : baseFeeParams.feeSchedulerParam.endingFeeBps
+                  )
                 : null,
         },
         activationType: activationType,
