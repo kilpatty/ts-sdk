@@ -37,12 +37,7 @@ import {
 import { Connection, PublicKey } from '@solana/web3.js'
 import type { DynamicBondingCurve } from '../idl/dynamic-bonding-curve/idl'
 import { Program } from '@coral-xyz/anchor'
-import {
-    bpsToFeeNumerator,
-    convertToLamports,
-    feeNumeratorToBps,
-    fromDecimalToBN,
-} from './utils'
+import { bpsToFeeNumerator, convertToLamports, fromDecimalToBN } from './utils'
 
 /**
  * Get the first key

@@ -243,6 +243,15 @@ export type FeeSchedulerParams = {
     totalDuration: number
 }
 
+export type RateLimiterParams = {
+    baseFeeBps: number
+    maxFeeBps: number
+    referenceAmount: number
+    maxDuration: number
+    tokenQuoteDecimal: TokenDecimal
+    activationType: ActivationType
+}
+
 export type LockedVestingParams = {
     totalLockedVestingAmount: number
     numberOfVestingPeriod: number
@@ -251,13 +260,25 @@ export type LockedVestingParams = {
     cliffDurationFromMigrationTime: number
 }
 
+type BaseFeeParams =
+    | {
+          baseFeeMode:
+              | BaseFeeMode.FeeSchedulerLinear
+              | BaseFeeMode.FeeSchedulerExponential
+          feeSchedulerParam: FeeSchedulerParams
+      }
+    | {
+          baseFeeMode: BaseFeeMode.RateLimiter
+          rateLimiterParam: RateLimiterParams
+      }
+
 export type BuildCurveBaseParam = {
     totalTokenSupply: number
     migrationOption: MigrationOption
     tokenBaseDecimal: TokenDecimal
     tokenQuoteDecimal: TokenDecimal
     lockedVestingParam: LockedVestingParams
-    feeSchedulerParam: FeeSchedulerParams
+    baseFeeParams: BaseFeeParams
     dynamicFeeEnabled: boolean
     activationType: ActivationType
     collectFeeMode: CollectFeeMode
