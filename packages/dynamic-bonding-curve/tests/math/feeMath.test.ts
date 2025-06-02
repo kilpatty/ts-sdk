@@ -1,15 +1,15 @@
 import { test, expect } from 'bun:test'
 import {
-    getFeeInPeriod,
+    getFeeNumeratorInPeriod,
     getCurrentBaseFeeNumerator,
     getVariableFee,
 } from '../../src/math/feeMath'
 import BN from 'bn.js'
-import { FeeSchedulerMode } from '../../src/types'
+import { BaseFeeMode } from '../../src/types'
 
 test('getFeeInPeriod calculation', () => {
     // Test case 1: No reduction
-    const result1 = getFeeInPeriod(
+    const result1 = getFeeNumeratorInPeriod(
         new BN(1000), // cliff fee
         new BN(0), // reduction factor
         0 // period as number, not BN
@@ -17,7 +17,7 @@ test('getFeeInPeriod calculation', () => {
     expect(result1.eq(new BN(1000))).toBe(true)
 
     // Test case 2: With reduction
-    const result2 = getFeeInPeriod(
+    const result2 = getFeeNumeratorInPeriod(
         new BN(1000), // cliff fee
         new BN(100), // 1% reduction factor
         1 // period as number, not BN
@@ -28,7 +28,7 @@ test('getFeeInPeriod calculation', () => {
 
 test('getFeeInPeriod with higher periods', () => {
     // Test with period > 1 to test binary exponentiation
-    const result = getFeeInPeriod(new BN(1000), new BN(100), 5)
+    const result = getFeeNumeratorInPeriod(new BN(1000), new BN(100), 5)
 
     // Fee decreases with each period
     expect(result.lt(new BN(1000))).toBe(true)
@@ -39,10 +39,10 @@ test('getFeeInPeriod with higher periods', () => {
 test('getCurrentBaseFeeNumerator with linear mode', () => {
     const baseFee = {
         cliffFeeNumerator: new BN(1000),
-        feeSchedulerMode: FeeSchedulerMode.Linear,
-        numberOfPeriod: 10,
-        periodFrequency: new BN(100),
-        reductionFactor: new BN(50), // 50 per period
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        firstFactor: 10,
+        secondFactor: new BN(50), // 50 per period
+        thirdFactor: new BN(100),
     }
 
     // Before activation point
@@ -62,10 +62,10 @@ test('getCurrentBaseFeeNumerator with linear mode', () => {
 test('getCurrentBaseFeeNumerator with exponential mode', () => {
     const baseFee = {
         cliffFeeNumerator: new BN(1000),
-        feeSchedulerMode: FeeSchedulerMode.Exponential,
-        numberOfPeriod: 5,
-        periodFrequency: new BN(100),
-        reductionFactor: new BN(100),
+        baseFeeMode: BaseFeeMode.FeeSchedulerExponential,
+        firstFactor: 5,
+        secondFactor: new BN(100),
+        thirdFactor: new BN(100),
     }
 
     // After activation point, 3 periods elapsed
