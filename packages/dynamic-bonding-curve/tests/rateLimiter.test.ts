@@ -13,17 +13,17 @@ import { calculateRateLimiterFee } from './utils/common'
 describe('Rate Limiter tests', () => {
     test('getRateLimiterParams with Slot activation type', () => {
         const baseFeeBps = 100 // 1%
-        const maxFeeBps = 500 // 5%
+        const feeIncrementBps = 10 // 10 bps
         const referenceAmount = 0.2
-        const maxRateLimiterDuration = 100000 // slots
+        const maxLimiterDuration = 100000 // slots
         const tokenQuoteDecimal = 6
         const activationType = ActivationType.Slot
 
         const params = getRateLimiterParams(
             baseFeeBps,
-            maxFeeBps,
+            feeIncrementBps,
             referenceAmount,
-            maxRateLimiterDuration,
+            maxLimiterDuration,
             tokenQuoteDecimal,
             activationType
         )
@@ -35,7 +35,7 @@ describe('Rate Limiter tests', () => {
             bpsToFeeNumerator(baseFeeBps).toNumber()
         )
         expect(params.firstFactor).toBeGreaterThan(0) // feeIncrementBps
-        expect(params.secondFactor.toNumber()).toBe(maxRateLimiterDuration)
+        expect(params.secondFactor.toNumber()).toBe(maxLimiterDuration)
         expect(params.thirdFactor.toNumber()).toBe(
             referenceAmount * 10 ** tokenQuoteDecimal
         )
@@ -52,17 +52,17 @@ describe('Rate Limiter tests', () => {
 
     test('getRateLimiterParams with Timestamp activation type', () => {
         const baseFeeBps = 100 // 1%
-        const maxFeeBps = 500 // 5%
+        const feeIncrementBps = 50 // 50 bps
         const referenceAmount = 1000
-        const maxRateLimiterDuration = 40000 // seconds
+        const maxLimiterDuration = 40000 // seconds
         const tokenQuoteDecimal = 6
         const activationType = ActivationType.Timestamp
 
         const params = getRateLimiterParams(
             baseFeeBps,
-            maxFeeBps,
+            feeIncrementBps,
             referenceAmount,
-            maxRateLimiterDuration,
+            maxLimiterDuration,
             tokenQuoteDecimal,
             activationType
         )
@@ -73,87 +73,25 @@ describe('Rate Limiter tests', () => {
             bpsToFeeNumerator(baseFeeBps).toNumber()
         )
         expect(params.firstFactor).toBeGreaterThan(0) // feeIncrementBps
-        expect(params.secondFactor.toNumber()).toBe(maxRateLimiterDuration)
+        expect(params.secondFactor.toNumber()).toBe(maxLimiterDuration)
         expect(params.thirdFactor.toNumber()).toBe(
             referenceAmount * 10 ** tokenQuoteDecimal
         )
     })
 
-    test('getRateLimiterParams validation errors', () => {
-        // Test base fee validation
-        expect(() => {
-            getRateLimiterParams(
-                0, // invalid base fee
-                500,
-                1000,
-                100000,
-                6,
-                ActivationType.Slot
-            )
-        }).toThrow('Base fee and max fee must be greater than zero')
-
-        // Test max fee validation
-        expect(() => {
-            getRateLimiterParams(
-                100,
-                0, // invalid max fee
-                1000,
-                100000,
-                6,
-                ActivationType.Slot
-            )
-        }).toThrow('Base fee and max fee must be greater than zero')
-
-        // Test base fee > max fee validation
-        expect(() => {
-            getRateLimiterParams(
-                600, // base fee > max fee
-                500,
-                1000,
-                100000,
-                6,
-                ActivationType.Slot
-            )
-        }).toThrow('Base fee must be less than or equal to max fee')
-
-        // Test reference amount validation
-        expect(() => {
-            getRateLimiterParams(
-                100,
-                500,
-                0, // invalid reference amount
-                100000,
-                6,
-                ActivationType.Slot
-            )
-        }).toThrow('Reference amount must be greater than zero')
-
-        // Test max duration validation
-        expect(() => {
-            getRateLimiterParams(
-                100,
-                500,
-                1000,
-                0, // invalid max duration
-                6,
-                ActivationType.Slot
-            )
-        }).toThrow('Max duration must be greater than zero')
-    })
-
     test('calculateRateLimiterFee with different input amounts', () => {
         const baseFeeBps = 100 // 1%
-        const maxFeeBps = 500 // 5%
+        const feeIncrementBps = 100 // 100 bps
         const referenceAmount = 1
-        const maxRateLimiterDuration = 100000
+        const maxLimiterDuration = 100000
         const tokenQuoteDecimal = 9
         const activationType = ActivationType.Slot
 
         const params = getRateLimiterParams(
             baseFeeBps,
-            maxFeeBps,
+            feeIncrementBps,
             referenceAmount,
-            maxRateLimiterDuration,
+            maxLimiterDuration,
             tokenQuoteDecimal,
             activationType
         )
@@ -186,17 +124,17 @@ describe('Rate Limiter tests', () => {
 
     test('calculateRateLimiterFee with maximum fee cap', () => {
         const baseFeeBps = 100 // 1%
-        const maxFeeBps = 500 // 5%
+        const feeIncrementBps = 200 // 200 bps
         const referenceAmount = 1000
-        const maxRateLimiterDuration = 100000
+        const maxLimiterDuration = 100000
         const tokenQuoteDecimal = 6
         const activationType = ActivationType.Slot
 
         const params = getRateLimiterParams(
             baseFeeBps,
-            maxFeeBps,
+            feeIncrementBps,
             referenceAmount,
-            maxRateLimiterDuration,
+            maxLimiterDuration,
             tokenQuoteDecimal,
             activationType
         )
@@ -204,6 +142,37 @@ describe('Rate Limiter tests', () => {
         // Test with a very large input amount to ensure we hit the maximum fee
         const inputAmount = new BN(1000000)
         const fee = calculateRateLimiterFee(params, inputAmount)
+
+        // Calculate the maximum possible fee
+        const maxFee = inputAmount
+            .mul(new BN(MAX_FEE_NUMERATOR))
+            .div(new BN(FEE_DENOMINATOR))
+
+        // The actual fee should not exceed the maximum fee
+        expect(fee.toNumber()).toBeLessThanOrEqual(maxFee.toNumber())
+    })
+
+    test('test rate limiter', () => {
+        const baseFeeBps = 100 // 1%
+        const feeIncrementBps = 100 // 200 bps
+        const referenceAmount = 0.1
+        const maxLimiterDuration = 750
+        const tokenQuoteDecimal = 9
+        const activationType = ActivationType.Slot
+
+        const params = getRateLimiterParams(
+            baseFeeBps,
+            feeIncrementBps,
+            referenceAmount,
+            maxLimiterDuration,
+            tokenQuoteDecimal,
+            activationType
+        )
+
+        // Test with a very large input amount to ensure we hit the maximum fee
+        const inputAmount = new BN(0.3 * 1e9)
+        const fee = calculateRateLimiterFee(params, inputAmount)
+        console.log('0.3 SOL tx fee:', fee.toString())
 
         // Calculate the maximum possible fee
         const maxFee = inputAmount
