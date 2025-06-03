@@ -124,7 +124,8 @@ export class CreatorService extends DynamicBondingCurveProgram {
                 payer,
                 tokenBaseAccount,
                 feeReceiver,
-                poolState.baseMint
+                poolState.baseMint,
+                tokenBaseProgram
             )
         createTokenBaseAccountIx &&
             preInstructions.push(createTokenBaseAccountIx)
@@ -134,7 +135,8 @@ export class CreatorService extends DynamicBondingCurveProgram {
                 payer,
                 tokenQuoteAccount,
                 tempWSolAcc,
-                poolConfigState.quoteMint
+                poolConfigState.quoteMint,
+                tokenQuoteProgram
             )
         createTokenQuoteAccountIx &&
             preInstructions.push(createTokenQuoteAccountIx)
