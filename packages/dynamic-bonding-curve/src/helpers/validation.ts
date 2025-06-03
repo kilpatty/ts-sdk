@@ -2,9 +2,13 @@ import BN from 'bn.js'
 import { MAX_CURVE_POINT, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '../constants'
 import {
     ActivationType,
+    BaseFee,
+    BaseFeeMode,
     CollectFeeMode,
+    LockedVestingParameters,
     MigrationFeeOption,
     MigrationOption,
+    PoolFeeParameters,
     TokenDecimal,
     TokenType,
     TokenUpdateAuthorityOption,
@@ -32,7 +36,7 @@ import Decimal from 'decimal.js'
  * @param poolFees - The pool fees
  * @returns true if the pool fees are valid, false otherwise
  */
-export function validatePoolFees(poolFees: any): boolean {
+export function validatePoolFees(poolFees: PoolFeeParameters): boolean {
     if (!poolFees) return false
 
     // check base fee if it exists
@@ -40,6 +44,123 @@ export function validatePoolFees(poolFees: any): boolean {
         if (poolFees.baseFee.cliffFeeNumerator.lte(new BN(0))) {
             return false
         }
+
+        // validate fee scheduler if it exists
+        if (
+            poolFees.baseFee.baseFeeMode === BaseFeeMode.FeeSchedulerLinear ||
+            poolFees.baseFee.baseFeeMode === BaseFeeMode.FeeSchedulerExponential
+        ) {
+            if (!validateFeeScheduler(poolFees.baseFee)) {
+                return false
+            }
+        }
+
+        // validate fee rate limiter if it exists
+        if (poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
+            if (!validateFeeRateLimiter(poolFees.baseFee)) {
+                return false
+            }
+        }
+    }
+
+    return true
+}
+/**
+ * Validate the fee scheduler parameters
+ * @param feeScheduler - The fee scheduler parameters
+ * @returns true if the fee scheduler parameters are valid, false otherwise
+ */
+export function validateFeeScheduler(feeScheduler: BaseFee): boolean {
+    if (!feeScheduler) return true
+
+    // if any parameter is set, all must be set
+    if (
+        feeScheduler.firstFactor ||
+        feeScheduler.secondFactor ||
+        feeScheduler.thirdFactor
+    ) {
+        if (
+            !feeScheduler.firstFactor ||
+            !feeScheduler.secondFactor ||
+            !feeScheduler.thirdFactor
+        ) {
+            return false
+        }
+    }
+
+    // validate cliff fee numerator
+    if (feeScheduler.cliffFeeNumerator.lte(new BN(0))) {
+        return false
+    }
+
+    // validate fee scheduler mode
+    if (
+        feeScheduler.baseFeeMode !== BaseFeeMode.FeeSchedulerLinear &&
+        feeScheduler.baseFeeMode !== BaseFeeMode.FeeSchedulerExponential
+    ) {
+        return false
+    }
+
+    // for linear mode, validate that the final fee won't be negative
+    if (feeScheduler.baseFeeMode === BaseFeeMode.FeeSchedulerLinear) {
+        const finalFee = feeScheduler.cliffFeeNumerator.sub(
+            feeScheduler.secondFactor.mul(new BN(feeScheduler.firstFactor))
+        )
+        if (finalFee.lt(new BN(0))) {
+            return false
+        }
+    }
+
+    return true
+}
+
+/**
+ * Validate the fee rate limiter parameters
+ * @param feeRateLimiter - The fee rate limiter parameters
+ * @returns true if the fee rate limiter parameters are valid, false otherwise
+ */
+export function validateFeeRateLimiter(feeRateLimiter: BaseFee): boolean {
+    if (!feeRateLimiter) return true
+
+    // if any parameter is set, all must be set
+    if (
+        feeRateLimiter.firstFactor ||
+        feeRateLimiter.secondFactor ||
+        feeRateLimiter.thirdFactor
+    ) {
+        if (
+            !feeRateLimiter.firstFactor ||
+            !feeRateLimiter.secondFactor ||
+            !feeRateLimiter.thirdFactor
+        ) {
+            return false
+        }
+    }
+
+    // validate cliff fee numerator
+    if (feeRateLimiter.cliffFeeNumerator.lte(new BN(0))) {
+        return false
+    }
+
+    // validate reference amount
+    if (
+        feeRateLimiter.thirdFactor &&
+        feeRateLimiter.thirdFactor.lte(new BN(0))
+    ) {
+        return false
+    }
+
+    // validate max limiter duration
+    if (
+        feeRateLimiter.secondFactor &&
+        feeRateLimiter.secondFactor.lte(new BN(0))
+    ) {
+        return false
+    }
+
+    // validate fee increment bps
+    if (feeRateLimiter.firstFactor && feeRateLimiter.firstFactor <= 0) {
+        return false
     }
 
     return true
@@ -191,11 +312,14 @@ export function validateCurve(
  * @returns true if the token supply is valid, false otherwise
  */
 export function validateTokenSupply(
-    tokenSupply: any,
+    tokenSupply: {
+        preMigrationTokenSupply: BN
+        postMigrationTokenSupply: BN
+    },
     leftoverReceiver: PublicKey,
     swapBaseAmount: BN,
     migrationBaseAmount: BN,
-    lockedVesting: any,
+    lockedVesting: LockedVestingParameters,
     swapBaseAmountBuffer: BN
 ): boolean {
     if (!tokenSupply) return true
