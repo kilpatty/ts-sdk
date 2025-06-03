@@ -783,8 +783,16 @@ export function getRateLimiterParams(
     tokenQuoteDecimal: TokenDecimal,
     activationType: ActivationType
 ): BaseFee {
-    if (baseFeeBps <= 0 || feeIncrementBps <= 0) {
-        throw new Error('Base fee and fee increment must be greater than zero')
+    const cliffFeeNumerator = bpsToFeeNumerator(baseFeeBps)
+    const feeIncrementNumerator = bpsToFeeNumerator(feeIncrementBps)
+
+    if (
+        baseFeeBps <= 0 ||
+        feeIncrementBps <= 0 ||
+        referenceAmount <= 0 ||
+        maxLimiterDuration <= 0
+    ) {
+        throw new Error('All rate limiter parameters must be greater than zero')
     }
 
     if (baseFeeBps > MAX_FEE_BPS) {
@@ -799,59 +807,40 @@ export function getRateLimiterParams(
         )
     }
 
-    if (referenceAmount <= 0) {
-        throw new Error('Reference amount must be greater than zero')
-    }
-
-    if (maxLimiterDuration <= 0) {
-        throw new Error('Max duration must be greater than zero')
-    }
-
-    const cliffFeeNumerator = bpsToFeeNumerator(baseFeeBps)
-    const feeIncrementNumerator = bpsToFeeNumerator(feeIncrementBps)
-
-    // validate fee increment numerator is less than FEE_DENOMINATOR
     if (feeIncrementNumerator.gte(new BN(FEE_DENOMINATOR))) {
         throw new Error(
             'Fee increment numerator must be less than FEE_DENOMINATOR'
         )
     }
 
-    // calculate max index to validate the fee increment
     const deltaNumerator = new BN(MAX_FEE_NUMERATOR).sub(cliffFeeNumerator)
     const maxIndex = deltaNumerator.div(feeIncrementNumerator)
-
-    // validate fee increment is not too large
     if (maxIndex.lt(new BN(1))) {
-        throw new Error('feeIncrementBps is too large for the given baseFeeBps')
+        throw new Error('Fee increment is too large for the given base fee')
     }
 
-    // validate min and max fee numerators
-    const minFeeNumerator = cliffFeeNumerator
-    const maxFeeNumerator = new BN(MAX_FEE_NUMERATOR)
-
     if (
-        minFeeNumerator.lt(new BN(MIN_FEE_NUMERATOR)) ||
-        maxFeeNumerator.gt(new BN(MAX_FEE_NUMERATOR))
+        cliffFeeNumerator.lt(new BN(MIN_FEE_NUMERATOR)) ||
+        cliffFeeNumerator.gt(new BN(MAX_FEE_NUMERATOR))
     ) {
-        throw new Error('Fee numerators must be within valid ranges')
+        throw new Error('Base fee must be between 0.01% and 99%')
+    }
+
+    const maxDuration =
+        activationType === ActivationType.Slot
+            ? MAX_RATE_LIMITER_DURATION_IN_SLOTS
+            : MAX_RATE_LIMITER_DURATION_IN_SECONDS
+
+    if (maxLimiterDuration > maxDuration) {
+        throw new Error(
+            `Max duration exceeds maximum allowed value of ${maxDuration}`
+        )
     }
 
     const referenceAmountInLamports = convertToLamports(
         referenceAmount,
         tokenQuoteDecimal
     )
-
-    const maxRateLimiterDuration =
-        activationType === ActivationType.Slot
-            ? MAX_RATE_LIMITER_DURATION_IN_SLOTS
-            : MAX_RATE_LIMITER_DURATION_IN_SECONDS
-
-    if (maxLimiterDuration > maxRateLimiterDuration) {
-        throw new Error(
-            `Max duration exceeds maximum allowed value of ${maxRateLimiterDuration}`
-        )
-    }
 
     return {
         cliffFeeNumerator,
@@ -861,7 +850,6 @@ export function getRateLimiterParams(
         baseFeeMode: BaseFeeMode.RateLimiter,
     }
 }
-
 /**
  * Get the dynamic fee parameters (20% of base fee)
  * @param baseFeeBps - The base fee in basis points

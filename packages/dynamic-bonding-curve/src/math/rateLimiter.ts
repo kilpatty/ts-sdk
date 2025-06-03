@@ -7,6 +7,14 @@ import {
 } from '../constants'
 import { Rounding } from '../types'
 
+/**
+ * Calculate the fee numerator on rate limiter
+ * @param cliffFeeNumerator - The cliff fee numerator
+ * @param referenceAmount - The reference amount
+ * @param feeIncrementBps - The fee increment bps
+ * @param inputAmount - The input amount
+ * @returns The fee numerator
+ */
 export function getFeeNumeratorOnRateLimiter(
     cliffFeeNumerator: BN,
     referenceAmount: BN,
@@ -19,7 +27,7 @@ export function getFeeNumeratorOnRateLimiter(
     }
 
     // calculate fee increment numerator
-    const feeIncrementNumerator = mulDiv(
+    const i = mulDiv(
         new BN(feeIncrementBps),
         new BN(FEE_DENOMINATOR),
         new BN(BASIS_POINT_MAX),
@@ -28,7 +36,7 @@ export function getFeeNumeratorOnRateLimiter(
 
     // calculate max index (how many increments until we reach MAX_FEE_NUMERATOR)
     const deltaNumerator = new BN(MAX_FEE_NUMERATOR).sub(cliffFeeNumerator)
-    const maxIndex = deltaNumerator.div(feeIncrementNumerator)
+    const maxIndex = deltaNumerator.div(i)
 
     // calculate a and b
     // a = (input_amount - reference_amount) / reference_amount (integer division)
@@ -52,20 +60,20 @@ export function getFeeNumeratorOnRateLimiter(
 
         const one = new BN(1)
         const two = new BN(2)
+        const c = cliffFeeNumerator
+        const x0 = referenceAmount
 
         // c + c*a
-        const term1 = cliffFeeNumerator.add(cliffFeeNumerator.mul(a))
+        const term1 = c.add(c.mul(a))
 
         // i*a*(a+1)/2
-        const term2 = feeIncrementNumerator.mul(a).mul(a.add(one)).div(two)
+        const term2 = i.mul(a).mul(a.add(one)).div(two)
 
         // c + i*(a+1)
-        const term3 = cliffFeeNumerator.add(
-            feeIncrementNumerator.mul(a.add(one))
-        )
+        const term3 = c.add(i.mul(a.add(one)))
 
         // calculate total fee
-        const totalFee = referenceAmount.mul(term1.add(term2)).add(b.mul(term3))
+        const totalFee = x0.mul(term1.add(term2)).add(b.mul(term3))
 
         // convert to trading fee: trading_fee = total_fee / FEE_DENOMINATOR
         tradingFee = totalFee.div(new BN(FEE_DENOMINATOR))
@@ -74,22 +82,21 @@ export function getFeeNumeratorOnRateLimiter(
         // use MAX_FEE_NUMERATOR for the portion exceeding max_index
         const one = new BN(1)
         const two = new BN(2)
+        const c = cliffFeeNumerator
+        const x0 = referenceAmount
 
         // c + c*max_index
-        const term1 = cliffFeeNumerator.add(cliffFeeNumerator.mul(maxIndex))
+        const term1 = c.add(c.mul(maxIndex))
 
         // i*max_index*(max_index+1)/2
-        const term2 = feeIncrementNumerator
-            .mul(maxIndex)
-            .mul(maxIndex.add(one))
-            .div(two)
+        const term2 = i.mul(maxIndex).mul(maxIndex.add(one)).div(two)
 
         // calculate fee for the first part (up to max_index)
-        const firstPartFee = referenceAmount.mul(term1.add(term2))
+        const firstPartFee = x0.mul(term1.add(term2))
 
         // calculate fee for the remaining part (beyond max_index)
         const d = a.sub(maxIndex)
-        const leftAmount = d.mul(referenceAmount).add(b)
+        const leftAmount = d.mul(x0).add(b)
         const secondPartFee = leftAmount.mul(new BN(MAX_FEE_NUMERATOR))
 
         // calculate total fee
