@@ -8,6 +8,7 @@ import {
 } from '@solana/web3.js'
 import { DynamicBondingCurveProgram } from './program'
 import {
+    ActivationType,
     BaseFeeMode,
     ConfigParameters,
     CreateConfigAndPoolParam,
@@ -38,6 +39,7 @@ import {
     validateConfigParameters,
     validateSwapAmount,
 } from '../helpers/validation'
+import BN from 'bn.js'
 
 export class PoolService extends DynamicBondingCurveProgram {
     private state: StateService
@@ -269,7 +271,22 @@ export class PoolService extends DynamicBondingCurveProgram {
         // error checks
         validateSwapAmount(buyAmount)
 
+        let currentPoint
+        if (
+            createConfigAndPoolWithFirstBuyParam.activationType ===
+            ActivationType.Slot
+        ) {
+            const currentSlot = await this.connection.getSlot()
+            currentPoint = currentSlot
+        } else {
+            const currentSlot = await this.connection.getSlot()
+            const currentTime = await this.connection.getBlockTime(currentSlot)
+            currentPoint = currentTime
+        }
+
         // check if rate limiter is applied
+        // this swapBuyTx is only QuoteToBase direction
+        // this swapBuyTx does not check poolState, so there is no check for activation point
         const isRateLimiterApplied =
             createConfigAndPoolWithFirstBuyParam.poolFees.baseFee
                 .baseFeeMode === BaseFeeMode.RateLimiter
@@ -592,7 +609,19 @@ export class PoolService extends DynamicBondingCurveProgram {
         // error checks
         validateSwapAmount(buyAmount)
 
+        let currentPoint
+        if (poolConfigState.activationType === ActivationType.Slot) {
+            const currentSlot = await this.connection.getSlot()
+            currentPoint = new BN(currentSlot)
+        } else {
+            const currentSlot = await this.connection.getSlot()
+            const currentTime = await this.connection.getBlockTime(currentSlot)
+            currentPoint = new BN(currentTime)
+        }
+
         // check if rate limiter is applied
+        // this firstBuyTx is only QuoteToBase direction
+        // this firstBuyTx does not check poolState, so there is no check for activation point
         const isRateLimiterApplied =
             poolConfigState.poolFees.baseFee.baseFeeMode ===
             BaseFeeMode.RateLimiter
@@ -650,7 +679,7 @@ export class PoolService extends DynamicBondingCurveProgram {
               ]
             : []
 
-        const swapTx = await this.program.methods
+        const firstBuyTx = await this.program.methods
             .swap({
                 amountIn: buyAmount,
                 minimumAmountOut,
@@ -675,7 +704,7 @@ export class PoolService extends DynamicBondingCurveProgram {
             .postInstructions(postInstructions)
             .transaction()
 
-        tx.add(...swapTx.instructions)
+        tx.add(...firstBuyTx.instructions)
 
         return tx
     }
@@ -701,10 +730,31 @@ export class PoolService extends DynamicBondingCurveProgram {
         // error checks
         validateSwapAmount(amountIn)
 
-        // check if rate limiter is applied
+        let currentPoint
+        if (poolConfigState.activationType === ActivationType.Slot) {
+            const currentSlot = await this.connection.getSlot()
+            currentPoint = new BN(currentSlot)
+        } else {
+            const currentSlot = await this.connection.getSlot()
+            const currentTime = await this.connection.getBlockTime(currentSlot)
+            currentPoint = new BN(currentTime)
+        }
+
+        // check if rate limiter is applied if:
+        // 1. rate limiter mode
+        // 2. swap direction is QuoteToBase
+        // 3. current point is greater than activation point
+        // 4. current point is less than activation point + maxLimiterDuration
         const isRateLimiterApplied =
             poolConfigState.poolFees.baseFee.baseFeeMode ===
-                BaseFeeMode.RateLimiter && !swapBaseForQuote
+                BaseFeeMode.RateLimiter &&
+            !swapBaseForQuote &&
+            currentPoint.gte(poolState.activationPoint) &&
+            currentPoint.lte(
+                poolState.activationPoint.add(
+                    poolConfigState.poolFees.baseFee.secondFactor
+                )
+            )
 
         const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
             this.prepareSwapParams(swapBaseForQuote, poolState, poolConfigState)
