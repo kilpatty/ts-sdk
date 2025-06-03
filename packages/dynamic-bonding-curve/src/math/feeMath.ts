@@ -39,58 +39,63 @@ export function getBaseFeeNumerator(
     const baseFeeMode = baseFee.baseFeeMode
 
     if (baseFeeMode === BaseFeeMode.RateLimiter) {
-        // Check if rate limiter is applied
+        const feeIncrementBps = baseFee.firstFactor
+        const maxLimiterDuration = baseFee.secondFactor
+        const referenceAmount = baseFee.thirdFactor
+
+        // check if rate limiter is applied
         if (currentPoint.lt(activationPoint)) {
             return baseFee.cliffFeeNumerator
         }
 
-        const lastEffectivePoint = activationPoint.add(baseFee.secondFactor)
+        const lastEffectivePoint = activationPoint.add(maxLimiterDuration)
         if (currentPoint.gt(lastEffectivePoint)) {
             return baseFee.cliffFeeNumerator
         }
 
-        // If no input amount provided, return base fee
+        // if no input amount provided, return base fee
         if (!inputAmount) {
             return baseFee.cliffFeeNumerator
         }
 
         return getFeeNumeratorOnRateLimiter(
             baseFee.cliffFeeNumerator,
-            baseFee.thirdFactor, // reference amount
-            new BN(baseFee.firstFactor), // fee increment bps
+            referenceAmount,
+            new BN(feeIncrementBps),
             inputAmount
         )
     } else {
-        if (baseFee.thirdFactor.isZero()) {
+        const numberOfPeriod = baseFee.firstFactor
+        const reductionFactor = baseFee.secondFactor
+        const periodFrequency = baseFee.thirdFactor
+
+        if (periodFrequency.isZero()) {
             return baseFee.cliffFeeNumerator
         }
 
         let period: number
         if (currentPoint.lt(activationPoint)) {
             // before activation point, use max period (min fee)
-            period = baseFee.firstFactor
+            period = numberOfPeriod
         } else {
             const elapsedPoints = SafeMath.sub(currentPoint, activationPoint)
-            const periodCount = SafeMath.div(elapsedPoints, baseFee.thirdFactor)
+            const periodCount = SafeMath.div(elapsedPoints, periodFrequency)
 
-            period = Math.min(
-                parseInt(periodCount.toString()),
-                baseFee.firstFactor
-            )
+            period = Math.min(parseInt(periodCount.toString()), numberOfPeriod)
         }
 
         if (baseFeeMode === BaseFeeMode.FeeSchedulerLinear) {
             // linear fee calculation: cliffFeeNumerator - period * reductionFactor
             return getFeeNumeratorOnLinearFeeScheduler(
                 baseFee.cliffFeeNumerator,
-                baseFee.secondFactor,
+                reductionFactor,
                 period
             )
         } else {
             // exponential fee calculation: cliff_fee_numerator * (1 - reduction_factor/10_000)^period
             return getFeeNumeratorOnExponentialFeeScheduler(
                 baseFee.cliffFeeNumerator,
-                baseFee.secondFactor,
+                reductionFactor,
                 period
             )
         }

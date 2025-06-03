@@ -1,7 +1,6 @@
 import {
     ActivationType,
     getRateLimiterParams,
-    calculateRateLimiterFee,
     BaseFeeMode,
     bpsToFeeNumerator,
     FEE_DENOMINATOR,
@@ -9,6 +8,7 @@ import {
 } from '../src'
 import { expect, test, describe } from 'bun:test'
 import BN from 'bn.js'
+import { calculateRateLimiterFee } from './utils/common'
 
 describe('Rate Limiter tests', () => {
     test('getRateLimiterParams with Slot activation type', () => {

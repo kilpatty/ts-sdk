@@ -23,6 +23,7 @@ import {
     MAX_RATE_LIMITER_DURATION_IN_SECONDS,
     MAX_RATE_LIMITER_DURATION_IN_SLOTS,
     MAX_SQRT_PRICE,
+    MIN_FEE_NUMERATOR,
     MIN_SQRT_PRICE,
     ONE_Q64,
 } from '../constants'
@@ -767,32 +768,34 @@ export function calculateFeeSchedulerEndingBaseFeeBps(
 /**
  * Get the rate limiter parameters
  * @param baseFeeBps - The base fee in basis points
- * @param maxFeeBps - The max fee in basis points
+ * @param feeIncrementBps - The fee increment in basis points
  * @param referenceAmount - The reference amount
- * @param maxRateLimiterDuration - The max rate limiter duration
+ * @param maxLimiterDuration - The max rate limiter duration
  * @param tokenQuoteDecimal - The token quote decimal
  * @param activationType - The activation type
  * @returns The rate limiter parameters
  */
 export function getRateLimiterParams(
     baseFeeBps: number,
-    maxFeeBps: number,
+    feeIncrementBps: number,
     referenceAmount: number,
-    maxDuration: number,
+    maxLimiterDuration: number,
     tokenQuoteDecimal: TokenDecimal,
     activationType: ActivationType
 ): BaseFee {
-    if (baseFeeBps <= 0 || maxFeeBps <= 0) {
-        throw new Error('Base fee and max fee must be greater than zero')
+    if (baseFeeBps <= 0 || feeIncrementBps <= 0) {
+        throw new Error('Base fee and fee increment must be greater than zero')
     }
 
-    if (baseFeeBps > maxFeeBps) {
-        throw new Error('Base fee must be less than or equal to max fee')
-    }
-
-    if (maxFeeBps > MAX_FEE_BPS) {
+    if (baseFeeBps > MAX_FEE_BPS) {
         throw new Error(
-            `Max fee (${maxFeeBps} bps) exceeds maximum allowed value of ${MAX_FEE_BPS} bps`
+            `Base fee (${baseFeeBps} bps) exceeds maximum allowed value of ${MAX_FEE_BPS} bps`
+        )
+    }
+
+    if (feeIncrementBps > MAX_FEE_BPS) {
+        throw new Error(
+            `Fee increment (${feeIncrementBps} bps) exceeds maximum allowed value of ${MAX_FEE_BPS} bps`
         )
     }
 
@@ -800,29 +803,38 @@ export function getRateLimiterParams(
         throw new Error('Reference amount must be greater than zero')
     }
 
-    if (maxDuration <= 0) {
+    if (maxLimiterDuration <= 0) {
         throw new Error('Max duration must be greater than zero')
     }
 
     const cliffFeeNumerator = bpsToFeeNumerator(baseFeeBps)
-    const maxFeeNumerator = bpsToFeeNumerator(maxFeeBps)
-
-    // calculate fee increment
-    const feeIncrementBps = Math.min(
-        Math.floor((maxFeeBps - baseFeeBps) / 10),
-        MAX_FEE_BPS - baseFeeBps
-    )
-
-    // calculate max index
-    const deltaNumerator = maxFeeNumerator.sub(cliffFeeNumerator)
     const feeIncrementNumerator = bpsToFeeNumerator(feeIncrementBps)
+
+    // validate fee increment numerator is less than FEE_DENOMINATOR
+    if (feeIncrementNumerator.gte(new BN(FEE_DENOMINATOR))) {
+        throw new Error(
+            'Fee increment numerator must be less than FEE_DENOMINATOR'
+        )
+    }
+
+    // calculate max index to validate the fee increment
+    const deltaNumerator = new BN(MAX_FEE_NUMERATOR).sub(cliffFeeNumerator)
     const maxIndex = deltaNumerator.div(feeIncrementNumerator)
 
-    // validate fee increment
+    // validate fee increment is not too large
     if (maxIndex.lt(new BN(1))) {
-        throw new Error(
-            'feeIncrementBps is too large for the given baseFeeBps and maxFeeBps'
-        )
+        throw new Error('feeIncrementBps is too large for the given baseFeeBps')
+    }
+
+    // validate min and max fee numerators
+    const minFeeNumerator = cliffFeeNumerator
+    const maxFeeNumerator = new BN(MAX_FEE_NUMERATOR)
+
+    if (
+        minFeeNumerator.lt(new BN(MIN_FEE_NUMERATOR)) ||
+        maxFeeNumerator.gt(new BN(MAX_FEE_NUMERATOR))
+    ) {
+        throw new Error('Fee numerators must be within valid ranges')
     }
 
     const referenceAmountInLamports = convertToLamports(
@@ -830,109 +842,24 @@ export function getRateLimiterParams(
         tokenQuoteDecimal
     )
 
-    // Set max duration based on activation type
-    const maxLimiterDuration =
+    const maxRateLimiterDuration =
         activationType === ActivationType.Slot
             ? MAX_RATE_LIMITER_DURATION_IN_SLOTS
             : MAX_RATE_LIMITER_DURATION_IN_SECONDS
 
-    if (maxDuration > maxLimiterDuration) {
+    if (maxLimiterDuration > maxRateLimiterDuration) {
         throw new Error(
-            `Max duration exceeds maximum allowed value of ${maxLimiterDuration}`
+            `Max duration exceeds maximum allowed value of ${maxRateLimiterDuration}`
         )
     }
 
     return {
         cliffFeeNumerator,
         firstFactor: feeIncrementBps,
-        secondFactor: new BN(maxDuration),
+        secondFactor: new BN(maxLimiterDuration),
         thirdFactor: new BN(referenceAmountInLamports),
         baseFeeMode: BaseFeeMode.RateLimiter,
     }
-}
-
-/**
- * Calculate the rate limiter fee for a given input amount
- * @param params - The rate limiter parameters
- * @param inputAmount - The input amount
- * @returns The fee
- */
-export function calculateRateLimiterFee(params: BaseFee, inputAmount: BN): BN {
-    // for input_amount <= reference_amount
-    // --> fee = input_amount * cliff_fee_numerator
-
-    // for input_amount > reference_amount
-
-    // let x0 = reference_amount
-    // let c = cliff_fee_numerator
-    // let i = fee_increment (in basis points)
-    // let a = (input_amount - x0) / x0 (integer division)
-    // let b = (input_amount - x0) % x0 (remainder)
-
-    // if a < max_index:
-    // --> fee = x0 * (c + c*a + i*a*(a+1)/2) + b * (c + i*(a+1))
-
-    // if a ≥ max_index:
-    // --> fee = x0 * (c + c*max_index + i*max_index*(max_index+1)/2) + (d*x0 + b) * MAX_FEE
-    // where:
-    // d = a - max_index
-    // MAX_FEE is the maximum allowed fee (9900 bps)
-
-    const { cliffFeeNumerator, thirdFactor, firstFactor } = params
-
-    const feeIncrementNumerator = bpsToFeeNumerator(firstFactor)
-
-    // for input_amount <= reference_amount
-    if (inputAmount.lte(thirdFactor)) {
-        return inputAmount.mul(cliffFeeNumerator).div(new BN(FEE_DENOMINATOR))
-    }
-
-    // for input_amount > reference_amount
-    const x0 = thirdFactor
-    const c = cliffFeeNumerator
-    const i = feeIncrementNumerator
-
-    // calculate a and b
-    const diff = inputAmount.sub(x0)
-    const a = diff.div(x0)
-    const b = diff.mod(x0)
-
-    // calculate max_index
-    const maxFeeNumerator = new BN(MAX_FEE_NUMERATOR)
-    const deltaNumerator = maxFeeNumerator.sub(cliffFeeNumerator)
-    const maxIndex = deltaNumerator.div(feeIncrementNumerator)
-
-    let fee: BN
-    if (a.lt(maxIndex)) {
-        // if a < max_index
-        const numerator1 = c.add(c.mul(a)).add(
-            i
-                .mul(a)
-                .mul(a.add(new BN(1)))
-                .div(new BN(2))
-        )
-        const numerator2 = c.add(i.mul(a.add(new BN(1))))
-        const firstFee = x0.mul(numerator1)
-        const secondFee = b.mul(numerator2)
-        fee = firstFee.add(secondFee)
-    } else {
-        // if a >= max_index
-        const numerator1 = c.add(c.mul(maxIndex)).add(
-            i
-                .mul(maxIndex)
-                .mul(maxIndex.add(new BN(1)))
-                .div(new BN(2))
-        )
-        const numerator2 = maxFeeNumerator
-        const firstFee = x0.mul(numerator1)
-
-        const d = a.sub(maxIndex)
-        const leftAmount = d.mul(x0).add(b)
-        const secondFee = leftAmount.mul(numerator2)
-        fee = firstFee.add(secondFee)
-    }
-
-    return fee.div(new BN(FEE_DENOMINATOR))
 }
 
 /**
