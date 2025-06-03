@@ -586,7 +586,8 @@ const transaction = await client.partner.createConfig({
 
 - `buildCurve` helps you to create a curve structure based on percentage of supply on migration and migration quote threshold.
 - If `dynamicFeeEnabled` is true, the dynamic fee will be enabled and capped at 20% of minimum base fee.
-- You must calculate your `lockedVestingParam.totalVestingDuration` and `feeSchedulerParam.totalDuration` based on your `activationType` and `activationTime`.
+- `lockedVestingParam.totalVestingDuration` and `lockedVestingParam.cliffDurationFromMigrationTime` are calculated in terms of seconds.
+- `feeSchedulerParam.totalDuration` is calculated based on your `activationType` and `activationTime`.
 - Slot is 400ms, Timestamp is 1000ms.
 
 ---
@@ -707,7 +708,8 @@ const transaction = await client.partner.createConfig({
 
 - `buildCurveWithMarketCap` helps you to create a curve structure based on initial market cap and migration market cap.
 - If `dynamicFeeEnabled` is true, the dynamic fee will be enabled and capped at 20% of minimum base fee.
-- You must calculate your `lockedVestingParam.totalVestingDuration` and `feeSchedulerParam.totalDuration` based on your `activationType` and `activationTime`.
+- `lockedVestingParam.totalVestingDuration` and `lockedVestingParam.cliffDurationFromMigrationTime` are calculated in terms of seconds.
+- `feeSchedulerParam.totalDuration` is calculated based on your `activationType` and `activationTime`.
 - Slot is 400ms, Timestamp is 1000ms.
 
 ---
@@ -830,7 +832,8 @@ const transaction = await client.partner.createConfig({
 
 - `buildCurveWithTwoSegments` helps you to create a curve structure based on initial market cap, migration market cap and percentage of supply on migration.
 - If `dynamicFeeEnabled` is true, the dynamic fee will be enabled and capped at 20% of minimum base fee.
-- You must calculate your `lockedVestingParam.totalVestingDuration` and `feeSchedulerParam.totalDuration` based on your `activationType` and `activationTime`.
+- `lockedVestingParam.totalVestingDuration` and `lockedVestingParam.cliffDurationFromMigrationTime` are calculated in terms of seconds.
+- `feeSchedulerParam.totalDuration` is calculated based on your `activationType` and `activationTime`.
 - Slot is 400ms, Timestamp is 1000ms.
 
 ---
@@ -970,7 +973,8 @@ const transaction = await client.partner.createConfig({
     3. `liquidityWeights[i] > liquidityWeights[i+1]`: Higher liquidity at lower prices.
         - This means that the price will move less for a given trade at lower prices (more resistance), and price will move more for a given trade at higher prices (less resistance).
 - If `dynamicFeeEnabled` is true, the dynamic fee will be enabled and capped at 20% of minimum base fee.
-- You must calculate your `lockedVestingParam.totalVestingDuration` and `feeSchedulerParam.totalDuration` based on your `activationType` and `activationTime`.
+- `lockedVestingParam.totalVestingDuration` and `lockedVestingParam.cliffDurationFromMigrationTime` are calculated in terms of seconds.
+- `feeSchedulerParam.totalDuration` is calculated based on your `activationType` and `activationTime`.
 - Slot is 400ms, Timestamp is 1000ms.
 
 ---
@@ -2951,8 +2955,7 @@ function getLockedVestingParams(
     cliffUnlockAmount: number,
     totalVestingDuration: number,
     cliffDurationFromMigrationTime: number,
-    tokenBaseDecimal: TokenDecimal,
-    activationType: ActivationType
+    tokenBaseDecimal: TokenDecimal
 ): LockedVestingParams
 ```
 
@@ -2965,7 +2968,6 @@ cliffUnlockAmount: number // The amount of tokens that will be unlocked when ves
 totalVestingDuration: number // The total vesting duration in seconds
 cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
 tokenBaseDecimal: TokenDecimal // The number of decimals for the base token
-activationType: ActivationType // The activation type
 ```
 
 #### Returns
@@ -2987,4 +2989,4 @@ const lockedVestingParams = getLockedVestingParams(
 
 #### Notes
 
-- The `totalVestingDuration` is the total duration of the vesting. It must be calculated based on your `activationType`. If you use `ActivationType.Slot`, the `totalVestingDuration` is denominated in terms of 400ms (slot). If you use `ActivationType.Timestamp`, the `totalVestingDuration` is denominated in terms of 1000ms (timestamp).
+- The `totalVestingDuration` is the total duration of the vesting. It must be calculated in terms of seconds => 1000ms (timestamp).
