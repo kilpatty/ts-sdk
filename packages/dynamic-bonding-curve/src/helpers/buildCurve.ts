@@ -63,14 +63,18 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
     // handle base fee params
     const baseFee = (() => {
         if (baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter) {
-            const { baseFeeBps, maxFeeBps, referenceAmount, maxDuration } =
-                baseFeeParams.rateLimiterParam
+            const {
+                baseFeeBps,
+                feeIncrementBps,
+                referenceAmount,
+                maxLimiterDuration,
+            } = baseFeeParams.rateLimiterParam
 
             return getRateLimiterParams(
                 baseFeeBps,
-                maxFeeBps,
+                feeIncrementBps,
                 referenceAmount,
-                maxDuration,
+                maxLimiterDuration,
                 tokenQuoteDecimal,
                 activationType
             )
@@ -324,14 +328,18 @@ export function buildCurveWithTwoSegments(
     // handle base fee params
     const baseFee = (() => {
         if (baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter) {
-            const { baseFeeBps, maxFeeBps, referenceAmount, maxDuration } =
-                baseFeeParams.rateLimiterParam
+            const {
+                baseFeeBps,
+                feeIncrementBps,
+                referenceAmount,
+                maxLimiterDuration,
+            } = baseFeeParams.rateLimiterParam
 
             return getRateLimiterParams(
                 baseFeeBps,
-                maxFeeBps,
+                feeIncrementBps,
                 referenceAmount,
-                maxDuration,
+                maxLimiterDuration,
                 tokenQuoteDecimal,
                 activationType
             )
@@ -559,14 +567,18 @@ export function buildCurveWithLiquidityWeights(
     // handle base fee params
     const baseFee = (() => {
         if (baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter) {
-            const { baseFeeBps, maxFeeBps, referenceAmount, maxDuration } =
-                baseFeeParams.rateLimiterParam
+            const {
+                baseFeeBps,
+                feeIncrementBps,
+                referenceAmount,
+                maxLimiterDuration,
+            } = baseFeeParams.rateLimiterParam
 
             return getRateLimiterParams(
                 baseFeeBps,
-                maxFeeBps,
+                feeIncrementBps,
                 referenceAmount,
-                maxDuration,
+                maxLimiterDuration,
                 tokenQuoteDecimal,
                 activationType
             )
