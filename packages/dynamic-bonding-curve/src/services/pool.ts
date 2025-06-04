@@ -13,6 +13,7 @@ import {
     CreatePoolWithFirstBuyParam,
     InitializePoolBaseParam,
     PrepareSwapParams,
+    SwapQuoteExactInParam,
     TokenType,
     type CreatePoolParam,
     type SwapParam,
@@ -30,7 +31,7 @@ import {
 import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { METAPLEX_PROGRAM_ID } from '../constants'
-import { swapQuote } from '../math/swapQuote'
+import { swapQuote, calculateQuoteExactInAmount } from '../math/swapQuote'
 import { StateService } from './state'
 import {
     validateConfigParameters,
@@ -765,5 +766,20 @@ export class PoolService extends DynamicBondingCurveProgram {
             hasReferral,
             currentPoint
         )
+    }
+
+    swapQuoteExactIn(swapQuoteExactInParam: SwapQuoteExactInParam) {
+        const { virtualPool, config } = swapQuoteExactInParam
+
+        const requiredQuoteAmount = calculateQuoteExactInAmount(
+            config.migrationQuoteThreshold,
+            virtualPool.quoteReserve,
+            config.collectFeeMode,
+            config.poolFees.baseFee.cliffFeeNumerator
+        )
+
+        return {
+            amountIn: requiredQuoteAmount,
+        }
     }
 }

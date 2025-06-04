@@ -17,6 +17,7 @@ import {
     type SwapAmount,
     type VirtualPool,
 } from '../types'
+import { FEE_DENOMINATOR } from '../constants'
 
 /**
  * Get swap result
@@ -424,4 +425,31 @@ export async function swapQuote(
     }
 
     return result
+}
+
+/**
+ * Calculate the required quote amount for exact input
+ * @param migrationQuoteThreshold Migration quote threshold
+ * @param quoteReserve Current quote reserve
+ * @param collectFeeMode Fee collection mode
+ * @param feeDenominator Fee denominator
+ * @param feeNumerator Fee numerator
+ * @returns Required quote amount
+ */
+export function calculateQuoteExactInAmount(
+    migrationQuoteThreshold: BN,
+    quoteReserve: BN,
+    collectFeeMode: GetFeeMode,
+    feeNumerator: BN
+): BN {
+    const amountInAfterFee = migrationQuoteThreshold.sub(quoteReserve)
+
+    if (collectFeeMode === GetFeeMode.OutputToken) {
+        return amountInAfterFee
+    } else {
+        // For quote token fee collect mode
+        // amountIn = amountInAfterFee * feeDenominator / (feeDenominator - feeNumerator)
+        const denominator = new BN(FEE_DENOMINATOR).sub(feeNumerator)
+        return amountInAfterFee.mul(new BN(FEE_DENOMINATOR)).div(denominator)
+    }
 }
