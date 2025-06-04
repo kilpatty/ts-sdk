@@ -369,6 +369,7 @@ export type SwapQuoteParam = {
 export type SwapQuoteExactInParam = {
     virtualPool: VirtualPool
     config: PoolConfig
+    currentPoint: BN
 }
 
 export type MigrateToDammV1Param = {

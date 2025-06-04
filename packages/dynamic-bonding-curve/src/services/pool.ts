@@ -37,6 +37,7 @@ import {
     validateConfigParameters,
     validateSwapAmount,
 } from '../helpers/validation'
+import BN from 'bn.js'
 
 export class PoolService extends DynamicBondingCurveProgram {
     private state: StateService
@@ -768,18 +769,19 @@ export class PoolService extends DynamicBondingCurveProgram {
         )
     }
 
-    swapQuoteExactIn(swapQuoteExactInParam: SwapQuoteExactInParam) {
-        const { virtualPool, config } = swapQuoteExactInParam
+    swapQuoteExactIn(swapQuoteExactInParam: SwapQuoteExactInParam): {
+        exactAmountIn: BN
+    } {
+        const { virtualPool, config, currentPoint } = swapQuoteExactInParam
 
         const requiredQuoteAmount = calculateQuoteExactInAmount(
-            config.migrationQuoteThreshold,
-            virtualPool.quoteReserve,
-            config.collectFeeMode,
-            config.poolFees.baseFee.cliffFeeNumerator
+            config,
+            virtualPool,
+            currentPoint
         )
 
         return {
-            amountIn: requiredQuoteAmount,
+            exactAmountIn: requiredQuoteAmount,
         }
     }
 }

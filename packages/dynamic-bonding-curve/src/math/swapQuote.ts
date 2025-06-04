@@ -1,12 +1,18 @@
 import BN from 'bn.js'
 import { SafeMath } from './safeMath'
+import { mulDiv } from './utilsMath'
 import {
     getDeltaAmountBaseUnsigned,
     getDeltaAmountQuoteUnsigned,
     getNextSqrtPriceFromInput,
 } from './curve'
-import { getFeeOnAmount } from './feeMath'
 import {
+    getCurrentBaseFeeNumerator,
+    getFeeOnAmount,
+    getVariableFee,
+} from './feeMath'
+import {
+    CollectFeeMode,
     GetFeeMode,
     Rounding,
     TradeDirection,
@@ -17,7 +23,7 @@ import {
     type SwapAmount,
     type VirtualPool,
 } from '../types'
-import { FEE_DENOMINATOR } from '../constants'
+import { FEE_DENOMINATOR, MAX_FEE_NUMERATOR } from '../constants'
 
 /**
  * Get swap result
@@ -432,24 +438,53 @@ export async function swapQuote(
  * @param migrationQuoteThreshold Migration quote threshold
  * @param quoteReserve Current quote reserve
  * @param collectFeeMode Fee collection mode
- * @param feeDenominator Fee denominator
- * @param feeNumerator Fee numerator
+ * @param config Pool config state
+ * @param currentPoint Current point
  * @returns Required quote amount
  */
 export function calculateQuoteExactInAmount(
-    migrationQuoteThreshold: BN,
-    quoteReserve: BN,
-    collectFeeMode: GetFeeMode,
-    feeNumerator: BN
+    config: PoolConfig,
+    virtualPool: VirtualPool,
+    currentPoint: BN
 ): BN {
-    const amountInAfterFee = migrationQuoteThreshold.sub(quoteReserve)
+    if (virtualPool.quoteReserve.gte(config.migrationQuoteThreshold)) {
+        return new BN(0)
+    }
 
-    if (collectFeeMode === GetFeeMode.OutputToken) {
-        return amountInAfterFee
+    const amountInAfterFee = config.migrationQuoteThreshold.sub(
+        virtualPool.quoteReserve
+    )
+
+    if (config.collectFeeMode === CollectFeeMode.OnlyQuote) {
+        const baseFeeNumerator = getCurrentBaseFeeNumerator(
+            config.poolFees.baseFee,
+            currentPoint,
+            virtualPool.activationPoint
+        )
+
+        let totalFeeNumerator = baseFeeNumerator
+        if (config.poolFees.dynamicFee.initialized !== 0) {
+            const variableFee = getVariableFee(
+                config.poolFees.dynamicFee,
+                virtualPool.volatilityTracker
+            )
+            totalFeeNumerator = SafeMath.add(totalFeeNumerator, variableFee)
+        }
+
+        // cap at MAX_FEE_NUMERATOR
+        if (totalFeeNumerator.gt(new BN(MAX_FEE_NUMERATOR))) {
+            totalFeeNumerator = new BN(MAX_FEE_NUMERATOR)
+        }
+
+        // amountIn = amountInAfterFee * FEE_DENOMINATOR / (FEE_DENOMINATOR - effectiveFeeNumerator)
+        const denominator = new BN(FEE_DENOMINATOR).sub(totalFeeNumerator)
+        return mulDiv(
+            amountInAfterFee,
+            new BN(FEE_DENOMINATOR),
+            denominator,
+            Rounding.Up
+        )
     } else {
-        // For quote token fee collect mode
-        // amountIn = amountInAfterFee * feeDenominator / (feeDenominator - feeNumerator)
-        const denominator = new BN(FEE_DENOMINATOR).sub(feeNumerator)
-        return amountInAfterFee.mul(new BN(FEE_DENOMINATOR)).div(denominator)
+        return amountInAfterFee
     }
 }
