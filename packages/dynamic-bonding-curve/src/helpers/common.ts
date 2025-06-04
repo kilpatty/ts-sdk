@@ -747,18 +747,19 @@ export function getFeeSchedulerParams(
  */
 export function calculateFeeSchedulerEndingBaseFeeBps(
     cliffFeeNumerator: number,
-    firstFactor: number,
-    secondFactor: number,
+    numberOfPeriod: number,
+    reductionFactor: number,
     baseFeeMode: BaseFeeMode
 ): number {
     let baseFeeNumerator: number
     if (baseFeeMode == BaseFeeMode.FeeSchedulerLinear) {
         // linear mode
-        baseFeeNumerator = cliffFeeNumerator - firstFactor * secondFactor
+        baseFeeNumerator = cliffFeeNumerator - numberOfPeriod * reductionFactor
     } else {
         // exponential mode
-        const decayRate = 1 - secondFactor / BASIS_POINT_MAX
-        baseFeeNumerator = cliffFeeNumerator * Math.pow(decayRate, firstFactor)
+        const decayRate = 1 - reductionFactor / BASIS_POINT_MAX
+        baseFeeNumerator =
+            cliffFeeNumerator * Math.pow(decayRate, numberOfPeriod)
     }
 
     // ensure base fee is not negative

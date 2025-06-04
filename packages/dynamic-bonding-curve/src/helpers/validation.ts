@@ -30,13 +30,28 @@ import {
     isNativeSol,
 } from './utils'
 import Decimal from 'decimal.js'
+import {
+    FEE_DENOMINATOR,
+    MAX_FEE_NUMERATOR,
+    MAX_RATE_LIMITER_DURATION_IN_SECONDS,
+    MAX_RATE_LIMITER_DURATION_IN_SLOTS,
+    MIN_FEE_NUMERATOR,
+} from '../constants'
+import { bpsToFeeNumerator } from './utils'
+import { getFeeNumeratorOnRateLimiter } from '../math/rateLimiter'
 
 /**
  * Validate the pool fees
  * @param poolFees - The pool fees
+ * @param collectFeeMode - The collect fee mode
+ * @param activationType - The activation type
  * @returns true if the pool fees are valid, false otherwise
  */
-export function validatePoolFees(poolFees: PoolFeeParameters): boolean {
+export function validatePoolFees(
+    poolFees: PoolFeeParameters,
+    collectFeeMode: CollectFeeMode,
+    activationType: ActivationType
+): boolean {
     if (!poolFees) return false
 
     // check base fee if it exists
@@ -57,7 +72,13 @@ export function validatePoolFees(poolFees: PoolFeeParameters): boolean {
 
         // validate fee rate limiter if it exists
         if (poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
-            if (!validateFeeRateLimiter(poolFees.baseFee)) {
+            if (
+                !validateFeeRateLimiter(
+                    poolFees.baseFee,
+                    collectFeeMode,
+                    activationType
+                )
+            ) {
                 return false
             }
         }
@@ -65,6 +86,7 @@ export function validatePoolFees(poolFees: PoolFeeParameters): boolean {
 
     return true
 }
+
 /**
  * Validate the fee scheduler parameters
  * @param feeScheduler - The fee scheduler parameters
@@ -75,14 +97,14 @@ export function validateFeeScheduler(feeScheduler: BaseFee): boolean {
 
     // if any parameter is set, all must be set
     if (
-        feeScheduler.firstFactor ||
-        feeScheduler.secondFactor ||
-        feeScheduler.thirdFactor
+        feeScheduler.firstFactor !== 0 ||
+        feeScheduler.secondFactor.gt(new BN(0)) ||
+        feeScheduler.thirdFactor.gt(new BN(0))
     ) {
         if (
-            !feeScheduler.firstFactor ||
-            !feeScheduler.secondFactor ||
-            !feeScheduler.thirdFactor
+            feeScheduler.firstFactor === 0 ||
+            feeScheduler.secondFactor.eq(new BN(0)) ||
+            feeScheduler.thirdFactor.eq(new BN(0))
         ) {
             return false
         }
@@ -111,55 +133,111 @@ export function validateFeeScheduler(feeScheduler: BaseFee): boolean {
         }
     }
 
+    // validate min and max fee numerators
+    const minFeeNumerator = feeScheduler.cliffFeeNumerator.sub(
+        feeScheduler.secondFactor.mul(new BN(feeScheduler.firstFactor))
+    )
+    const maxFeeNumerator = feeScheduler.cliffFeeNumerator
+
+    // validate against fee denominator
+    if (
+        minFeeNumerator.gte(new BN(FEE_DENOMINATOR)) ||
+        maxFeeNumerator.gte(new BN(FEE_DENOMINATOR))
+    ) {
+        return false
+    }
+
+    // validate against min and max fee numerators
+    if (
+        minFeeNumerator.lt(new BN(MIN_FEE_NUMERATOR)) ||
+        maxFeeNumerator.gt(new BN(MAX_FEE_NUMERATOR))
+    ) {
+        return false
+    }
+
     return true
 }
 
 /**
  * Validate the fee rate limiter parameters
  * @param feeRateLimiter - The fee rate limiter parameters
+ * @param collectFeeMode - The collect fee mode
+ * @param activationType - The activation type
  * @returns true if the fee rate limiter parameters are valid, false otherwise
  */
-export function validateFeeRateLimiter(feeRateLimiter: BaseFee): boolean {
+export function validateFeeRateLimiter(
+    feeRateLimiter: BaseFee,
+    collectFeeMode: CollectFeeMode,
+    activationType: ActivationType
+): boolean {
     if (!feeRateLimiter) return true
 
-    // if any parameter is set, all must be set
+    // can only be applied in quote token collect fee mode
+    if (collectFeeMode !== CollectFeeMode.OnlyQuote) {
+        return false
+    }
+
+    // check if it's a zero rate limiter
     if (
-        feeRateLimiter.firstFactor ||
-        feeRateLimiter.secondFactor ||
-        feeRateLimiter.thirdFactor
+        !feeRateLimiter.firstFactor &&
+        !feeRateLimiter.secondFactor &&
+        !feeRateLimiter.thirdFactor
     ) {
-        if (
-            !feeRateLimiter.firstFactor ||
-            !feeRateLimiter.secondFactor ||
-            !feeRateLimiter.thirdFactor
-        ) {
-            return false
-        }
+        return true
+    }
+
+    // check if it's a non-zero rate limiter
+    if (
+        !feeRateLimiter.firstFactor ||
+        !feeRateLimiter.secondFactor ||
+        !feeRateLimiter.thirdFactor
+    ) {
+        return false
+    }
+
+    // validate max limiter duration based on activation type
+    const maxDuration =
+        activationType === ActivationType.Slot
+            ? MAX_RATE_LIMITER_DURATION_IN_SLOTS
+            : MAX_RATE_LIMITER_DURATION_IN_SECONDS
+
+    if (feeRateLimiter.secondFactor.gt(new BN(maxDuration))) {
+        return false
+    }
+
+    // validate fee increment numerator
+    const feeIncrementNumerator = bpsToFeeNumerator(feeRateLimiter.firstFactor)
+    if (feeIncrementNumerator.gte(new BN(FEE_DENOMINATOR))) {
+        return false
     }
 
     // validate cliff fee numerator
-    if (feeRateLimiter.cliffFeeNumerator.lte(new BN(0))) {
-        return false
-    }
-
-    // validate reference amount
     if (
-        feeRateLimiter.thirdFactor &&
-        feeRateLimiter.thirdFactor.lte(new BN(0))
+        feeRateLimiter.cliffFeeNumerator.lt(new BN(MIN_FEE_NUMERATOR)) ||
+        feeRateLimiter.cliffFeeNumerator.gt(new BN(MAX_FEE_NUMERATOR))
     ) {
         return false
     }
 
-    // validate max limiter duration
-    if (
-        feeRateLimiter.secondFactor &&
-        feeRateLimiter.secondFactor.lte(new BN(0))
-    ) {
-        return false
-    }
+    // validate min and max fee numerators based on amounts
+    const minFeeNumerator = getFeeNumeratorOnRateLimiter(
+        feeRateLimiter.cliffFeeNumerator,
+        feeRateLimiter.thirdFactor,
+        new BN(feeRateLimiter.firstFactor),
+        new BN(0)
+    )
 
-    // validate fee increment bps
-    if (feeRateLimiter.firstFactor && feeRateLimiter.firstFactor <= 0) {
+    const maxFeeNumerator = getFeeNumeratorOnRateLimiter(
+        feeRateLimiter.cliffFeeNumerator,
+        feeRateLimiter.thirdFactor,
+        new BN(feeRateLimiter.firstFactor),
+        new BN(Number.MAX_SAFE_INTEGER)
+    )
+
+    if (
+        minFeeNumerator.lt(new BN(MIN_FEE_NUMERATOR)) ||
+        maxFeeNumerator.gt(new BN(MAX_FEE_NUMERATOR))
+    ) {
         return false
     }
 
@@ -391,7 +469,13 @@ export function validateConfigParameters(
     if (!configParam.poolFees) {
         throw new Error('Pool fees are required')
     }
-    if (!validatePoolFees(configParam.poolFees)) {
+    if (
+        !validatePoolFees(
+            configParam.poolFees,
+            configParam.collectFeeMode,
+            configParam.activationType
+        )
+    ) {
         throw new Error('Invalid pool fees')
     }
 
