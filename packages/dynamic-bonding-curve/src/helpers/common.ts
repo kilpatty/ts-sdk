@@ -1066,3 +1066,27 @@ export const getTwoCurve = (
         ],
     }
 }
+
+/**
+ * Check if rate limiter should be applied based on pool configuration and state
+ * @param baseFeeMode - The base fee mode
+ * @param swapBaseForQuote - Whether the swap is from base to quote
+ * @param currentPoint - The current point
+ * @param activationPoint - The activation point
+ * @param maxLimiterDuration - The maximum limiter duration
+ * @returns Whether rate limiter should be applied
+ */
+export function checkRateLimiterApplied(
+    baseFeeMode: BaseFeeMode,
+    swapBaseForQuote: boolean,
+    currentPoint: BN,
+    activationPoint: BN,
+    maxLimiterDuration: BN
+): boolean {
+    return (
+        baseFeeMode === BaseFeeMode.RateLimiter &&
+        !swapBaseForQuote &&
+        currentPoint.gte(activationPoint) &&
+        currentPoint.lte(activationPoint.add(maxLimiterDuration))
+    )
+}

@@ -29,6 +29,7 @@ import {
     wrapSOLInstruction,
     deriveDbcTokenVaultAddress,
     getTokenType,
+    checkRateLimiterApplied,
 } from '../helpers'
 import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
@@ -287,9 +288,13 @@ export class PoolService extends DynamicBondingCurveProgram {
         // check if rate limiter is applied
         // this swapBuyTx is only QuoteToBase direction
         // this swapBuyTx does not check poolState, so there is no check for activation point
-        const isRateLimiterApplied =
-            createConfigAndPoolWithFirstBuyParam.poolFees.baseFee
-                .baseFeeMode === BaseFeeMode.RateLimiter
+        const isRateLimiterApplied = checkRateLimiterApplied(
+            createConfigAndPoolWithFirstBuyParam.poolFees.baseFee.baseFeeMode,
+            false,
+            new BN(0),
+            new BN(0),
+            new BN(0)
+        )
 
         const quoteTokenFlag = await getTokenType(this.connection, quoteMint)
 
@@ -622,9 +627,13 @@ export class PoolService extends DynamicBondingCurveProgram {
         // check if rate limiter is applied
         // this firstBuyTx is only QuoteToBase direction
         // this firstBuyTx does not check poolState, so there is no check for activation point
-        const isRateLimiterApplied =
-            poolConfigState.poolFees.baseFee.baseFeeMode ===
-            BaseFeeMode.RateLimiter
+        const isRateLimiterApplied = checkRateLimiterApplied(
+            poolConfigState.poolFees.baseFee.baseFeeMode,
+            false,
+            new BN(0),
+            new BN(0),
+            new BN(0)
+        )
 
         const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
             this.prepareSwapParams(
@@ -745,16 +754,13 @@ export class PoolService extends DynamicBondingCurveProgram {
         // 2. swap direction is QuoteToBase
         // 3. current point is greater than activation point
         // 4. current point is less than activation point + maxLimiterDuration
-        const isRateLimiterApplied =
-            poolConfigState.poolFees.baseFee.baseFeeMode ===
-                BaseFeeMode.RateLimiter &&
-            !swapBaseForQuote &&
-            currentPoint.gte(poolState.activationPoint) &&
-            currentPoint.lte(
-                poolState.activationPoint.add(
-                    poolConfigState.poolFees.baseFee.secondFactor
-                )
-            )
+        const isRateLimiterApplied = checkRateLimiterApplied(
+            poolConfigState.poolFees.baseFee.baseFeeMode,
+            !swapBaseForQuote,
+            currentPoint,
+            poolState.activationPoint,
+            poolConfigState.poolFees.baseFee.secondFactor
+        )
 
         const { inputMint, outputMint, inputTokenProgram, outputTokenProgram } =
             this.prepareSwapParams(swapBaseForQuote, poolState, poolConfigState)
