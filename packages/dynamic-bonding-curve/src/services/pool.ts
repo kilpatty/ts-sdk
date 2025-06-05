@@ -756,7 +756,7 @@ export class PoolService extends DynamicBondingCurveProgram {
         // 4. current point is less than activation point + maxLimiterDuration
         const isRateLimiterApplied = checkRateLimiterApplied(
             poolConfigState.poolFees.baseFee.baseFeeMode,
-            !swapBaseForQuote,
+            swapBaseForQuote,
             currentPoint,
             poolState.activationPoint,
             poolConfigState.poolFees.baseFee.secondFactor
