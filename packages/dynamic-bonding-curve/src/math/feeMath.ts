@@ -47,12 +47,12 @@ export function getBaseFeeNumerator(
         const maxLimiterDuration = baseFee.secondFactor
         const referenceAmount = baseFee.thirdFactor
 
-        const isQuoteToBase = tradeDirection === TradeDirection.QuoteToBase
+        const isBaseToQuote = tradeDirection === TradeDirection.BaseToQuote
 
         // check if rate limiter is applied
         const isRateLimiterApplied = checkRateLimiterApplied(
-            baseFee.baseFeeMode,
-            isQuoteToBase,
+            baseFeeMode,
+            isBaseToQuote,
             currentPoint,
             activationPoint,
             baseFee.secondFactor
