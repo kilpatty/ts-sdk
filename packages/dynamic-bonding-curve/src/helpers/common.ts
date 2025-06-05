@@ -731,8 +731,8 @@ export function getFeeSchedulerParams(
     return {
         cliffFeeNumerator: maxBaseFeeNumerator,
         firstFactor: numberOfPeriod,
-        secondFactor: reductionFactor,
-        thirdFactor: periodFrequency,
+        secondFactor: periodFrequency,
+        thirdFactor: reductionFactor,
         baseFeeMode,
     }
 }

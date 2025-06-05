@@ -53,8 +53,9 @@ test('getBaseFeeNumerator with linear mode', () => {
         new BN(50),
         new BN(100)
     )
+
     // Use max period (min fee)
-    expect(result1.eq(new BN(500))).toBe(true)
+    expect(result1.eq(new BN(0))).toBe(true)
 
     // After activation point, 2 periods elapsed
     const result2 = getBaseFeeNumerator(
@@ -63,10 +64,11 @@ test('getBaseFeeNumerator with linear mode', () => {
         new BN(300),
         new BN(100)
     )
-    expect(result2.eq(new BN(900))).toBe(true)
+
+    expect(result2.eq(new BN(600))).toBe(true)
 })
 
-test('getCurrentBaseFeeNumerator with exponential mode', () => {
+test('getBaseFeeNumerator with exponential mode', () => {
     const baseFee = {
         cliffFeeNumerator: new BN(1000),
         baseFeeMode: BaseFeeMode.FeeSchedulerExponential,

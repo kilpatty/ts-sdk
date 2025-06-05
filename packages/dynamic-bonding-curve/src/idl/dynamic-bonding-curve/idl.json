@@ -3942,11 +3942,11 @@
             "type": "u64"
           },
           {
-            "name": "third_factor",
+            "name": "second_factor",
             "type": "u64"
           },
           {
-            "name": "second_factor",
+            "name": "third_factor",
             "type": "u64"
           },
           {

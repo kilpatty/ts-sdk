@@ -230,8 +230,8 @@ export type CreateDammV2MigrationMetadataParam =
 export type BaseFee = {
     cliffFeeNumerator: BN
     firstFactor: number // feeScheduler: numberOfPeriod, rateLimiter: feeIncrementBps
-    secondFactor: BN // feeScheduler: reductionFactor, rateLimiter: maxLimiterDuration
-    thirdFactor: BN // feeScheduler: periodFrequency, rateLimiter: referenceAmount
+    secondFactor: BN // feeScheduler: periodFrequency, rateLimiter: maxLimiterDuration
+    thirdFactor: BN // feeScheduler: reductionFactor, rateLimiter: referenceAmount
     baseFeeMode: BaseFeeMode
 }
 

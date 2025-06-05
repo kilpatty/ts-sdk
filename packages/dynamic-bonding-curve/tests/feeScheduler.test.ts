@@ -31,7 +31,7 @@ describe('calculateFeeScheduler tests', () => {
         console.log('result', convertBNToDecimal(result))
 
         // linear mode: cliffFeeNumerator - (numberOfPeriod * reductionFactor)
-        expect(result.secondFactor.toNumber()).toEqual(2777777)
+        expect(result.thirdFactor.toNumber()).toEqual(2777777)
     })
 
     test('exponential fee scheduler - should calculate parameters correctly', () => {
@@ -52,7 +52,7 @@ describe('calculateFeeScheduler tests', () => {
         console.log('result', convertBNToDecimal(result))
 
         // exponential mode: cliffFeeNumerator * (1 - reductionFactor/10_000)^numberOfPeriod
-        expect(result.secondFactor.toNumber()).toEqual(383)
+        expect(result.thirdFactor.toNumber()).toEqual(383)
     })
 
     test('build curve with market cap - should calculate parameters correctly', () => {

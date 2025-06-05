@@ -3128,11 +3128,11 @@ export type DynamicBondingCurve = {
                         type: 'u64'
                     },
                     {
-                        name: 'thirdFactor'
+                        name: 'secondFactor'
                         type: 'u64'
                     },
                     {
-                        name: 'secondFactor'
+                        name: 'thirdFactor'
                         type: 'u64'
                     },
                     {

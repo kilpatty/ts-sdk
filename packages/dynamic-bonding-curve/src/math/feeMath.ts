@@ -86,8 +86,8 @@ export function getBaseFeeNumerator(
         }
     } else {
         const numberOfPeriod = baseFee.firstFactor
-        const reductionFactor = baseFee.secondFactor
-        const periodFrequency = baseFee.thirdFactor
+        const periodFrequency = baseFee.secondFactor
+        const reductionFactor = baseFee.thirdFactor
 
         if (periodFrequency.isZero()) {
             return baseFee.cliffFeeNumerator

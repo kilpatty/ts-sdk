@@ -59,7 +59,6 @@ export function buildCurve(buildCurveParam: BuildCurveParam): ConfigParameters {
         baseFeeParams,
     } = buildCurveParam
 
-    // handle base fee params
     const baseFee = getBaseFeeParams(
         baseFeeParams,
         tokenQuoteDecimal,
@@ -293,7 +292,6 @@ export function buildCurveWithTwoSegments(
         baseFeeParams,
     } = buildCurveWithTwoSegmentsParam
 
-    // handle base fee params
     const baseFee = getBaseFeeParams(
         baseFeeParams,
         tokenQuoteDecimal,
@@ -501,7 +499,6 @@ export function buildCurveWithLiquidityWeights(
         baseFeeParams,
     } = buildCurveWithLiquidityWeightsParam
 
-    // handle base fee params
     const baseFee = getBaseFeeParams(
         baseFeeParams,
         tokenQuoteDecimal,
