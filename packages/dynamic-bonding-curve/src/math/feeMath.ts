@@ -5,6 +5,7 @@ import { FEE_DENOMINATOR, MAX_FEE_NUMERATOR } from '../constants'
 import {
     BaseFeeMode,
     Rounding,
+    TradeDirection,
     type DynamicFeeConfig,
     type FeeOnAmountResult,
     type PoolFeesConfig,
@@ -15,10 +16,12 @@ import {
     getFeeNumeratorOnLinearFeeScheduler,
 } from './feeScheduler'
 import { getFeeNumeratorOnRateLimiter } from './rateLimiter'
+import { checkRateLimiterApplied } from '../helpers'
 
 /**
  * Get current base fee numerator
  * @param baseFee Base fee parameters
+ * @param tradeDirection Trade direction
  * @param currentPoint Current point
  * @param activationPoint Activation point
  * @param inputAmount Input amount (optional, used for rate limiter)
@@ -32,6 +35,7 @@ export function getBaseFeeNumerator(
         thirdFactor: BN
         baseFeeMode: BaseFeeMode
     },
+    tradeDirection: TradeDirection,
     currentPoint: BN,
     activationPoint: BN,
     inputAmount?: BN
@@ -43,11 +47,23 @@ export function getBaseFeeNumerator(
         const maxLimiterDuration = baseFee.secondFactor
         const referenceAmount = baseFee.thirdFactor
 
+        const isQuoteToBase = tradeDirection === TradeDirection.QuoteToBase
+
         // check if rate limiter is applied
+        const isRateLimiterApplied = checkRateLimiterApplied(
+            baseFee.baseFeeMode,
+            isQuoteToBase,
+            currentPoint,
+            activationPoint,
+            baseFee.secondFactor
+        )
+
+        // if current point is less than activation point, return base fee
         if (currentPoint.lt(activationPoint)) {
             return baseFee.cliffFeeNumerator
         }
 
+        // if lastEffectivePoint is less than currentPoint, return base fee
         const lastEffectivePoint = activationPoint.add(maxLimiterDuration)
         if (currentPoint.gt(lastEffectivePoint)) {
             return baseFee.cliffFeeNumerator
@@ -58,12 +74,16 @@ export function getBaseFeeNumerator(
             return baseFee.cliffFeeNumerator
         }
 
-        return getFeeNumeratorOnRateLimiter(
-            baseFee.cliffFeeNumerator,
-            referenceAmount,
-            new BN(feeIncrementBps),
-            inputAmount
-        )
+        if (isRateLimiterApplied) {
+            return getFeeNumeratorOnRateLimiter(
+                baseFee.cliffFeeNumerator,
+                referenceAmount,
+                new BN(feeIncrementBps),
+                inputAmount
+            )
+        } else {
+            return baseFee.cliffFeeNumerator
+        }
     } else {
         const numberOfPeriod = baseFee.firstFactor
         const reductionFactor = baseFee.secondFactor
@@ -153,11 +173,13 @@ export function getFeeOnAmount(
     isReferral: boolean,
     currentPoint: BN,
     activationPoint: BN,
-    volatilityTracker: VolatilityTracker
+    volatilityTracker: VolatilityTracker,
+    tradeDirection: TradeDirection
 ): FeeOnAmountResult {
     // get total trading fee
     const baseFeeNumerator = getBaseFeeNumerator(
         poolFees.baseFee,
+        tradeDirection,
         currentPoint,
         activationPoint,
         poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter

@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { getBaseFeeNumerator, getVariableFee } from '../../src/math/feeMath'
 import BN from 'bn.js'
-import { BaseFeeMode } from '../../src/types'
+import { BaseFeeMode, TradeDirection } from '../../src/types'
 import { getFeeNumeratorOnExponentialFeeScheduler } from '../../src/math/feeScheduler'
 
 test('getFeeInPeriod calculation', () => {
@@ -47,12 +47,22 @@ test('getBaseFeeNumerator with linear mode', () => {
     }
 
     // Before activation point
-    const result1 = getBaseFeeNumerator(baseFee, new BN(50), new BN(100))
+    const result1 = getBaseFeeNumerator(
+        baseFee,
+        TradeDirection.QuoteToBase,
+        new BN(50),
+        new BN(100)
+    )
     // Use max period (min fee)
     expect(result1.eq(new BN(500))).toBe(true)
 
     // After activation point, 2 periods elapsed
-    const result2 = getBaseFeeNumerator(baseFee, new BN(300), new BN(100))
+    const result2 = getBaseFeeNumerator(
+        baseFee,
+        TradeDirection.QuoteToBase,
+        new BN(300),
+        new BN(100)
+    )
     expect(result2.eq(new BN(900))).toBe(true)
 })
 
@@ -66,7 +76,12 @@ test('getCurrentBaseFeeNumerator with exponential mode', () => {
     }
 
     // After activation point, 3 periods elapsed
-    const result = getBaseFeeNumerator(baseFee, new BN(350), new BN(100))
+    const result = getBaseFeeNumerator(
+        baseFee,
+        TradeDirection.QuoteToBase,
+        new BN(350),
+        new BN(100)
+    )
 
     // Use exponential reduction
     expect(result.lt(new BN(1000))).toBe(true)

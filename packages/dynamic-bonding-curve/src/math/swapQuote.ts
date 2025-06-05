@@ -50,7 +50,8 @@ export function getSwapResult(
             feeMode.hasReferral,
             currentPoint,
             poolState.activationPoint,
-            poolState.volatilityTracker
+            poolState.volatilityTracker,
+            tradeDirection
         )
 
         actualProtocolFee = feeResult.protocolFee
@@ -86,7 +87,8 @@ export function getSwapResult(
             feeMode.hasReferral,
             currentPoint,
             poolState.activationPoint,
-            poolState.volatilityTracker
+            poolState.volatilityTracker,
+            tradeDirection
         )
 
         actualProtocolFee = feeResult.protocolFee

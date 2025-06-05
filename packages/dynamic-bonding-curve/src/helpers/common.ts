@@ -1090,3 +1090,69 @@ export function checkRateLimiterApplied(
         currentPoint.lte(activationPoint.add(maxLimiterDuration))
     )
 }
+
+/**
+ * Get base fee parameters based on the base fee mode
+ * @param baseFeeParams - The base fee parameters
+ * @param tokenQuoteDecimal - The token quote decimal
+ * @param activationType - The activation type
+ * @returns The base fee parameters
+ */
+export function getBaseFeeParams(
+    baseFeeParams: {
+        baseFeeMode: BaseFeeMode
+        rateLimiterParam?: {
+            baseFeeBps: number
+            feeIncrementBps: number
+            referenceAmount: number
+            maxLimiterDuration: number
+        }
+        feeSchedulerParam?: {
+            startingFeeBps: number
+            endingFeeBps: number
+            numberOfPeriod: number
+            totalDuration: number
+        }
+    },
+    tokenQuoteDecimal: TokenDecimal,
+    activationType: ActivationType
+): BaseFee {
+    if (baseFeeParams.baseFeeMode === BaseFeeMode.RateLimiter) {
+        if (!baseFeeParams.rateLimiterParam) {
+            throw new Error(
+                'Rate limiter parameters are required for RateLimiter mode'
+            )
+        }
+        const {
+            baseFeeBps,
+            feeIncrementBps,
+            referenceAmount,
+            maxLimiterDuration,
+        } = baseFeeParams.rateLimiterParam
+
+        return getRateLimiterParams(
+            baseFeeBps,
+            feeIncrementBps,
+            referenceAmount,
+            maxLimiterDuration,
+            tokenQuoteDecimal,
+            activationType
+        )
+    } else {
+        if (!baseFeeParams.feeSchedulerParam) {
+            throw new Error(
+                'Fee scheduler parameters are required for FeeScheduler mode'
+            )
+        }
+        const { startingFeeBps, endingFeeBps, numberOfPeriod, totalDuration } =
+            baseFeeParams.feeSchedulerParam
+
+        return getFeeSchedulerParams(
+            startingFeeBps,
+            endingFeeBps,
+            baseFeeParams.baseFeeMode,
+            numberOfPeriod,
+            totalDuration
+        )
+    }
+}
