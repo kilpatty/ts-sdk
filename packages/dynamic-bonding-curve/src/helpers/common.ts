@@ -426,7 +426,7 @@ export const getLiquidity = (
  * @returns The first curve
  */
 export const getFirstCurve = (
-    migrationSqrPrice: BN,
+    migrationSqrtPrice: BN,
     migrationBaseAmount: BN,
     swapAmount: BN,
     migrationQuoteThreshold: BN,
@@ -435,7 +435,7 @@ export const getFirstCurve = (
     // Swap_amount = L *(1/Pmin - 1/Pmax) = L * (Pmax - Pmin) / (Pmax * Pmin)       (1)
     // Quote_amount = L * (Pmax - Pmin)                                             (2)
     // (Quote_amount * (1-migrationFeePercent/100) / Migration_amount = Pmax ^ 2    (3)
-    const migrationSqrPriceDecimal = new Decimal(migrationSqrPrice.toString())
+    const migrationSqrPriceDecimal = new Decimal(migrationSqrtPrice.toString())
     const migrationBaseAmountDecimal = new Decimal(
         migrationBaseAmount.toString()
     )
@@ -447,12 +447,8 @@ export const getFirstCurve = (
     // From (3) and (4) => Swap_amount * (1-migrationFeePercent/100) / Migration_amount = Pmax / Pmin
     // => Pmin = Pmax * Migration_amount / (Swap_amount * (1-migrationFeePercent/100))
     const denominator = swapAmountDecimal
-        .mul(
-            new Decimal(10000).sub(
-                migrationFeePercentDecimal.mul(new Decimal(100))
-            )
-        )
-        .div(new Decimal(10000))
+        .mul(new Decimal(100).sub(migrationFeePercentDecimal))
+        .div(new Decimal(100))
 
     const sqrtStartPriceDecimal = migrationSqrPriceDecimal
         .mul(migrationBaseAmountDecimal)
@@ -464,13 +460,13 @@ export const getFirstCurve = (
         swapAmount,
         migrationQuoteThreshold,
         sqrtStartPrice,
-        migrationSqrPrice
+        migrationSqrtPrice
     )
     return {
         sqrtStartPrice,
         curve: [
             {
-                sqrtPrice: migrationSqrPrice,
+                sqrtPrice: migrationSqrtPrice,
                 liquidity,
             },
         ],
