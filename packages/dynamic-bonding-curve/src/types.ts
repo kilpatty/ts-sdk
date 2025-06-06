@@ -402,6 +402,15 @@ export type ClaimTradingFeeParam = {
     tempWSolAcc?: PublicKey
 }
 
+export type ClaimTradingFee2Param = {
+    feeClaimer: PublicKey
+    payer: PublicKey
+    pool: PublicKey
+    maxBaseAmount: BN
+    maxQuoteAmount: BN
+    receiver: PublicKey
+}
+
 export type ClaimPartnerTradingFeeWithQuoteMintNotSolParam = {
     feeClaimer: PublicKey
     payer: PublicKey
@@ -427,6 +436,15 @@ export type ClaimCreatorTradingFeeParam = {
     maxQuoteAmount: BN
     receiver?: PublicKey
     tempWSolAcc?: PublicKey
+}
+
+export type ClaimCreatorTradingFee2Param = {
+    creator: PublicKey
+    payer: PublicKey
+    pool: PublicKey
+    maxBaseAmount: BN
+    maxQuoteAmount: BN
+    receiver: PublicKey
 }
 
 export type ClaimCreatorTradingFeeWithQuoteMintNotSolParam = {
