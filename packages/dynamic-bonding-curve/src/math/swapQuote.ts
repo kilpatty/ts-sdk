@@ -472,9 +472,7 @@ export function calculateQuoteExactInAmount(
         }
 
         // cap at MAX_FEE_NUMERATOR
-        if (totalFeeNumerator.gt(new BN(MAX_FEE_NUMERATOR))) {
-            totalFeeNumerator = new BN(MAX_FEE_NUMERATOR)
-        }
+        totalFeeNumerator = BN.min(totalFeeNumerator, new BN(MAX_FEE_NUMERATOR))
 
         // amountIn = amountInAfterFee * FEE_DENOMINATOR / (FEE_DENOMINATOR - effectiveFeeNumerator)
         const denominator = new BN(FEE_DENOMINATOR).sub(totalFeeNumerator)
