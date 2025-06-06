@@ -205,7 +205,7 @@ describe('buildCurveWithMarketCap tests', () => {
             leftover: 0,
             tokenUpdateAuthority: TokenUpdateAuthorityOption.Immutable,
             migrationFee: {
-                feePercentage: 25,
+                feePercentage: 1.5,
                 creatorFeePercentage: 50,
             },
         })

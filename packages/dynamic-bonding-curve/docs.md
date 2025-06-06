@@ -7,6 +7,7 @@
     - [createConfig](#createConfig)
     - [createPartnerMetadata](#createPartnerMetadata)
     - [claimPartnerTradingFee](#claimPartnerTradingFee)
+    - [claimPartnerTradingFee2](#claimPartnerTradingFee2)
     - [partnerWithdrawSurplus](#partnerWithdrawSurplus)
     - [partnerWithdrawMigrationFee](#partnerWithdrawMigrationFee)
 
@@ -41,6 +42,7 @@
 
     - [createPoolMetadata](#createPoolMetadata)
     - [claimCreatorTradingFee](#claimCreatorTradingFee)
+    - [claimCreatorTradingFee2](#claimCreatorTradingFee2)
     - [creatorWithdrawSurplus](#creatorWithdrawSurplus)
     - [creatorWithdrawMigrationFee](#creatorWithdrawMigrationFee)
     - [transferPoolCreator](#transferPoolCreator)
@@ -387,6 +389,54 @@ const transaction = await client.partner.claimPartnerTradingFee({
 - The feeClaimer of the pool must be the same as the feeClaimer in the `ClaimTradingFeeParam` params.
 - You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
 - If you indicated a `receiver`, the receiver **is not** required to sign the transaction, however, you must provide a `tempWSolAcc` if the receiver != creato and if the quote mint is SOL.
+
+---
+
+### claimPartnerTradingFee2
+
+Claims the trading fee for the partner. A partner is the `feeClaimer` in the config key.
+
+#### Function
+
+```typescript
+async claimPartnerTradingFee2(claimTradingFee2Param: ClaimTradingFee2Param): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface ClaimTradingFeeParam {
+    pool: PublicKey // The pool address
+    feeClaimer: PublicKey // The wallet that will claim the fee
+    payer: PublicKey // The wallet that will pay for the transaction
+    maxBaseAmount: BN // The maximum base amount to claim (use 0 to not claim base tokens)
+    maxQuoteAmount: BN // The maximum quote amount to claim (use 0 to not claim quote tokens)
+    receiver?: PublicKey | null // The wallet that will receive the tokens
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.partner.claimPartnerTradingFee2({
+    pool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    payer: new PublicKey('payer1234567890abcdefghijklmnopqrstuvwxyz'),
+    maxBaseAmount: new BN(1000000),
+    maxQuoteAmount: new BN(1000000),
+    receiver: new PublicKey('receiver1234567890abcdefghijklmnopqrstuvwxyz'),
+})
+```
+
+#### Notes
+
+- The feeClaimer of the pool must be the same as the feeClaimer in the `ClaimTradingFee2Param` params.
+- You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
+- Can be used in case the partner is a squad multisig account.
 
 ---
 
@@ -1990,6 +2040,8 @@ const transaction = await client.creator.createPoolMetadata({
 })
 ```
 
+---
+
 ### claimCreatorTradingFee
 
 Claims a creator trading fee. If your pool's config key has `creatorTradingFeePercentage` > 0, you can use this function to claim the trading fee for the pool creator.
@@ -2039,6 +2091,54 @@ const transaction = await client.creator.claimCreatorTradingFee({
 - The creator of the pool must be the same as the creator in the `ClaimCreatorTradingFeeParam` params.
 - You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
 - If you indicated a `receiver`, the receiver **is not** required to sign the transaction, however, you must provide a `tempWSolAcc` if the receiver != creator and if the quote mint is SOL.
+
+---
+
+### claimCreatorTradingFee2
+
+Claims a creator trading fee. If your pool's config key has `creatorTradingFeePercentage` > 0, you can use this function to claim the trading fee for the pool creator.
+
+#### Function
+
+```typescript
+async claimCreatorTradingFee2(claimCreatorTradingFee2Param: ClaimCreatorTradingFee2Param): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface ClaimCreatorTradingFeeParam {
+    creator: PublicKey // The creator of the pool
+    payer: PublicKey // The payer of the transaction
+    pool: PublicKey // The pool address
+    maxBaseAmount: BN // The maximum amount of base tokens to claim
+    maxQuoteAmount: BN // The maximum amount of quote tokens to claim
+    receiver?: PublicKey | null // The wallet that will receive the tokens
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.creator.claimCreatorTradingFee({
+    creator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    payer: new PublicKey('payer1234567890abcdefghijklmnopqrstuvwxyz'),
+    pool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    maxBaseAmount: new BN(1000000000),
+    maxQuoteAmount: new BN(1000000000),
+    receiver: new PublicKey('receiver1234567890abcdefghijklmnopqrstuvwxyz'),
+})
+```
+
+#### Notes
+
+- The creator of the pool must be the same as the creator in the `ClaimCreatorTradingFee2Param` params.
+- You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
+- Can be used in case the creator is a squad multisig account.
 
 ---
 

@@ -425,7 +425,7 @@ export const getLiquidity = (
  * @returns The first curve
  */
 export const getFirstCurve = (
-    migrationSqrPrice: BN,
+    migrationSqrtPrice: BN,
     migrationBaseAmount: BN,
     swapAmount: BN,
     migrationQuoteThreshold: BN,
@@ -434,28 +434,38 @@ export const getFirstCurve = (
     // Swap_amount = L *(1/Pmin - 1/Pmax) = L * (Pmax - Pmin) / (Pmax * Pmin)       (1)
     // Quote_amount = L * (Pmax - Pmin)                                             (2)
     // (Quote_amount * (1-migrationFeePercent/100) / Migration_amount = Pmax ^ 2    (3)
-
+    const migrationSqrPriceDecimal = new Decimal(migrationSqrtPrice.toString())
+    const migrationBaseAmountDecimal = new Decimal(
+        migrationBaseAmount.toString()
+    )
+    const swapAmountDecimal = new Decimal(swapAmount.toString())
+    const migrationFeePercentDecimal = new Decimal(
+        migrationFeePercent.toString()
+    )
     // From (1) and (2) => Quote_amount / Swap_amount = (Pmax * Pmin)               (4)
     // From (3) and (4) => Swap_amount * (1-migrationFeePercent/100) / Migration_amount = Pmax / Pmin
     // => Pmin = Pmax * Migration_amount / (Swap_amount * (1-migrationFeePercent/100))
-    const denominator = swapAmount
-        .mul(new BN(100).sub(new BN(migrationFeePercent)))
-        .div(new BN(100))
-    const sqrtStartPrice = migrationSqrPrice
-        .mul(migrationBaseAmount)
+    const denominator = swapAmountDecimal
+        .mul(new Decimal(100).sub(migrationFeePercentDecimal))
+        .div(new Decimal(100))
+
+    const sqrtStartPriceDecimal = migrationSqrPriceDecimal
+        .mul(migrationBaseAmountDecimal)
         .div(denominator)
+
+    const sqrtStartPrice = new BN(sqrtStartPriceDecimal.floor().toFixed())
 
     const liquidity = getLiquidity(
         swapAmount,
         migrationQuoteThreshold,
         sqrtStartPrice,
-        migrationSqrPrice
+        migrationSqrtPrice
     )
     return {
         sqrtStartPrice,
         curve: [
             {
-                sqrtPrice: migrationSqrPrice,
+                sqrtPrice: migrationSqrtPrice,
                 liquidity,
             },
         ],
