@@ -78,7 +78,8 @@
 
 - [Calculation Functions](#calculation-functions)
 
-    - [getBaseFeeParams](#getBaseFeeParams)
+    - [getFeeSchedulerParams](#getFeeSchedulerParams)
+    - [getRateLimiterParams](#getRateLimiterParams)
     - [getDynamicFeeParams](#getDynamicFeeParams)
     - [getLockedVestingParams](#getLockedVestingParams)
 
@@ -108,10 +109,10 @@ interface CreateConfigParam {
     poolFees: {
         baseFee: {
             cliffFeeNumerator: BN // Initial fee numerator (base fee)
-            numberOfPeriod: number // The number of reduction periods
-            reductionFactor: BN // How much fee reduces in each period
-            periodFrequency: BN // How often fees change
-            feeSchedulerMode: number // 0: Linear, 1: Exponential
+            firstFactor: number // feeScheduler: numberOfPeriod, rateLimiter: feeIncrementBps
+            secondFactor: BN // feeScheduler: periodFrequency, rateLimiter: maxLimiterDuration
+            thirdFactor: BN // feeScheduler: reductionFactor, rateLimiter: referenceAmount
+            baseFeeMode: number // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential, 2: RateLimiter
         }
         dynamicFee: {
             // Optional dynamic fee
@@ -182,10 +183,10 @@ const transaction = await client.partner.createConfig({
     poolFees: {
         baseFee: {
             cliffFeeNumerator: new BN('2500000'),
-            numberOfPeriod: 0,
-            reductionFactor: new BN('0'),
-            periodFrequency: new BN('0'),
-            feeSchedulerMode: FeeSchedulerMode.Linear,
+            firstFactor: 0,
+            secondFactor: new BN('0'),
+            thirdFactor: new BN('0'),
+            baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
         },
         dynamicFee: {
             binStep: 1,
@@ -248,6 +249,19 @@ When creating a new configuration for a dynamic bonding curve, several validatio
 ##### Pool Fees
 
 - Base fee must have a positive cliff fee numerator
+- If using Fee Scheduler (Linear or Exponential):
+    - All parameters (firstFactor, secondFactor, thirdFactor) must be set if any are set
+    - Cliff fee numerator must be positive
+    - For Linear mode, final fee must not be negative
+    - Min and max fee numerators must be within valid range (MIN_FEE_NUMERATOR to MAX_FEE_NUMERATOR)
+    - Fee numerators must be less than FEE_DENOMINATOR
+- If using Rate Limiter:
+    - Can only be used with OnlyQuote collect fee mode
+    - All parameters must be set for non-zero rate limiter
+    - Max limiter duration must be within limits based on activation type
+    - Fee increment numerator must be less than FEE_DENOMINATOR
+    - Cliff fee numerator must be within valid range
+    - Min and max fee numerators must be within valid range
 
 ##### Fee Mode
 
@@ -264,6 +278,8 @@ When creating a new configuration for a dynamic bonding curve, several validatio
 ##### Migration Fee
 
 - Must be a valid option: FixedBps25 (0), FixedBps30 (1), FixedBps100 (2), FixedBps200 (3), FixedBps400 (4), FixedBps600 (5)
+- Migration fee percentage must be between 0 and 50
+- Creator fee percentage must be between 0 and 100
 
 ##### Token Decimals
 
@@ -291,12 +307,21 @@ When creating a new configuration for a dynamic bonding curve, several validatio
 
 ##### Locked Vesting
 
-- If the values are not all zeros (no Locked Vesting), then the values must have a frequency greater than 0, and the total amount of tokens vested must be greater than 0.
+- If the values are not all zeros (no Locked Vesting), then:
+    - Frequency must be greater than 0
+    - Total amount of tokens vested (cliffUnlockAmount + amountPerPeriod \* numberOfPeriod) must be greater than 0
 
 ##### Token Supply
 
-- If you want to set a total supply of 1,000,000,000 (1B) tokens, then the pre-migration supply must be 1B and the post-migration supply must be 1B.
-- Post-migration supply must not exceed pre-migration supply
+- If specified:
+    - Leftover receiver must be a valid non-default PublicKey
+    - Post-migration supply must not exceed pre-migration supply
+    - Pre-migration supply must be sufficient to cover minimum base supply with buffer
+    - Post-migration supply must be sufficient to cover minimum base supply without buffer
+
+##### Token Update Authority
+
+- Must be either Mutable (0) or Immutable (1)
 
 ---
 
@@ -548,13 +573,25 @@ interface BuildCurveParam {
         totalVestingDuration: number // The total vesting duration in seconds
         cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
     }
-    feeSchedulerParam: {
-        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
-        startingFeeBps: number // The starting fee in basis points
-        endingFeeBps: number // The ending fee in basis points
-        feeSchedulerMode: number // 0: Linear, 1: Exponential
-        numberOfPeriod: number // The number of periods
-        totalDuration: number // The total duration of the fee scheduler
+    // Either FeeSchedulerLinear/FeeSchedulerExponential mode
+    baseFeeParams: {
+        baseFeeMode: 0 | 1 // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential
+        feeSchedulerParam: {
+            startingFeeBps: number // The starting fee in basis points
+            endingFeeBps: number // The ending fee in basis points
+            numberOfPeriod: number // The number of periods
+            totalDuration: number // The total duration of the fee scheduler
+        }
+    }
+    // OR RateLimiter mode
+    baseFeeParams: {
+        baseFeeMode: 2 // RateLimiter
+        rateLimiterParam: {
+            baseFeeBps: number // The base fee in basis points
+            feeIncrementBps: number // The fee increment in basis points
+            referenceAmount: number // The reference amount for rate limiting
+            maxLimiterDuration: number // The maximum duration for rate limiting
+        }
     }
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
     activationType: number // 0: Slot, 1: Timestamp
@@ -597,12 +634,14 @@ const curveConfig = buildCurve({
         totalVestingDuration: 0,
         cliffDurationFromMigrationTime: 0,
     },
-    feeSchedulerParam: {
-        startingFeeBps: 100,
-        endingFeeBps: 100,
-        numberOfPeriod: 0,
-        totalDuration: 0,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
+    baseFeeParams: {
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        feeSchedulerParam: {
+            startingFeeBps: 100,
+            endingFeeBps: 100,
+            numberOfPeriod: 0,
+            totalDuration: 0,
+        },
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
@@ -670,13 +709,25 @@ interface BuildCurveWithMarketCapParam {
         totalVestingDuration: number // The total vesting duration in seconds
         cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
     }
-    feeSchedulerParam: {
-        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
-        startingFeeBps: number // The starting fee in basis points
-        endingFeeBps: number // The ending fee in basis points
-        feeSchedulerMode: number // 0: Linear, 1: Exponential
-        numberOfPeriod: number // The number of periods
-        totalDuration: number // The total duration of the fee scheduler
+    // Either FeeSchedulerLinear/FeeSchedulerExponential mode
+    baseFeeParams: {
+        baseFeeMode: 0 | 1 // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential
+        feeSchedulerParam: {
+            startingFeeBps: number // The starting fee in basis points
+            endingFeeBps: number // The ending fee in basis points
+            numberOfPeriod: number // The number of periods
+            totalDuration: number // The total duration of the fee scheduler
+        }
+    }
+    // OR RateLimiter mode
+    baseFeeParams: {
+        baseFeeMode: 2 // RateLimiter
+        rateLimiterParam: {
+            baseFeeBps: number // The base fee in basis points
+            feeIncrementBps: number // The fee increment in basis points
+            referenceAmount: number // The reference amount for rate limiting
+            maxLimiterDuration: number // The maximum duration for rate limiting
+        }
     }
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
     activationType: number // 0: Slot, 1: Timestamp
@@ -719,12 +770,14 @@ const curveConfig = buildCurveWithMarketCap({
         totalVestingDuration: 0,
         cliffDurationFromMigrationTime: 0,
     },
-    feeSchedulerParam: {
-        startingFeeBps: 100,
-        endingFeeBps: 100,
-        numberOfPeriod: 0,
-        totalDuration: 0,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
+    baseFeeParams: {
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        feeSchedulerParam: {
+            startingFeeBps: 100,
+            endingFeeBps: 100,
+            numberOfPeriod: 0,
+            totalDuration: 0,
+        },
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
@@ -793,13 +846,25 @@ interface BuildCurveWithTwoSegmentsParam {
         totalVestingDuration: number // The total vesting duration in seconds
         cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
     }
-    feeSchedulerParam: {
-        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
-        startingFeeBps: number // The starting fee in basis points
-        endingFeeBps: number // The ending fee in basis points
-        feeSchedulerMode: number // 0: Linear, 1: Exponential
-        numberOfPeriod: number // The number of periods
-        totalDuration: number // The total duration of the fee scheduler
+    // Either FeeSchedulerLinear/FeeSchedulerExponential mode
+    baseFeeParams: {
+        baseFeeMode: 0 | 1 // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential
+        feeSchedulerParam: {
+            startingFeeBps: number // The starting fee in basis points
+            endingFeeBps: number // The ending fee in basis points
+            numberOfPeriod: number // The number of periods
+            totalDuration: number // The total duration of the fee scheduler
+        }
+    }
+    // OR RateLimiter mode
+    baseFeeParams: {
+        baseFeeMode: 2 // RateLimiter
+        rateLimiterParam: {
+            baseFeeBps: number // The base fee in basis points
+            feeIncrementBps: number // The fee increment in basis points
+            referenceAmount: number // The reference amount for rate limiting
+            maxLimiterDuration: number // The maximum duration for rate limiting
+        }
     }
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
     activationType: number // 0: Slot, 1: Timestamp
@@ -843,12 +908,14 @@ const curveConfig = buildCurveWithTwoSegments({
         totalVestingDuration: 0,
         cliffDurationFromMigrationTime: 0,
     },
-    feeSchedulerParam: {
-        startingFeeBps: 100,
-        endingFeeBps: 100,
-        numberOfPeriod: 0,
-        totalDuration: 0,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
+    baseFeeParams: {
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        feeSchedulerParam: {
+            startingFeeBps: 100,
+            endingFeeBps: 100,
+            numberOfPeriod: 0,
+            totalDuration: 0,
+        },
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
@@ -916,13 +983,25 @@ interface BuildCurveWithLiquidityWeightsParam {
         totalVestingDuration: number // The total vesting duration in seconds
         cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
     }
-    feeSchedulerParam: {
-        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
-        startingFeeBps: number // The starting fee in basis points
-        endingFeeBps: number // The ending fee in basis points
-        feeSchedulerMode: number // 0: Linear, 1: Exponential
-        numberOfPeriod: number // The number of periods
-        totalDuration: number // The total duration of the fee scheduler
+    // Either FeeSchedulerLinear/FeeSchedulerExponential mode
+    baseFeeParams: {
+        baseFeeMode: 0 | 1 // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential
+        feeSchedulerParam: {
+            startingFeeBps: number // The starting fee in basis points
+            endingFeeBps: number // The ending fee in basis points
+            numberOfPeriod: number // The number of periods
+            totalDuration: number // The total duration of the fee scheduler
+        }
+    }
+    // OR RateLimiter mode
+    baseFeeParams: {
+        baseFeeMode: 2 // RateLimiter
+        rateLimiterParam: {
+            baseFeeBps: number // The base fee in basis points
+            feeIncrementBps: number // The fee increment in basis points
+            referenceAmount: number // The reference amount for rate limiting
+            maxLimiterDuration: number // The maximum duration for rate limiting
+        }
     }
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
     activationType: number // 0: Slot, 1: Timestamp
@@ -971,12 +1050,14 @@ const curveConfig = buildCurveWithLiquidityWeights({
         totalVestingDuration: 0,
         cliffDurationFromMigrationTime: 0,
     },
-    feeSchedulerParam: {
-        startingFeeBps: 100,
-        endingFeeBps: 100,
-        numberOfPeriod: 0,
-        totalDuration: 0,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
+    baseFeeParams: {
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        feeSchedulerParam: {
+            startingFeeBps: 100,
+            endingFeeBps: 100,
+            numberOfPeriod: 0,
+            totalDuration: 0,
+        },
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
@@ -1103,10 +1184,10 @@ interface CreateConfigAndPoolParam {
     poolFees: {
         baseFee: {
             cliffFeeNumerator: BN // Initial fee numerator (base fee)
-            numberOfPeriod: number // The number of reduction periods
-            reductionFactor: BN // How much fee reduces in each period
-            periodFrequency: BN // How often fees change
-            feeSchedulerMode: number // 0: Linear, 1: Exponential
+            firstFactor: number // feeScheduler: numberOfPeriod, rateLimiter: feeIncrementBps
+            secondFactor: BN // feeScheduler: periodFrequency, rateLimiter: maxLimiterDuration
+            thirdFactor: BN // feeScheduler: reductionFactor, rateLimiter: referenceAmount
+            baseFeeMode: number // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential, 2: RateLimiter
         }
         dynamicFee: {
             // Optional dynamic fee, put null if you don't want to use dynamic fee
@@ -1184,10 +1265,10 @@ const transaction = await client.pool.createConfigAndPool({
     poolFees: {
         baseFee: {
             cliffFeeNumerator: new BN('2500000'),
-            numberOfPeriod: 0,
-            reductionFactor: new BN('0'),
-            periodFrequency: new BN('0'),
-            feeSchedulerMode: FeeSchedulerMode.Linear,
+            firstFactor: 0,
+            secondFactor: new BN('0'),
+            thirdFactor: new BN('0'),
+            baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
         },
         dynamicFee: {
             binStep: 1,
@@ -1281,10 +1362,10 @@ interface CreateConfigAndPoolWithFirstBuyParam {
     poolFees: {
         baseFee: {
             cliffFeeNumerator: BN // Initial fee numerator (base fee)
-            numberOfPeriod: number // The number of reduction periods
-            reductionFactor: BN // How much fee reduces in each period
-            periodFrequency: BN // How often fees change
-            feeSchedulerMode: number // 0: Linear, 1: Exponential
+            firstFactor: number // feeScheduler: numberOfPeriod, rateLimiter: feeIncrementBps
+            secondFactor: BN // feeScheduler: periodFrequency, rateLimiter: maxLimiterDuration
+            thirdFactor: BN // feeScheduler: reductionFactor, rateLimiter: referenceAmount
+            baseFeeMode: number // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential, 2: RateLimiter
         }
         dynamicFee: {
             // Optional dynamic fee
@@ -1367,10 +1448,10 @@ const transaction = await client.pool.createConfigAndPoolWithFirstBuy({
     poolFees: {
         baseFee: {
             cliffFeeNumerator: new BN('2500000'),
-            numberOfPeriod: 0,
-            reductionFactor: new BN('0'),
-            periodFrequency: new BN('0'),
-            feeSchedulerMode: FeeSchedulerMode.Linear,
+            firstFactor: 0,
+            secondFactor: new BN('0'),
+            thirdFactor: new BN('0'),
+            baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
         },
         dynamicFee: {
             binStep: 1,
@@ -2959,14 +3040,14 @@ const dbcTokenVaultAddress = deriveDbcTokenVaultAddress(
 
 ## Calculation Functions
 
-### getBaseFeeParams
+### getFeeSchedulerParams
 
-Gets the base fee parameters for a specific pool. Includes fee scheduler calculation.
+Gets the fee scheduler parameters for a specific pool config.
 
 #### Function
 
 ```typescript
-function getBaseFeeParams(
+function getFeeSchedulerParams(
     startingFeeBps: number,
     endingFeeBps: number,
     feeSchedulerMode: number,
@@ -2987,12 +3068,12 @@ totalDuration: number // The total duration of the fee scheduler
 
 #### Returns
 
-A `BaseFeeParams` object containing the calculated base fee parameters.
+A `BaseFee` object containing the calculated fee scheduler parameters.
 
 #### Example
 
 ```typescript
-const baseFeeParams = getBaseFeeParams(
+const baseFeeParams = getFeeSchedulerParams(
     startingFeeBps: 5000,
     endingFeeBps: 100,
     feeSchedulerMode: 1,
@@ -3004,6 +3085,64 @@ const baseFeeParams = getBaseFeeParams(
 #### Notes
 
 - The `totalDuration` is the total duration of the fee scheduler. It must be calculated based on your `activationType`. If you use `ActivationType.Slot`, the `totalDuration` is denominated in terms of 400ms (slot). If you use `ActivationType.Timestamp`, the `totalDuration` is denominated in terms of 1000ms (timestamp).
+- `startingFeeBps` must always be greater than or equal to `endingFeeBps`.
+- `totalDuration` must always be greater than or equal to `numberOfPeriod`.
+
+---
+
+### getRateLimiterParams
+
+Gets the fee scheduler parameters for a specific pool config.
+
+#### Function
+
+```typescript
+function getRateLimiterParams(
+    baseFeeBps: number,
+    feeIncrementBps: number,
+    referenceAmount: number,
+    maxLimiterDuration: number,
+    tokenQuoteDecimal: TokenDecimal,
+    activationType: ActivationType
+): BaseFeeParams
+```
+
+#### Parameters
+
+```typescript
+baseFeeBps: number // The base fee in basis points
+feeIncrementBps: number // The fee increment in basis points
+referenceAmount: number // The reference amount (in terms of quote token)
+maxLimiterDuration: number // The max rate limiter duration
+tokenQuoteDecimal: TokenDecimal // The token quote decimal
+activationType: ActivationType // The activation type
+```
+
+#### Returns
+
+A `BaseFee` object containing the calculated rate limiter parameters.
+
+#### Example
+
+```typescript
+const baseFeeParams = getRateLimiterParams(
+    baseFeeBps: 100,
+    feeIncrementBps: 100,
+    referenceAmount: 1, // 1 SOL
+    maxLimiterDuration: 600, // 600 slots
+    tokenQuoteDecimal: TokenDecimal.NINE,
+    activationType: ActivationType.Slot
+)
+```
+
+#### Notes
+
+- The `maxLimiterDuration` is the max duration of the rate limiter. It must be calculated based on your `activationType`. If you use `ActivationType.Slot`, the `maxLimiterDuration` is denominated in terms of 400ms (slot). If you use `ActivationType.Timestamp`, the `maxLimiterDuration` is denominated in terms of 1000ms (timestamp).
+- `referenceAmount` must always be greater than 0. This parameter takes into account the quoteMint decimals. For example, if you use `TokenDecimal.NINE`, the `referenceAmount` must be 1 (1 SOL).
+- `maxLimiterDuration` must always be greater than 0.
+- `tokenQuoteDecimal` must always be greater than 0.
+- `activationType` must always be greater than 0.
+- `baseFeeBps` must always be greater than 0.
 
 ---
 
