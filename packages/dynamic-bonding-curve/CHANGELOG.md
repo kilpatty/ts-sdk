@@ -2,6 +2,13 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.2.2] - 2025-06-02
+
+### Added
+
+- `claimCreatorTradingFee2` function (without `tempWSolAcc` parameter)
+- `claimPartnerTradingFee2` function (without `tempWSolAcc` parameter)
+
 ## [1.2.1] - 2025-06-02
 
 ### Changed
