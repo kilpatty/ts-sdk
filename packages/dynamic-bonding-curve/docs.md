@@ -26,6 +26,7 @@
     - [createPoolWithFirstBuy](#createPoolWithFirstBuy)
     - [swap](#swap)
     - [swapQuote](#swapQuote)
+    - [swapQuoteExactIn](#swapQuoteExactIn)
 
 - [Migration Functions](#migration-functions)
 
@@ -1514,7 +1515,7 @@ Swaps between base and quote or quote and base on the Dynamic Bonding Curve.
 #### Function
 
 ```typescript
-async swap(pool: PublicKey, swapParam: SwapParam): Promise<Transaction>
+async swap(swapParam: SwapParam): Promise<Transaction>
 ```
 
 #### Parameters
@@ -1595,6 +1596,7 @@ const virtualPoolState = await client.state.getPool(poolAddress)
 const poolConfigState = await client.state.getPoolConfig(
     virtualPoolState.config
 )
+const currentSlot = await connection.getSlot()
 
 const quote = await client.pool.swapQuote({
     virtualPool: virtualPoolState, // The virtual pool state
@@ -1603,7 +1605,7 @@ const quote = await client.pool.swapQuote({
     amountIn: new BN(100000000), // The amount of tokens to swap
     slippageBps: 100, // The slippage in basis points (optional)
     hasReferral: false, // Whether to include a referral fee
-    currentPoint: new BN(0), // The current point
+    currentPoint: new BN(currentSlot), // The current point
 })
 ```
 
@@ -1615,6 +1617,53 @@ const quote = await client.pool.swapQuote({
 - The `amountIn` is the amount of tokens you want to swap, denominated in the smallest unit and token decimals. (e.g., lamports for SOL).
 - The `slippageBps` parameter is the slippage in basis points (optional). This will calculate the minimum amount out based on the slippage.
 - The `hasReferral` parameter indicates whether a referral fee should be included in the calculation.
+- The `currentPoint` parameter is typically used in cases where the config has applied a fee scheduler. If activationType == 0, then it is current slot. If activationType == 1, then it is the current block timestamp. You can fill in accordingly based on slot or timestamp.
+
+---
+
+### swapQuoteExactIn
+
+Gets the exact swap quotation in between quote and base swaps.
+
+#### Function
+
+```typescript
+swapQuoteExactIn(swapQuoteExactInParam: SwapQuoteExactInParam): Promise<QuoteResult>
+```
+
+#### Parameters
+
+```typescript
+interface SwapQuoteExactInParam {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    currentPoint: BN
+}
+```
+
+#### Returns
+
+The exact quote in result of the swap.
+
+#### Example
+
+```typescript
+const virtualPoolState = await client.state.getPool(poolAddress)
+const poolConfigState = await client.state.getPoolConfig(
+    virtualPoolState.config
+)
+const currentSlot = await connection.getSlot()
+
+const quote = await client.pool.swapQuoteExactIn({
+    virtualPool: virtualPoolState, // The virtual pool state
+    config: poolConfigState, // The pool config state
+    currentPoint: new BN(currentSlot), // The current point
+})
+```
+
+#### Notes
+
+- This function helps to get the exact number of quote tokens to swap to hit the `migrationQuoteThreshold` in the config key.
 - The `currentPoint` parameter is typically used in cases where the config has applied a fee scheduler. If activationType == 0, then it is current slot. If activationType == 1, then it is the current block timestamp. You can fill in accordingly based on slot or timestamp.
 
 ---
