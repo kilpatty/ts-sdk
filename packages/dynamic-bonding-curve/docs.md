@@ -1515,7 +1515,7 @@ Swaps between base and quote or quote and base on the Dynamic Bonding Curve.
 #### Function
 
 ```typescript
-async swap(pool: PublicKey, swapParam: SwapParam): Promise<Transaction>
+async swap(swapParam: SwapParam): Promise<Transaction>
 ```
 
 #### Parameters
