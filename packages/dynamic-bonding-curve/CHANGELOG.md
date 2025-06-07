@@ -32,6 +32,7 @@ All notable changes to the Dynamic Bonding Curve SDK will be documented in this 
         - 0 = Fee Scheduler - Linear
         - 1 = Fee Scheduler - Exponential
         - 2 = Rate Limiter
+- `buildCurve`, `buildCurveWithMarketCap`, `buildCurveWithTwoSegments`, `buildCurveWithLiquidityWeights` functions now require `baseFeeParams` parameter that can be either configured with `feeSchedulerParam` or `rateLimiterParam`
 
 ### Changed
 
