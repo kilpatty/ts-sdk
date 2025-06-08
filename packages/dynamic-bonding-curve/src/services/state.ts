@@ -92,6 +92,18 @@ export class StateService extends DynamicBondingCurveProgram {
     }
 
     /**
+     * Get all dynamic bonding curve pools by creator address
+     * @param creatorAddress - The address of the creator
+     * @returns Array of pool accounts with their addresses
+     */
+    async getPoolsByCreator(
+        creatorAddress: PublicKey | string
+    ): Promise<ProgramAccount<VirtualPool>[]> {
+        const filters = createProgramAccountFilter(creatorAddress, 104)
+        return this.program.account.virtualPool.all(filters)
+    }
+
+    /**
      * Get pool by base mint
      * @param baseMint - The base mint address
      * @returns A virtual pool account
@@ -338,6 +350,56 @@ export class StateService extends DynamicBondingCurveProgram {
         }>
     > {
         const filteredPools = await this.getPoolsByConfig(configAddress)
+
+        return filteredPools.map((pool) => ({
+            poolAddress: pool.publicKey,
+            partnerBaseFee: pool.account.partnerBaseFee,
+            creatorBaseFee: pool.account.creatorBaseFee,
+            totalTradingBaseFee: pool.account.metrics.totalTradingBaseFee,
+        }))
+    }
+
+    /**
+     * Get all quote fees for pools linked to a specific creator
+     * @param creatorAddress - The address of the creator
+     * @returns Array of pools with their quote fees
+     */
+    async getPoolsQuoteFeesByCreator(
+        creatorAddress: PublicKey | string
+    ): Promise<
+        Array<{
+            poolAddress: PublicKey
+            partnerQuoteFee: BN
+            creatorQuoteFee: BN
+            totalTradingQuoteFee: BN
+        }>
+    > {
+        const filteredPools = await this.getPoolsByCreator(creatorAddress)
+
+        return filteredPools.map((pool) => ({
+            poolAddress: pool.publicKey,
+            partnerQuoteFee: pool.account.partnerQuoteFee,
+            creatorQuoteFee: pool.account.creatorQuoteFee,
+            totalTradingQuoteFee: pool.account.metrics.totalTradingQuoteFee,
+        }))
+    }
+
+    /**
+     * Get all base fees for pools linked to a specific creator
+     * @param creatorAddress - The address of the creator
+     * @returns Array of pools with their base fees
+     */
+    async getPoolsBaseFeesByCreator(
+        creatorAddress: PublicKey | string
+    ): Promise<
+        Array<{
+            poolAddress: PublicKey
+            partnerBaseFee: BN
+            creatorBaseFee: BN
+            totalTradingBaseFee: BN
+        }>
+    > {
+        const filteredPools = await this.getPoolsByCreator(creatorAddress)
 
         return filteredPools.map((pool) => ({
             poolAddress: pool.publicKey,
