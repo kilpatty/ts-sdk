@@ -56,6 +56,7 @@
     - [getPool](#getPool)
     - [getPools](#getPools)
     - [getPoolsByConfig](#getPoolsByConfig)
+    - [getPoolsByCreator](#getPoolsByCreator)
     - [getPoolByBaseMint](#getPoolByBaseMint)
     - [getPoolMigrationQuoteThreshold](#getPoolMigrationQuoteThreshold)
     - [getPoolCurveProgress](#getPoolCurveProgress)
@@ -65,10 +66,8 @@
     - [getDammV1MigrationMetadata](#getDammV1MigrationMetadata)
     - [getDammV2MigrationMetadata](#getDammV2MigrationMetadata)
     - [getPoolFeeMetrics](#getPoolFeeMetrics)
-    - [getPoolCreatorFeeMetrics](#getPoolCreatorFeeMetrics)
-    - [getPoolPartnerFeeMetrics](#getPoolPartnerFeeMetrics)
-    - [getPoolsQuoteFeesByConfig](#getPoolsQuoteFeesByConfig)
-    - [getPoolsBaseFeesByConfig](#getPoolsBaseFeesByConfig)
+    - [getPoolsFeesByConfig](#getPoolsFeesByConfig)
+    - [getPoolsFeesByCreator](#getPoolsFeesByCreator)
 
 - [Helper Functions](#helper-functions)
 
@@ -2463,6 +2462,34 @@ const pools = await client.state.getPoolsByConfig(configAddress)
 
 ---
 
+### getPoolsByCreator
+
+Retrieves all pools by creator address.
+
+#### Function
+
+```typescript
+async getPoolsByCreator(creatorAddress: PublicKey | string): Promise<ProgramAccount<VirtualPool>[]>
+```
+
+#### Parameters
+
+```typescript
+creatorAddress: PublicKey | string // The address of the creator
+```
+
+#### Returns
+
+An array of pools.
+
+#### Example
+
+```typescript
+const pools = await client.state.getPoolsByCreator(creatorAddress)
+```
+
+---
+
 ### getPoolByBaseMint
 
 Gets the pool by base mint.
@@ -2726,79 +2753,20 @@ const metrics = await client.state.getPoolFeeMetrics(poolAddress)
 
 ---
 
-### getPoolCreatorFeeMetrics
+### getPoolsFeesByConfig
 
-Gets the creator fee metrics for a specific pool.
-
-#### Function
-
-```typescript
-async getPoolCreatorFeeMetrics(poolAddress: PublicKey): Promise<{
-    creatorBaseFee: BN
-    creatorQuoteFee: BN
-}>
-```
-
-#### Parameters
-
-```typescript
-poolAddress: PublicKey // The address of the pool
-```
-
-#### Returns
-
-An object containing the creator's fee metrics.
-
-#### Example
-
-```typescript
-const metrics = await client.state.getPoolCreatorFeeMetrics(poolAddress)
-```
-
----
-
-### getPoolPartnerFeeMetrics
-
-Gets the partner fee metrics for a specific pool.
+Gets all fees for pools linked to a specific config key.
 
 #### Function
 
 ```typescript
-async getPoolPartnerFeeMetrics(poolAddress: PublicKey): Promise<{
+async getPoolsFeesByConfig(configAddress: PublicKey): Promise<Array<{
+    poolAddress: PublicKey
     partnerBaseFee: BN
     partnerQuoteFee: BN
-}>
-```
-
-#### Parameters
-
-```typescript
-poolAddress: PublicKey // The address of the pool
-```
-
-#### Returns
-
-An object containing the partner's fee metrics.
-
-#### Example
-
-```typescript
-const metrics = await client.state.getPoolPartnerFeeMetrics(poolAddress)
-```
-
----
-
-### getPoolsQuoteFeesByConfig
-
-Gets all quote fees for pools linked to a specific config key.
-
-#### Function
-
-```typescript
-async getPoolsQuoteFeesByConfig(configAddress: PublicKey): Promise<Array<{
-    poolAddress: PublicKey
-    partnerQuoteFee: BN
+    creatorBaseFee: BN
     creatorQuoteFee: BN
+    totalTradingBaseFee: BN
     totalTradingQuoteFee: BN
 }>>
 ```
@@ -2816,40 +2784,43 @@ An array of objects containing quote fee metrics for each pool.
 #### Example
 
 ```typescript
-const fees = await client.state.getPoolsQuoteFeesByConfig(configAddress)
+const fees = await client.state.getPoolsFeesByConfig(configAddress)
 ```
 
 ---
 
-### getPoolsBaseFeesByConfig
+### getPoolsFeesByCreator
 
-Gets all base fees for pools linked to a specific config key.
+Gets all fees for pools linked to a specific creator.
 
 #### Function
 
 ```typescript
-async getPoolsBaseFeesByConfig(configAddress: PublicKey): Promise<Array<{
+async getPoolsFeesByCreator(creatorAddress: PublicKey): Promise<Array<{
     poolAddress: PublicKey
     partnerBaseFee: BN
+    partnerQuoteFee: BN
     creatorBaseFee: BN
+    creatorQuoteFee: BN
     totalTradingBaseFee: BN
+    totalTradingQuoteFee: BN
 }>>
 ```
 
 #### Parameters
 
 ```typescript
-configAddress: PublicKey // The address of the pool config
+creatorAddress: PublicKey // The address of the creator
 ```
 
 #### Returns
 
-An array of objects containing base fee metrics for each pool.
+An array of objects containing quote fee metrics for each pool.
 
 #### Example
 
 ```typescript
-const fees = await client.state.getPoolsBaseFeesByConfig(configAddress)
+const fees = await client.state.getPoolsFeesByCreator(creatorAddress)
 ```
 
 ---
