@@ -56,6 +56,7 @@
     - [getPool](#getPool)
     - [getPools](#getPools)
     - [getPoolsByConfig](#getPoolsByConfig)
+    - [getPoolsByCreator](#getPoolsByCreator)
     - [getPoolByBaseMint](#getPoolByBaseMint)
     - [getPoolMigrationQuoteThreshold](#getPoolMigrationQuoteThreshold)
     - [getPoolCurveProgress](#getPoolCurveProgress)
@@ -69,6 +70,8 @@
     - [getPoolPartnerFeeMetrics](#getPoolPartnerFeeMetrics)
     - [getPoolsQuoteFeesByConfig](#getPoolsQuoteFeesByConfig)
     - [getPoolsBaseFeesByConfig](#getPoolsBaseFeesByConfig)
+    - [getPoolsQuoteFeesByCreator](#getPoolsQuoteFeesByCreator)
+    - [getPoolsBaseFeesByCreator](#getPoolsBaseFeesByCreator)
 
 - [Helper Functions](#helper-functions)
 
@@ -2463,6 +2466,34 @@ const pools = await client.state.getPoolsByConfig(configAddress)
 
 ---
 
+### getPoolsByCreator
+
+Retrieves all pools by creator address.
+
+#### Function
+
+```typescript
+async getPoolsByCreator(creatorAddress: PublicKey | string): Promise<ProgramAccount<VirtualPool>[]>
+```
+
+#### Parameters
+
+```typescript
+creatorAddress: PublicKey | string // The address of the creator
+```
+
+#### Returns
+
+An array of pools.
+
+#### Example
+
+```typescript
+const pools = await client.state.getPoolsByCreator(creatorAddress)
+```
+
+---
+
 ### getPoolByBaseMint
 
 Gets the pool by base mint.
@@ -2850,6 +2881,72 @@ An array of objects containing base fee metrics for each pool.
 
 ```typescript
 const fees = await client.state.getPoolsBaseFeesByConfig(configAddress)
+```
+
+---
+
+### getPoolsQuoteFeesByCreator
+
+Gets all quote fees for pools linked to a specific creator.
+
+#### Function
+
+```typescript
+async getPoolsQuoteFeesByCreator(creatorAddress: PublicKey): Promise<Array<{
+    poolAddress: PublicKey
+    partnerQuoteFee: BN
+    creatorQuoteFee: BN
+    totalTradingQuoteFee: BN
+}>>
+```
+
+#### Parameters
+
+```typescript
+creatorAddress: PublicKey // The address of the creator
+```
+
+#### Returns
+
+An array of objects containing quote fee metrics for each pool.
+
+#### Example
+
+```typescript
+const fees = await client.state.getPoolsQuoteFeesByCreator(creatorAddress)
+```
+
+---
+
+### getPoolsBaseFeesByCreator
+
+Gets all base fees for pools linked to a specific creator.
+
+#### Function
+
+```typescript
+async getPoolsBaseFeesByCreator(creatorAddress: PublicKey): Promise<Array<{
+    poolAddress: PublicKey
+    partnerBaseFee: BN
+    creatorBaseFee: BN
+    totalTradingBaseFee: BN
+}>>
+```
+
+#### Parameters
+
+```typescript
+creatorAddress: PublicKey // The address of the creator
+```
+
+#### Returns
+
+An array of objects containing base fee metrics for each pool.
+
+#### Example
+
+```typescript
+const fees = await client.state.getPoolsBaseFeesByCreator(creatorAddress)
 ```
 
 ---
