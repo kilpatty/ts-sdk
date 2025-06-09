@@ -39,6 +39,12 @@ All notable changes to the Dynamic Bonding Curve SDK will be documented in this 
 - Updated base fee parameter structure to support both fee scheduler and rate limiter modes
 - Enhanced fee calculation logic to accommodate rate limiter functionality
 
+## [1.2.3] - 2025-06-07
+
+### Added
+
+- `swapQuoteExactIn` function
+
 ## [1.2.2] - 2025-06-02
 
 ### Added
