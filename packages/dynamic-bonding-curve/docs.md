@@ -1542,7 +1542,7 @@ const transaction = await client.pool.swap({
     amountIn: new BN(1000000000),
     minimumAmountOut: new BN(0),
     swapBaseForQuote: false,
-    poolAddress: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    pool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
     referralTokenAccount: null,
 })
 ```
