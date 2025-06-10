@@ -337,6 +337,29 @@ export const getMigrationQuoteThresholdFromMigrationQuoteAmount = (
 }
 
 /**
+ * Get the migration market cap
+ * @param percentageSupplyOnMigration - The percentage of supply on migration
+ * @param totalTokenSupply - The total token supply
+ * @param migrationQuoteThreshold - The migration quote threshold
+ * @returns The migration market cap
+ */
+export const getMigrationMarketCap = (
+    percentageSupplyOnMigration: number,
+    totalTokenSupply: number,
+    migrationQuoteThreshold: number
+): Decimal => {
+    const migrationAmount = new Decimal(totalTokenSupply)
+        .mul(new Decimal(percentageSupplyOnMigration))
+        .div(new Decimal(100))
+
+    const migrationPrice = new Decimal(migrationQuoteThreshold).div(
+        migrationAmount
+    )
+    const migrationMarketCap = migrationPrice.mul(new Decimal(totalTokenSupply))
+    return migrationMarketCap
+}
+
+/**
  * Get the base token for migration
  * @param migrationQuoteAmount - The migration quote amount to deposit to pool
  * @param sqrtMigrationPrice - The migration sqrt price
