@@ -16,6 +16,8 @@ export const MAX_CURVE_POINT = 16
 export const PARTNER_SURPLUS_SHARE = 80 // 80%
 export const SWAP_BUFFER_PERCENTAGE = 25 // 25%
 export const MAX_SWALLOW_PERCENTAGE = 20 // 20%
+export const MAX_MIGRATION_FEE_PERCENTAGE = 50 // 50%
+export const MAX_CREATOR_MIGRATION_FEE_PERCENTAGE = 100 // 100%
 
 export const SLOT_DURATION = 400
 export const TIMESTAMP_DURATION = 1000

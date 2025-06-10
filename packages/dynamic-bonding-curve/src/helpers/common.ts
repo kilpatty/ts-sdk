@@ -17,6 +17,7 @@ import {
     DYNAMIC_FEE_REDUCTION_FACTOR_DEFAULT,
     FEE_DENOMINATOR,
     MAX_FEE_NUMERATOR,
+    MAX_MIGRATION_FEE_PERCENTAGE,
     MAX_PRICE_CHANGE_BPS_DEFAULT,
     MAX_SQRT_PRICE,
     MIN_SQRT_PRICE,
@@ -350,11 +351,11 @@ export const getMigrationMarketCap = (
     migrationQuoteThreshold: number,
     migrationFeePercentage: number
 ): Decimal => {
-    if (migrationFeePercentage > 50) {
+    if (migrationFeePercentage > MAX_MIGRATION_FEE_PERCENTAGE) {
         throw new Error('Migration fee percentage cannot be greater than 50')
     }
 
-    const migrationAmount = new Decimal(totalTokenSupply)
+    const migrationBaseAmount = new Decimal(totalTokenSupply)
         .mul(new Decimal(percentageSupplyOnMigration))
         .div(new Decimal(100))
 
@@ -364,7 +365,7 @@ export const getMigrationMarketCap = (
             migrationFeePercentage
         )
 
-    const migrationPrice = migrationQuoteAmount.div(migrationAmount)
+    const migrationPrice = migrationQuoteAmount.div(migrationBaseAmount)
 
     const migrationMarketCap = migrationPrice.mul(new Decimal(totalTokenSupply))
     return migrationMarketCap

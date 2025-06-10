@@ -1,5 +1,11 @@
 import BN from 'bn.js'
-import { MAX_CURVE_POINT, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '../constants'
+import {
+    MAX_CREATOR_MIGRATION_FEE_PERCENTAGE,
+    MAX_CURVE_POINT,
+    MAX_MIGRATION_FEE_PERCENTAGE,
+    MAX_SQRT_PRICE,
+    MIN_SQRT_PRICE,
+} from '../constants'
 import {
     ActivationType,
     CollectFeeMode,
@@ -306,15 +312,20 @@ export function validateConfigParameters(
     // Migration fee percentages validation
     if (
         configParam.migrationFee.feePercentage < 0 ||
-        configParam.migrationFee.feePercentage > 50
+        configParam.migrationFee.feePercentage > MAX_MIGRATION_FEE_PERCENTAGE
     ) {
-        throw new Error('Migration fee percentage must be between 0 and 50')
+        throw new Error(
+            `Migration fee percentage must be between 0 and ${MAX_MIGRATION_FEE_PERCENTAGE}`
+        )
     }
     if (
         configParam.migrationFee.creatorFeePercentage < 0 ||
-        configParam.migrationFee.creatorFeePercentage > 100
+        configParam.migrationFee.creatorFeePercentage >
+            MAX_CREATOR_MIGRATION_FEE_PERCENTAGE
     ) {
-        throw new Error('Creator fee percentage must be between 0 and 100')
+        throw new Error(
+            `Creator fee percentage must be between 0 and ${MAX_CREATOR_MIGRATION_FEE_PERCENTAGE}`
+        )
     }
 
     // Token decimals validation
