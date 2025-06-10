@@ -341,20 +341,31 @@ export const getMigrationQuoteThresholdFromMigrationQuoteAmount = (
  * @param percentageSupplyOnMigration - The percentage of supply on migration
  * @param totalTokenSupply - The total token supply
  * @param migrationQuoteThreshold - The migration quote threshold
+ * @param migrationFeePercentage - The migration fee percentage
  * @returns The migration market cap
  */
 export const getMigrationMarketCap = (
     percentageSupplyOnMigration: number,
     totalTokenSupply: number,
-    migrationQuoteThreshold: number
+    migrationQuoteThreshold: number,
+    migrationFeePercentage: number
 ): Decimal => {
+    if (migrationFeePercentage > 50) {
+        throw new Error('Migration fee percentage cannot be greater than 50')
+    }
+
     const migrationAmount = new Decimal(totalTokenSupply)
         .mul(new Decimal(percentageSupplyOnMigration))
         .div(new Decimal(100))
 
-    const migrationPrice = new Decimal(migrationQuoteThreshold).div(
-        migrationAmount
-    )
+    const migrationQuoteAmount =
+        getMigrationQuoteAmountFromMigrationQuoteThreshold(
+            new Decimal(migrationQuoteThreshold),
+            migrationFeePercentage
+        )
+
+    const migrationPrice = migrationQuoteAmount.div(migrationAmount)
+
     const migrationMarketCap = migrationPrice.mul(new Decimal(totalTokenSupply))
     return migrationMarketCap
 }
