@@ -2,6 +2,12 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.2.5] - 2025-06-12
+
+### Changed
+
+- Removed `getDammV1MigrationMetadata` and `getDammV2MigrationMetadata` functions
+
 ## [1.2.4] - 2025-06-12
 
 ### Added
