@@ -215,6 +215,7 @@ export function buildCurveWithMarketCap(
         totalTokenSupply,
         tokenBaseDecimal,
         migrationFee,
+        leftover,
     } = buildCurveWithMarketCapParam
 
     const {
@@ -234,12 +235,15 @@ export function buildCurveWithMarketCap(
         tokenBaseDecimal
     )
 
+    const totalLeftover = convertToLamports(leftover, tokenBaseDecimal)
+
     const totalSupply = convertToLamports(totalTokenSupply, tokenBaseDecimal)
 
     const percentageSupplyOnMigration = getPercentageSupplyOnMigration(
         new Decimal(initialMarketCap),
         new Decimal(migrationMarketCap),
         lockedVesting,
+        totalLeftover,
         totalSupply
     )
 

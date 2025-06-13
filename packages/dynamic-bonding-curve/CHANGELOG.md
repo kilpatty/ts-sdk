@@ -2,6 +2,12 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.2.6] - 2025-06-13
+
+### Changed
+
+- Fixed `getPercentageSupplyOnMigration` function to correctly calculate the percentage of supply on migration
+
 ## [1.2.5] - 2025-06-12
 
 ### Changed

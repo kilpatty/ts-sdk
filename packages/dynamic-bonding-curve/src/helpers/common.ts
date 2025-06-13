@@ -655,6 +655,7 @@ export const getSwapAmountWithBuffer = (
  * @param initialMarketCap - The initial market cap
  * @param migrationMarketCap - The migration market cap
  * @param lockedVesting - The locked vesting
+ * @param totalLeftover - The leftover
  * @param totalTokenSupply - The total token supply
  * @returns The percentage of supply for initial liquidity
  */
@@ -662,25 +663,30 @@ export const getPercentageSupplyOnMigration = (
     initialMarketCap: Decimal,
     migrationMarketCap: Decimal,
     lockedVesting: LockedVestingParameters,
+    totalLeftover: BN,
     totalTokenSupply: BN
 ): number => {
-    // formula: x = sqrt(initialMC / migrationMC) * (100 - z) / (1 + sqrt(initialMC / migrationMC))
+    // formula: x = sqrt(initialMC / migrationMC) * (100 - lockedVesting - leftover) / (1 + sqrt(initialMC / migrationMC))
 
-    // sqrt(initial_MC / migration_MC)
+    // sqrtRatio = sqrt(initial_MC / migration_MC)
     const marketCapRatio = initialMarketCap.div(migrationMarketCap)
     const sqrtRatio = Decimal.sqrt(marketCapRatio)
 
     // locked vesting percentage
     const totalVestingAmount = getTotalVestingAmount(lockedVesting)
-    const vestingPercentageDecimal = new Decimal(totalVestingAmount.toString())
+    const vestingPercentage = new Decimal(totalVestingAmount.toString())
         .mul(new Decimal(100))
         .div(new Decimal(totalTokenSupply.toString()))
-    const vestingPercentage = vestingPercentageDecimal.toNumber()
 
-    // (100 * sqrtRatio - lockedVesting * sqrtRatio) / (1 + sqrtRatio)
+    // leftover percentage
+    const leftoverPercentage = new Decimal(totalLeftover.toString())
+        .mul(new Decimal(100))
+        .div(new Decimal(totalTokenSupply.toString()))
+
+    // (100 * sqrtRatio - (vestingPercentage + leftoverPercentage) * sqrtRatio) / (1 + sqrtRatio)
     const numerator = new Decimal(100)
         .mul(sqrtRatio)
-        .sub(new Decimal(vestingPercentage).mul(sqrtRatio))
+        .sub(vestingPercentage.add(leftoverPercentage).mul(sqrtRatio))
     const denominator = new Decimal(1).add(sqrtRatio)
     return numerator.div(denominator).toNumber()
 }
