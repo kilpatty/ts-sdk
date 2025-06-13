@@ -655,6 +655,7 @@ export const getSwapAmountWithBuffer = (
  * @param initialMarketCap - The initial market cap
  * @param migrationMarketCap - The migration market cap
  * @param lockedVesting - The locked vesting
+ * @param totalLeftover - The leftover
  * @param totalTokenSupply - The total token supply
  * @returns The percentage of supply for initial liquidity
  */
@@ -673,21 +674,19 @@ export const getPercentageSupplyOnMigration = (
 
     // locked vesting percentage
     const totalVestingAmount = getTotalVestingAmount(lockedVesting)
-    const vestingPercentageDecimal = new Decimal(totalVestingAmount.toString())
+    const vestingPercentage = new Decimal(totalVestingAmount.toString())
         .mul(new Decimal(100))
         .div(new Decimal(totalTokenSupply.toString()))
-    const vestingPercentage = vestingPercentageDecimal.toNumber()
 
     // leftover percentage
-    const leftoverPercentageDecimal = new Decimal(totalLeftover.toString())
+    const leftoverPercentage = new Decimal(totalLeftover.toString())
         .mul(new Decimal(100))
         .div(new Decimal(totalTokenSupply.toString()))
-    const leftoverPercentage = leftoverPercentageDecimal.toNumber()
 
-    // (100 * sqrtRatio - (z + w) * sqrtRatio) / (1 + sqrtRatio)
+    // (100 * sqrtRatio - (vestingPercentage + leftoverPercentage) * sqrtRatio) / (1 + sqrtRatio)
     const numerator = new Decimal(100)
         .mul(sqrtRatio)
-        .sub(new Decimal(vestingPercentage + leftoverPercentage).mul(sqrtRatio))
+        .sub(vestingPercentage.add(leftoverPercentage).mul(sqrtRatio))
     const denominator = new Decimal(1).add(sqrtRatio)
     return numerator.div(denominator).toNumber()
 }
