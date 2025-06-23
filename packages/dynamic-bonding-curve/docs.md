@@ -198,7 +198,7 @@ const transaction = await client.partner.createConfig({
     },
     activationType: 0,
     collectFeeMode: 0,
-    migrationOption: 0
+    migrationOption: 0,
     tokenType: 0,
     tokenDecimal: 9,
     migrationQuoteThreshold: new BN('1000000000'),
@@ -1280,7 +1280,7 @@ const transaction = await client.pool.createConfigAndPool({
     },
     activationType: 0,
     collectFeeMode: 0,
-    migrationOption: 0
+    migrationOption: 0,
     tokenType: 0,
     tokenDecimal: 9,
     migrationQuoteThreshold: new BN('1000000000'),
@@ -1463,7 +1463,7 @@ const transaction = await client.pool.createConfigAndPoolWithFirstBuy({
     },
     activationType: 0,
     collectFeeMode: 0,
-    migrationOption: 0
+    migrationOption: 0,
     tokenType: 0,
     tokenDecimal: 9,
     migrationQuoteThreshold: new BN('1000000000'),
