@@ -902,6 +902,7 @@ export function getRateLimiterParams(
         baseFeeMode: BaseFeeMode.RateLimiter,
     }
 }
+
 /**
  * Get the dynamic fee parameters (20% of base fee)
  * @param baseFeeBps - The base fee in basis points
