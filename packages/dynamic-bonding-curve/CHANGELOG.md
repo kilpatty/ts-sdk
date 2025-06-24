@@ -2,6 +2,12 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.2.8] - 2025-06-24
+
+### Added
+
+- `getQuoteReserveFromNextSqrtPrice` helper function
+
 ## [1.2.7] - 2025-06-19
 
 ### Changed
