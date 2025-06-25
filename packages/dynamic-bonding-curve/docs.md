@@ -80,6 +80,7 @@
     - [getRateLimiterParams](#getRateLimiterParams)
     - [getDynamicFeeParams](#getDynamicFeeParams)
     - [getLockedVestingParams](#getLockedVestingParams)
+    - [getQuoteReserveFromNextSqrtPrice](#getQuoteReserveFromNextSqrtPrice)
 
 ---
 
@@ -3197,3 +3198,45 @@ const lockedVestingParams = getLockedVestingParams(
 #### Notes
 
 - The `totalVestingDuration` is the total duration of the vesting. It must be calculated in terms of seconds => 1000ms (timestamp).
+
+---
+
+### getQuoteReserveFromNextSqrtPrice
+
+Gets the quote reserve from the next sqrt price instead of getting from the pool state.
+
+#### Function
+
+```typescript
+function getQuoteReserveFromNextSqrtPrice(
+    nextSqrtPrice: BN,
+    config: PoolConfig
+): BN
+```
+
+#### Parameters
+
+```typescript
+nextSqrtPrice: BN // The next sqrt price that you can fetch from swap cpi logs
+config: PoolConfig // The pool config
+```
+
+#### Returns
+
+A `BN` object containing the calculated quote reserve.
+
+#### Example
+
+```typescript
+const poolConfig = await client.state.getPoolConfig(configAddress)
+
+const quoteReserve = getQuoteReserveFromNextSqrtPrice(
+    nextSqrtPrice: new BN('13663931917038696),
+    config: poolConfig
+)
+```
+
+#### Notes
+
+- The `nextSqrtPrice` is the next sqrt price that you can fetch from swap cpi logs.
+- The `config` is the pool config that the token pool used to launch.
