@@ -623,7 +623,7 @@ const curveConfig = buildCurve({
     totalTokenSupply: 1000000000,
     percentageSupplyOnMigration: 10,
     migrationQuoteThreshold: 300,
-    migrationOption: MigrationOption.MET_DAMM,
+    migrationOption: MigrationOption.MET_DAMM_V2,
     tokenBaseDecimal: TokenDecimal.SIX,
     tokenQuoteDecimal: TokenDecimal.NINE,
     lockedVestingParam: {
@@ -655,8 +655,8 @@ const curveConfig = buildCurve({
     leftover: 10000,
     tokenUpdateAuthority: 0,
     migrationFee: {
-        feePercentage: 25,
-        creatorFeePercentage: 50,
+        feePercentage: 0,
+        creatorFeePercentage: 0,
     },
 })
 
@@ -759,7 +759,7 @@ const curveConfig = buildCurveWithMarketCap({
     totalTokenSupply: 1000000000,
     initialMarketCap: 100,
     migrationMarketCap: 3000,
-    migrationOption: MigrationOption.MET_DAMM,
+    migrationOption: MigrationOption.MET_DAMM_V2,
     tokenBaseDecimal: TokenDecimal.SIX,
     tokenQuoteDecimal: TokenDecimal.NINE,
     lockedVestingParam: {
@@ -791,8 +791,8 @@ const curveConfig = buildCurveWithMarketCap({
     leftover: 0,
     tokenUpdateAuthority: 0,
     migrationFee: {
-        feePercentage: 25,
-        creatorFeePercentage: 50,
+        feePercentage: 0,
+        creatorFeePercentage: 0,
     },
 })
 
@@ -926,11 +926,11 @@ const curveConfig = buildCurveWithTwoSegments({
     partnerLockedLpPercentage: 0,
     creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
-    leftover: 1000000,
+    leftover: 1000,
     tokenUpdateAuthority: 0,
     migrationFee: {
-        feePercentage: 25,
-        creatorFeePercentage: 50,
+        feePercentage: 0,
+        creatorFeePercentage: 0,
     },
 })
 
@@ -1068,12 +1068,12 @@ const curveConfig = buildCurveWithLiquidityWeights({
     partnerLockedLpPercentage: 0,
     creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
-    leftover: 1000000,
+    leftover: 1000,
     liquidityWeights,
     tokenUpdateAuthority: 0,
     migrationFee: {
-        feePercentage: 25,
-        creatorFeePercentage: 50,
+        feePercentage: 0,
+        creatorFeePercentage: 0,
     },
 })
 
