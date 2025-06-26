@@ -452,7 +452,7 @@ export function validateTokenSupply(
  * @param option  - The update authority option
  * @returns true if the token update authority option is valid, false otherwise
  */
-export function validateTokenUpdateAuthorityOptions(
+export function validateTokenAuthorityOptions(
     option: TokenAuthorityOption
 ): boolean {
     return [
@@ -494,9 +494,7 @@ export function validateConfigParameters(
     }
 
     // Update token authority option validation
-    if (
-        !validateTokenUpdateAuthorityOptions(configParam.tokenUpdateAuthority)
-    ) {
+    if (!validateTokenAuthorityOptions(configParam.tokenUpdateAuthority)) {
         throw new Error('Invalid option for token update authority')
     }
 
