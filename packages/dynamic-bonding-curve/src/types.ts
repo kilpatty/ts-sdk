@@ -198,7 +198,7 @@ export enum Rounding {
     Down,
 }
 
-export enum TokenAuthorityOption {
+export enum TokenUpdateAuthorityOption {
     // Creator has permission to update update_authority
     CreatorUpdateAuthority = 0,
     // No one has permission to update the authority

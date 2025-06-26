@@ -17,7 +17,7 @@ import {
     PoolFeeParameters,
     TokenDecimal,
     TokenType,
-    TokenAuthorityOption,
+    TokenUpdateAuthorityOption,
     type CreateConfigParam,
     type PoolConfig,
 } from '../types'
@@ -452,15 +452,15 @@ export function validateTokenSupply(
  * @param option  - The update authority option
  * @returns true if the token update authority option is valid, false otherwise
  */
-export function validateTokenAuthorityOptions(
-    option: TokenAuthorityOption
+export function validateTokenUpdateAuthorityOptions(
+    option: TokenUpdateAuthorityOption
 ): boolean {
     return [
-        TokenAuthorityOption.CreatorUpdateAuthority,
-        TokenAuthorityOption.Immutable,
-        TokenAuthorityOption.PartnerUpdateAuthority,
-        TokenAuthorityOption.CreatorUpdateAndMintAuthority,
-        TokenAuthorityOption.PartnerUpdateAndMintAuthority,
+        TokenUpdateAuthorityOption.CreatorUpdateAuthority,
+        TokenUpdateAuthorityOption.Immutable,
+        TokenUpdateAuthorityOption.PartnerUpdateAuthority,
+        TokenUpdateAuthorityOption.CreatorUpdateAndMintAuthority,
+        TokenUpdateAuthorityOption.PartnerUpdateAndMintAuthority,
     ].includes(option)
 }
 
@@ -494,7 +494,9 @@ export function validateConfigParameters(
     }
 
     // Update token authority option validation
-    if (!validateTokenAuthorityOptions(configParam.tokenUpdateAuthority)) {
+    if (
+        !validateTokenUpdateAuthorityOptions(configParam.tokenUpdateAuthority)
+    ) {
         throw new Error('Invalid option for token update authority')
     }
 
