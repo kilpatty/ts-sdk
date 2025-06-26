@@ -17,7 +17,7 @@ import {
     PoolFeeParameters,
     TokenDecimal,
     TokenType,
-    TokenUpdateAuthorityOption,
+    TokenAuthorityOption,
     type CreateConfigParam,
     type PoolConfig,
 } from '../types'
@@ -179,7 +179,7 @@ export function validateFeeRateLimiter(
     if (!feeRateLimiter) return true
 
     // can only be applied in quote token collect fee mode
-    if (collectFeeMode !== CollectFeeMode.OnlyQuote) {
+    if (collectFeeMode !== CollectFeeMode.QuoteToken) {
         return false
     }
 
@@ -258,7 +258,7 @@ export function validateFeeRateLimiter(
 export function validateCollectFeeMode(
     collectFeeMode: CollectFeeMode
 ): boolean {
-    return [CollectFeeMode.OnlyQuote, CollectFeeMode.Both].includes(
+    return [CollectFeeMode.QuoteToken, CollectFeeMode.OutputToken].includes(
         collectFeeMode
     )
 }
@@ -453,11 +453,14 @@ export function validateTokenSupply(
  * @returns true if the token update authority option is valid, false otherwise
  */
 export function validateTokenUpdateAuthorityOptions(
-    option: TokenUpdateAuthorityOption
+    option: TokenAuthorityOption
 ): boolean {
     return [
-        TokenUpdateAuthorityOption.Mutable,
-        TokenUpdateAuthorityOption.Immutable,
+        TokenAuthorityOption.CreatorUpdateAuthority,
+        TokenAuthorityOption.Immutable,
+        TokenAuthorityOption.PartnerUpdateAuthority,
+        TokenAuthorityOption.CreatorUpdateAndMintAuthority,
+        TokenAuthorityOption.PartnerUpdateAndMintAuthority,
     ].includes(option)
 }
 
