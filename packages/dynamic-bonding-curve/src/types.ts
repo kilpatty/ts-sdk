@@ -157,18 +157,13 @@ export enum TokenType {
 }
 
 export enum CollectFeeMode {
-    OnlyQuote = 0,
-    Both = 1,
+    QuoteToken = 0,
+    OutputToken = 1,
 }
 
 export enum MigrationOption {
     MET_DAMM = 0,
     MET_DAMM_V2 = 1,
-}
-
-export enum GetFeeMode {
-    QuoteToken = 0,
-    OutputToken = 1,
 }
 
 export enum BaseFeeMode {
@@ -204,8 +199,16 @@ export enum Rounding {
 }
 
 export enum TokenUpdateAuthorityOption {
-    Mutable = 0,
+    // Creator has permission to update update_authority
+    CreatorUpdateAuthority = 0,
+    // No one has permission to update the authority
     Immutable = 1,
+    // Partner has permission to update update_authority
+    PartnerUpdateAuthority = 2,
+    // Creator has permission as mint_authority and update_authority
+    CreatorUpdateAndMintAuthority = 3,
+    // Partner has permission as mint_authority and update_authority
+    PartnerUpdateAndMintAuthority = 4,
 }
 
 ///////////
