@@ -364,6 +364,7 @@ export type CreateConfigAndPoolWithFirstBuyParam = CreateConfigAndPoolParam & {
 
 export type CreatePoolWithFirstBuyParam = {
     createPoolParam: CreatePoolParam
+    buyer: PublicKey
     buyAmount: BN
     minimumAmountOut: BN
     referralTokenAccount: PublicKey | null

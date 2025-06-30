@@ -272,19 +272,6 @@ export class PoolService extends DynamicBondingCurveProgram {
         // error checks
         validateSwapAmount(buyAmount)
 
-        let currentPoint
-        if (
-            createConfigAndPoolWithFirstBuyParam.activationType ===
-            ActivationType.Slot
-        ) {
-            const currentSlot = await this.connection.getSlot()
-            currentPoint = currentSlot
-        } else {
-            const currentSlot = await this.connection.getSlot()
-            const currentTime = await this.connection.getBlockTime(currentSlot)
-            currentPoint = currentTime
-        }
-
         // check if rate limiter is applied
         // this swapBuyTx is only QuoteToBase direction
         // this swapBuyTx does not check poolState, so there is no check for activation point
@@ -569,15 +556,18 @@ export class PoolService extends DynamicBondingCurveProgram {
     /**
      * Create a new pool and buy tokens
      * @param createPoolWithFirstBuyParam - The parameters for the pool and buy
-     * @returns A transaction that creates the pool and buys tokens
+     * @returns An object containing the new pool transaction and swap buy transaction
      */
     async createPoolWithFirstBuy(
         createPoolWithFirstBuyParam: CreatePoolWithFirstBuyParam
-    ): Promise<Transaction> {
+    ): Promise<{
+        createPoolTx: Transaction
+        swapBuyTx: Transaction
+    }> {
         const { baseMint, config, name, symbol, uri, payer, poolCreator } =
             createPoolWithFirstBuyParam.createPoolParam
 
-        const { buyAmount, minimumAmountOut, referralTokenAccount } =
+        const { buyer, buyAmount, minimumAmountOut, referralTokenAccount } =
             createPoolWithFirstBuyParam
 
         const poolConfigState = await this.state.getPoolConfig(config)
@@ -603,26 +593,19 @@ export class PoolService extends DynamicBondingCurveProgram {
         }
 
         // create pool transaction
-        let tx: Transaction
+        let createPoolTx: Transaction
         if (tokenType === TokenType.SPL) {
             const mintMetadata = deriveMintMetadata(baseMint)
-            tx = await this.initializeSplPool({ ...baseParams, mintMetadata })
+            createPoolTx = await this.initializeSplPool({
+                ...baseParams,
+                mintMetadata,
+            })
         } else {
-            tx = await this.initializeToken2022Pool(baseParams)
+            createPoolTx = await this.initializeToken2022Pool(baseParams)
         }
 
         // error checks
         validateSwapAmount(buyAmount)
-
-        let currentPoint
-        if (poolConfigState.activationType === ActivationType.Slot) {
-            const currentSlot = await this.connection.getSlot()
-            currentPoint = new BN(currentSlot)
-        } else {
-            const currentSlot = await this.connection.getSlot()
-            const currentTime = await this.connection.getBlockTime(currentSlot)
-            currentPoint = new BN(currentTime)
-        }
 
         // check if rate limiter is applied
         // this firstBuyTx is only QuoteToBase direction
@@ -647,8 +630,8 @@ export class PoolService extends DynamicBondingCurveProgram {
             ataTokenB: outputTokenAccount,
             instructions: preInstructions,
         } = await this.prepareTokenAccounts(
-            poolCreator,
-            poolCreator,
+            buyer,
+            buyer,
             inputMint,
             outputMint,
             inputTokenProgram,
@@ -659,7 +642,7 @@ export class PoolService extends DynamicBondingCurveProgram {
         if (inputMint.equals(NATIVE_MINT)) {
             preInstructions.push(
                 ...wrapSOLInstruction(
-                    poolCreator,
+                    buyer,
                     inputTokenAccount,
                     BigInt(buyAmount.toString())
                 )
@@ -673,7 +656,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 NATIVE_MINT.toBase58()
             )
         ) {
-            const unwrapIx = unwrapSOLInstruction(poolCreator, poolCreator)
+            const unwrapIx = unwrapSOLInstruction(buyer, buyer)
             unwrapIx && postInstructions.push(unwrapIx)
         }
 
@@ -688,7 +671,7 @@ export class PoolService extends DynamicBondingCurveProgram {
               ]
             : []
 
-        const firstBuyTx = await this.program.methods
+        const swapBuyTx = await this.program.methods
             .swap({
                 amountIn: buyAmount,
                 minimumAmountOut,
@@ -704,7 +687,7 @@ export class PoolService extends DynamicBondingCurveProgram {
                 referralTokenAccount,
                 inputTokenAccount,
                 outputTokenAccount,
-                payer: poolCreator,
+                payer: buyer,
                 tokenBaseProgram: outputTokenProgram,
                 tokenQuoteProgram: inputTokenProgram,
             })
@@ -713,9 +696,10 @@ export class PoolService extends DynamicBondingCurveProgram {
             .postInstructions(postInstructions)
             .transaction()
 
-        tx.add(...firstBuyTx.instructions)
-
-        return tx
+        return {
+            createPoolTx,
+            swapBuyTx,
+        }
     }
 
     /**
