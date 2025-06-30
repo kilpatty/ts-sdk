@@ -345,25 +345,27 @@ export type CreatePoolParam = {
 }
 
 export type CreateConfigAndPoolParam = CreateConfigParam & {
-    createPoolParam: {
-        name: string
-        symbol: string
-        uri: string
-        poolCreator: PublicKey
-        baseMint: PublicKey
-    }
+    preCreatePoolParam: PreCreatePoolParam
 }
 
 export type CreateConfigAndPoolWithFirstBuyParam = CreateConfigAndPoolParam & {
-    swapBuyParam: {
-        buyAmount: BN
-        minimumAmountOut: BN
-        referralTokenAccount: PublicKey | null
-    }
+    firstBuyParam: FirstBuyParam
 }
 
 export type CreatePoolWithFirstBuyParam = {
     createPoolParam: CreatePoolParam
+    firstBuyParam: FirstBuyParam
+}
+
+export type PreCreatePoolParam = {
+    name: string
+    symbol: string
+    uri: string
+    poolCreator: PublicKey
+    baseMint: PublicKey
+}
+
+export type FirstBuyParam = {
     buyer: PublicKey
     buyAmount: BN
     minimumAmountOut: BN
