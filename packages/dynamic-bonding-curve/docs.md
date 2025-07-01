@@ -28,6 +28,7 @@
     - [swap](#swap)
     - [swapQuote](#swapQuote)
     - [swapQuoteExactIn](#swapQuoteExactIn)
+    - [swapQuoteExactOut](#swapQuoteExactOut)
 
 - [Migration Functions](#migration-functions)
 
@@ -1848,6 +1849,72 @@ const quote = await client.pool.swapQuoteExactIn({
 #### Notes
 
 - This function helps to get the exact number of quote tokens to swap to hit the `migrationQuoteThreshold` in the config key.
+- The `currentPoint` parameter is typically used in cases where the config has applied a fee scheduler. If activationType == 0, then it is current slot. If activationType == 1, then it is the current block timestamp. You can fill in accordingly based on slot or timestamp.
+
+---
+
+### swapQuoteExactOut
+
+Gets the exact swap out quotation in between quote and base swaps.
+
+#### Function
+
+```typescript
+swapQuoteExactOut(swapQuoteExactOutParam: SwapQuoteExactOutParam): Promise<QuoteResult>
+```
+
+#### Parameters
+
+```typescript
+interface SwapQuoteExactOutParam {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    swapBaseForQuote: boolean
+    outAmount: BN
+    slippageBps?: number
+    hasReferral: boolean
+    currentPoint: BN
+}
+```
+
+#### Returns
+
+The exact quote out result of the swap.
+
+#### Example
+
+```typescript
+const virtualPoolState = await client.state.getPool(poolAddress)
+const poolConfigState = await client.state.getPoolConfig(
+    virtualPoolState.config
+)
+
+let currentPoint: BN
+if (poolConfigState.activationType === 0) {
+    // Slot
+    const currentSlot = await connection.getSlot()
+    currentPoint = new BN(currentSlot)
+} else {
+    // Timestamp
+    const currentSlot = await connection.getSlot()
+    const currentTime = await connection.getBlockTime(currentSlot)
+    currentPoint = new BN(currentTime || 0)
+}
+
+const quote = await client.pool.swapQuoteExactOut({
+    virtualPool: virtualPoolState,
+    config: poolConfigState,
+    swapBaseForQuote: false,
+    outAmount: new BN(100000000),
+    slippageBps: 0,
+    hasReferral: false,
+    currentPoint,
+})
+```
+
+#### Notes
+
+- This function helps to get the exact number of input tokens to swap to get the exact output amount.
 - The `currentPoint` parameter is typically used in cases where the config has applied a fee scheduler. If activationType == 0, then it is current slot. If activationType == 1, then it is the current block timestamp. You can fill in accordingly based on slot or timestamp.
 
 ---
