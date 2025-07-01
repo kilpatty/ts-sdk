@@ -357,6 +357,12 @@ export type CreatePoolWithFirstBuyParam = {
     firstBuyParam: FirstBuyParam
 }
 
+export type CreatePoolWithPartnerAndCreatorFirstBuyParam = {
+    createPoolParam: CreatePoolParam
+    partnerFirstBuyParam: PartnerFirstBuyParam
+    creatorFirstBuyParam: CreatorFirstBuyParam
+}
+
 export type PreCreatePoolParam = {
     name: string
     symbol: string
@@ -367,6 +373,20 @@ export type PreCreatePoolParam = {
 
 export type FirstBuyParam = {
     buyer: PublicKey
+    buyAmount: BN
+    minimumAmountOut: BN
+    referralTokenAccount: PublicKey | null
+}
+
+export type PartnerFirstBuyParam = {
+    partner: PublicKey
+    buyAmount: BN
+    minimumAmountOut: BN
+    referralTokenAccount: PublicKey | null
+}
+
+export type CreatorFirstBuyParam = {
+    creator: PublicKey
     buyAmount: BN
     minimumAmountOut: BN
     referralTokenAccount: PublicKey | null

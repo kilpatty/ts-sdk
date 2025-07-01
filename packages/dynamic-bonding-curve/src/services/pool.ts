@@ -14,6 +14,7 @@ import {
     CreateConfigAndPoolParam,
     CreateConfigAndPoolWithFirstBuyParam,
     CreatePoolWithFirstBuyParam,
+    CreatePoolWithPartnerAndCreatorFirstBuyParam,
     FirstBuyParam,
     InitializePoolBaseParam,
     PrepareSwapParams,
@@ -546,11 +547,7 @@ export class PoolService extends DynamicBondingCurveProgram {
         createPoolTx: Transaction
         swapBuyTx: Transaction
     }> {
-        const { baseMint, config, name, symbol, uri, payer, poolCreator } =
-            createPoolWithFirstBuyParam.createPoolParam
-
-        const { buyer, buyAmount, minimumAmountOut, referralTokenAccount } =
-            createPoolWithFirstBuyParam.firstBuyParam
+        const { config } = createPoolWithFirstBuyParam.createPoolParam
 
         const poolConfigState = await this.state.getPoolConfig(config)
 
@@ -576,6 +573,85 @@ export class PoolService extends DynamicBondingCurveProgram {
         return {
             createPoolTx,
             swapBuyTx,
+        }
+    }
+
+    /**
+     * Create a new pool and buy tokens with partner and creator
+     * @param createPoolWithPartnerAndCreatorFirstBuyParam - The parameters for the pool and buy
+     * @returns An object containing the new pool transaction and swap buy transactions
+     */
+    async createPoolWithPartnerAndCreatorFirstBuy(
+        createPoolWithPartnerAndCreatorFirstBuyParam: CreatePoolWithPartnerAndCreatorFirstBuyParam
+    ): Promise<{
+        createPoolTx: Transaction
+        partnerSwapBuyTx: Transaction
+        creatorSwapBuyTx: Transaction
+    }> {
+        const { config } =
+            createPoolWithPartnerAndCreatorFirstBuyParam.createPoolParam
+
+        const poolConfigState = await this.state.getPoolConfig(config)
+
+        const { quoteMint, tokenType } = poolConfigState
+
+        // create pool transaction
+        const createPoolTx = await this.createPoolTx(
+            createPoolWithPartnerAndCreatorFirstBuyParam.createPoolParam,
+            tokenType,
+            quoteMint
+        )
+
+        // create partner first buy transaction
+        const partnerSwapBuyTx = await this.swapBuyTx(
+            {
+                buyer: createPoolWithPartnerAndCreatorFirstBuyParam
+                    .partnerFirstBuyParam.partner,
+                buyAmount:
+                    createPoolWithPartnerAndCreatorFirstBuyParam
+                        .partnerFirstBuyParam.buyAmount,
+                minimumAmountOut:
+                    createPoolWithPartnerAndCreatorFirstBuyParam
+                        .partnerFirstBuyParam.minimumAmountOut,
+                referralTokenAccount:
+                    createPoolWithPartnerAndCreatorFirstBuyParam
+                        .partnerFirstBuyParam.referralTokenAccount,
+            },
+            createPoolWithPartnerAndCreatorFirstBuyParam.createPoolParam
+                .baseMint,
+            config,
+            poolConfigState.poolFees.baseFee.baseFeeMode,
+            tokenType,
+            quoteMint
+        )
+
+        // create creator first buy transaction
+        const creatorSwapBuyTx = await this.swapBuyTx(
+            {
+                buyer: createPoolWithPartnerAndCreatorFirstBuyParam
+                    .creatorFirstBuyParam.creator,
+                buyAmount:
+                    createPoolWithPartnerAndCreatorFirstBuyParam
+                        .creatorFirstBuyParam.buyAmount,
+                minimumAmountOut:
+                    createPoolWithPartnerAndCreatorFirstBuyParam
+                        .creatorFirstBuyParam.minimumAmountOut,
+                referralTokenAccount:
+                    createPoolWithPartnerAndCreatorFirstBuyParam
+                        .creatorFirstBuyParam.referralTokenAccount,
+            },
+            createPoolWithPartnerAndCreatorFirstBuyParam.createPoolParam
+                .baseMint,
+            config,
+            poolConfigState.poolFees.baseFee.baseFeeMode,
+            tokenType,
+            quoteMint
+        )
+
+        return {
+            createPoolTx,
+            partnerSwapBuyTx,
+            creatorSwapBuyTx,
         }
     }
 
