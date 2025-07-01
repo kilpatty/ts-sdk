@@ -2,6 +2,17 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.3.0] - 2025-07-01
+
+### Added
+
+- added optional `payer` parameter to `swap` function
+
+### Changed
+
+- `createConfigAndPoolWithFirstBuy` and `createPoolWithFirstBuy` function now accepts a `buyer` parameter
+- `createPoolWithFirstBuy` function now returns a `Transaction[]` containing `createPoolTx` and a `swapBuyTx` instead of a single `Transaction`
+
 ## [1.2.9] - 2025-06-26
 
 ### Added
