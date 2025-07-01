@@ -379,6 +379,7 @@ export type SwapParam = {
     minimumAmountOut: BN
     swapBaseForQuote: boolean
     referralTokenAccount: PublicKey | null
+    payer?: PublicKey
 }
 
 export type SwapQuoteParam = {

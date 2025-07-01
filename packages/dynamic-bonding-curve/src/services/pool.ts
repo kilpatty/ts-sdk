@@ -594,7 +594,7 @@ export class PoolService extends DynamicBondingCurveProgram {
 
         const poolConfigState = await this.state.getPoolConfig(poolState.config)
 
-        const { amountIn, minimumAmountOut, swapBaseForQuote, owner } =
+        const { amountIn, minimumAmountOut, swapBaseForQuote, owner, payer } =
             swapParam
 
         // error checks
@@ -633,7 +633,7 @@ export class PoolService extends DynamicBondingCurveProgram {
             instructions: preInstructions,
         } = await this.prepareTokenAccounts(
             owner,
-            owner,
+            payer ? payer : owner,
             inputMint,
             outputMint,
             inputTokenProgram,
