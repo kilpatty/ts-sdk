@@ -19,6 +19,7 @@ import {
     InitializePoolBaseParam,
     PrepareSwapParams,
     SwapQuoteExactInParam,
+    SwapQuoteExactOutParam,
     TokenType,
     type CreatePoolParam,
     type SwapParam,
@@ -37,7 +38,11 @@ import {
 import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { METAPLEX_PROGRAM_ID } from '../constants'
-import { swapQuote, calculateQuoteExactInAmount } from '../math/swapQuote'
+import {
+    swapQuote,
+    calculateQuoteExactInAmount,
+    swapQuoteExactOut,
+} from '../math/swapQuote'
 import { StateService } from './state'
 import {
     validateConfigParameters,
@@ -831,5 +836,32 @@ export class PoolService extends DynamicBondingCurveProgram {
         return {
             exactAmountIn: requiredQuoteAmount,
         }
+    }
+
+    /**
+     * Calculate the amount in for a swap with exact output amount (quote)
+     * @param swapQuoteExactOutParam - The parameters for the swap
+     * @returns The swap quote result with input amount calculated
+     */
+    swapQuoteExactOut(swapQuoteExactOutParam: SwapQuoteExactOutParam) {
+        const {
+            virtualPool,
+            config,
+            swapBaseForQuote,
+            outAmount,
+            slippageBps = 0,
+            hasReferral,
+            currentPoint,
+        } = swapQuoteExactOutParam
+
+        return swapQuoteExactOut(
+            virtualPool,
+            config,
+            swapBaseForQuote,
+            outAmount,
+            slippageBps,
+            hasReferral,
+            currentPoint
+        )
     }
 }

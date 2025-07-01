@@ -418,6 +418,16 @@ export type SwapQuoteExactInParam = {
     currentPoint: BN
 }
 
+export type SwapQuoteExactOutParam = {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    swapBaseForQuote: boolean
+    outAmount: BN
+    slippageBps?: number
+    hasReferral: boolean
+    currentPoint: BN
+}
+
 export type MigrateToDammV1Param = {
     payer: PublicKey
     virtualPool: PublicKey
