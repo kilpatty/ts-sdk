@@ -6,7 +6,8 @@ All notable changes to the Dynamic Bonding Curve SDK will be documented in this 
 
 ### Added
 
-- added optional `payer` parameter to `swap` function
+- Added optional `payer` parameter to `swap` function
+- Added `createPoolWithPartnerAndCreatorFirstBuy` function
 
 ### Changed
 
