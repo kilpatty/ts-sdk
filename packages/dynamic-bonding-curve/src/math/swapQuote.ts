@@ -493,7 +493,7 @@ export function calculateQuoteExactInAmount(
  * @param includedFeeAmount Included fee amount
  * @returns [excluded fee amount, trading fee]
  */
-function getExcludedFeeAmount(
+export function getExcludedFeeAmount(
     tradeFeeNumerator: BN,
     includedFeeAmount: BN
 ): [BN, BN] {
@@ -514,7 +514,7 @@ function getExcludedFeeAmount(
  * @param excludedFeeAmount Excluded fee amount
  * @returns Included fee amount
  */
-function getIncludedFeeAmount(
+export function getIncludedFeeAmount(
     tradeFeeNumerator: BN,
     excludedFeeAmount: BN
 ): BN {
@@ -547,7 +547,7 @@ function getIncludedFeeAmount(
  * @param currentPoint Current point
  * @returns Swap result with input amount calculated
  */
-function getSwapResultFromOutAmount(
+export function getSwapResultFromOutAmount(
     poolState: VirtualPool,
     configState: PoolConfig,
     outAmount: BN,
@@ -660,7 +660,7 @@ function getSwapResultFromOutAmount(
  * @param outAmount Quote output amount
  * @returns Swap amount with input calculated
  */
-function getInAmountFromBaseToQuote(
+export function getInAmountFromBaseToQuote(
     configState: PoolConfig,
     currentSqrtPrice: BN,
     outAmount: BN
@@ -764,7 +764,7 @@ function getInAmountFromBaseToQuote(
  * @param outAmount Base output amount
  * @returns Swap amount with input calculated
  */
-function getInAmountFromQuoteToBase(
+export function getInAmountFromQuoteToBase(
     configState: PoolConfig,
     currentSqrtPrice: BN,
     outAmount: BN
