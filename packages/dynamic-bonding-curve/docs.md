@@ -1351,7 +1351,7 @@ Creates a config key and a token pool and buys the token immediately in a single
 async createConfigAndPoolWithFirstBuy(createConfigAndPoolWithFirstBuyParam: CreateConfigAndPoolWithFirstBuyParam): Promise<{
     createConfigTx: Transaction
     createPoolTx: Transaction
-    swapBuyTx: Transaction
+    swapBuyTx: Transaction | undefined
 }>
 ```
 
@@ -1429,7 +1429,8 @@ interface CreateConfigAndPoolWithFirstBuyParam {
         uri: string // The uri of the pool
         poolCreator: PublicKey // The pool creator of the transaction
     }
-    firstBuyParam: {
+    firstBuyParam?: {
+        // Optional first buy param
         buyer: PublicKey // The buyer of the transaction
         buyAmount: BN // The amount of tokens to buy
         minimumAmountOut: BN // The minimum amount of tokens to receive
@@ -1531,7 +1532,8 @@ const transaction = await client.pool.createConfigAndPoolWithFirstBuy({
 - The payer must be the same as the payer in the `CreateConfigAndPoolWithFirstBuyParam` params.
 - The `createConfigTx` requires the payer and config to sign the transaction.
 - The `createPoolTx` requires the payer, poolCreator, and baseMint to sign the transaction.
-- The `swapBuyTx` requires the poolCreator and payer to sign the transaction.
+- If the `firstBuyParam` is not provided, the `swapBuyTx` will be undefined.
+- The `swapBuyTx` requires the buyer and payer to sign the transaction.
 
 ---
 
@@ -1544,7 +1546,7 @@ Creates a new pool with the config key and buys the token immediately.
 ```typescript
 async createPoolWithFirstBuy(createPoolWithFirstBuyParam: CreatePoolWithFirstBuyParam): Promise<{
     createPoolTx: Transaction
-    swapBuyTx: Transaction
+    swapBuyTx: Transaction | undefined
 }>
 ```
 
@@ -1561,7 +1563,8 @@ interface CreatePoolWithFirstBuyParam {
         payer: PublicKey // The payer of the transaction
         poolCreator: PublicKey // The pool creator of the transaction
     }
-    firstBuyParam: {
+    firstBuyParam?: {
+        // Optional first buy param
         buyer: PublicKey // The buyer of the transaction
         buyAmount: BN // The amount of tokens to buy
         minimumAmountOut: BN // The minimum amount of tokens to receive
@@ -1615,8 +1618,8 @@ Creates a new pool with the config key and buys the token immediately with partn
 ```typescript
 async createPoolWithPartnerAndCreatorFirstBuy(createPoolWithPartnerAndCreatorFirstBuyParam: CreatePoolWithPartnerAndCreatorFirstBuyParam): Promise<{
     createPoolTx: Transaction
-    partnerSwapBuyTx: Transaction
-    creatorSwapBuyTx: Transaction
+    partnerSwapBuyTx: Transaction | undefined
+    creatorSwapBuyTx: Transaction | undefined
 }>
 ```
 
@@ -1633,13 +1636,15 @@ interface CreatePoolWithPartnerAndCreatorFirstBuyParam {
         payer: PublicKey // The payer of the transaction
         poolCreator: PublicKey // The pool creator of the transaction
     }
-    partnerFirstBuyParam: {
+    partnerFirstBuyParam?: {
+        // Optional partner first buy param
         partner: PublicKey // The launchpad partner
         buyAmount: BN // The amount of tokens to buy
         minimumAmountOut: BN // The minimum amount of tokens to receive
         referralTokenAccount: PublicKey | null // The referral token account (optional)
     }
-    creatorFirstBuyParam: {
+    creatorFirstBuyParam?: {
+        // Optional creator first buy param
         creator: PublicKey // The pool creator
         buyAmount: BN // The amount of tokens to buy
         minimumAmountOut: BN // The minimum amount of tokens to receive
@@ -1683,7 +1688,8 @@ const transaction = await client.pool.createPoolWithPartnerAndCreatorFirstBuy({
 #### Notes
 
 - The `poolCreator` is required to sign when creating the pool.
-- The `partner` and `creator` are required to sign when buying the token.
+- The `partner` is required to sign when buying the token.
+- The `creator` is required to sign when buying the token.
 - The `baseMint` token type must be the same as the config key's token type.
 - The `minimumAmountOut` parameter protects against slippage. Set it to a value slightly lower than the expected output.
 - The `referralTokenAccount` parameter is an optional token account. If provided, the referral fee will be applied to the transaction.

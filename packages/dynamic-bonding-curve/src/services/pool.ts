@@ -221,10 +221,9 @@ export class PoolService extends DynamicBondingCurveProgram {
 
     /**
      * Private method to create pool transaction
-     * @param createConfigAndPoolWithFirstBuyParam - The parameters for the config and pool and buy
-     * @param configKey - The config key
-     * @param quoteMintToken - The quote mint token
-     * @param payerAddress - The payer address
+     * @param createPoolParam - The parameters for the pool
+     * @param tokenType - The token type
+     * @param quoteMint - The quote mint token
      * @returns A transaction that creates the pool
      */
     private async createPoolTx(
@@ -263,10 +262,12 @@ export class PoolService extends DynamicBondingCurveProgram {
 
     /**
      * Private method to create first buy transaction
-     * @param createConfigAndPoolWithFirstBuyParam - The parameters for the config and pool and buy
-     * @param configKey - The config key
-     * @param quoteMintToken - The quote mint token
-     * @param payerAddress - The payer address
+     * @param firstBuyParam - The parameters for the first buy
+     * @param baseMint - The base mint token
+     * @param config - The config key
+     * @param baseFeeMode - The base fee mode
+     * @param tokenType - The token type
+     * @param quoteMint - The quote mint token
      * @returns Instructions for the first buy
      */
     private async swapBuyTx(
@@ -486,7 +487,7 @@ export class PoolService extends DynamicBondingCurveProgram {
     ): Promise<{
         createConfigTx: Transaction
         createPoolTx: Transaction
-        swapBuyTx: Transaction
+        swapBuyTx: Transaction | undefined
     }> {
         const {
             config,
@@ -525,14 +526,24 @@ export class PoolService extends DynamicBondingCurveProgram {
         )
 
         // create first buy transaction
-        const swapBuyTx = await this.swapBuyTx(
-            createConfigAndPoolWithFirstBuyParam.firstBuyParam,
-            createConfigAndPoolWithFirstBuyParam.preCreatePoolParam.baseMint,
-            configKey,
-            createConfigAndPoolWithFirstBuyParam.poolFees.baseFee.baseFeeMode,
-            createConfigAndPoolWithFirstBuyParam.tokenType,
-            quoteMintToken
-        )
+        let swapBuyTx: Transaction | undefined
+        if (
+            createConfigAndPoolWithFirstBuyParam.firstBuyParam &&
+            createConfigAndPoolWithFirstBuyParam.firstBuyParam.buyAmount.gt(
+                new BN(0)
+            )
+        ) {
+            swapBuyTx = await this.swapBuyTx(
+                createConfigAndPoolWithFirstBuyParam.firstBuyParam,
+                createConfigAndPoolWithFirstBuyParam.preCreatePoolParam
+                    .baseMint,
+                configKey,
+                createConfigAndPoolWithFirstBuyParam.poolFees.baseFee
+                    .baseFeeMode,
+                createConfigAndPoolWithFirstBuyParam.tokenType,
+                quoteMintToken
+            )
+        }
 
         return {
             createConfigTx,
@@ -550,7 +561,7 @@ export class PoolService extends DynamicBondingCurveProgram {
         createPoolWithFirstBuyParam: CreatePoolWithFirstBuyParam
     ): Promise<{
         createPoolTx: Transaction
-        swapBuyTx: Transaction
+        swapBuyTx: Transaction | undefined
     }> {
         const { config } = createPoolWithFirstBuyParam.createPoolParam
 
@@ -566,14 +577,20 @@ export class PoolService extends DynamicBondingCurveProgram {
         )
 
         // create first buy transaction
-        const swapBuyTx = await this.swapBuyTx(
-            createPoolWithFirstBuyParam.firstBuyParam,
-            createPoolWithFirstBuyParam.createPoolParam.baseMint,
-            config,
-            poolConfigState.poolFees.baseFee.baseFeeMode,
-            tokenType,
-            quoteMint
-        )
+        let swapBuyTx: Transaction | undefined
+        if (
+            createPoolWithFirstBuyParam.firstBuyParam &&
+            createPoolWithFirstBuyParam.firstBuyParam.buyAmount.gt(new BN(0))
+        ) {
+            swapBuyTx = await this.swapBuyTx(
+                createPoolWithFirstBuyParam.firstBuyParam,
+                createPoolWithFirstBuyParam.createPoolParam.baseMint,
+                config,
+                poolConfigState.poolFees.baseFee.baseFeeMode,
+                tokenType,
+                quoteMint
+            )
+        }
 
         return {
             createPoolTx,
@@ -590,8 +607,8 @@ export class PoolService extends DynamicBondingCurveProgram {
         createPoolWithPartnerAndCreatorFirstBuyParam: CreatePoolWithPartnerAndCreatorFirstBuyParam
     ): Promise<{
         createPoolTx: Transaction
-        partnerSwapBuyTx: Transaction
-        creatorSwapBuyTx: Transaction
+        partnerSwapBuyTx: Transaction | undefined
+        creatorSwapBuyTx: Transaction | undefined
     }> {
         const { config } =
             createPoolWithPartnerAndCreatorFirstBuyParam.createPoolParam
@@ -608,50 +625,66 @@ export class PoolService extends DynamicBondingCurveProgram {
         )
 
         // create partner first buy transaction
-        const partnerSwapBuyTx = await this.swapBuyTx(
-            {
-                buyer: createPoolWithPartnerAndCreatorFirstBuyParam
-                    .partnerFirstBuyParam.partner,
-                buyAmount:
-                    createPoolWithPartnerAndCreatorFirstBuyParam
-                        .partnerFirstBuyParam.buyAmount,
-                minimumAmountOut:
-                    createPoolWithPartnerAndCreatorFirstBuyParam
-                        .partnerFirstBuyParam.minimumAmountOut,
-                referralTokenAccount:
-                    createPoolWithPartnerAndCreatorFirstBuyParam
-                        .partnerFirstBuyParam.referralTokenAccount,
-            },
-            createPoolWithPartnerAndCreatorFirstBuyParam.createPoolParam
-                .baseMint,
-            config,
-            poolConfigState.poolFees.baseFee.baseFeeMode,
-            tokenType,
-            quoteMint
-        )
+        let partnerSwapBuyTx: Transaction | undefined
+        if (
+            createPoolWithPartnerAndCreatorFirstBuyParam.partnerFirstBuyParam &&
+            createPoolWithPartnerAndCreatorFirstBuyParam.partnerFirstBuyParam.buyAmount.gt(
+                new BN(0)
+            )
+        ) {
+            partnerSwapBuyTx = await this.swapBuyTx(
+                {
+                    buyer: createPoolWithPartnerAndCreatorFirstBuyParam
+                        .partnerFirstBuyParam.partner,
+                    buyAmount:
+                        createPoolWithPartnerAndCreatorFirstBuyParam
+                            .partnerFirstBuyParam.buyAmount,
+                    minimumAmountOut:
+                        createPoolWithPartnerAndCreatorFirstBuyParam
+                            .partnerFirstBuyParam.minimumAmountOut,
+                    referralTokenAccount:
+                        createPoolWithPartnerAndCreatorFirstBuyParam
+                            .partnerFirstBuyParam.referralTokenAccount,
+                },
+                createPoolWithPartnerAndCreatorFirstBuyParam.createPoolParam
+                    .baseMint,
+                config,
+                poolConfigState.poolFees.baseFee.baseFeeMode,
+                tokenType,
+                quoteMint
+            )
+        }
 
         // create creator first buy transaction
-        const creatorSwapBuyTx = await this.swapBuyTx(
-            {
-                buyer: createPoolWithPartnerAndCreatorFirstBuyParam
-                    .creatorFirstBuyParam.creator,
-                buyAmount:
-                    createPoolWithPartnerAndCreatorFirstBuyParam
-                        .creatorFirstBuyParam.buyAmount,
-                minimumAmountOut:
-                    createPoolWithPartnerAndCreatorFirstBuyParam
-                        .creatorFirstBuyParam.minimumAmountOut,
-                referralTokenAccount:
-                    createPoolWithPartnerAndCreatorFirstBuyParam
-                        .creatorFirstBuyParam.referralTokenAccount,
-            },
-            createPoolWithPartnerAndCreatorFirstBuyParam.createPoolParam
-                .baseMint,
-            config,
-            poolConfigState.poolFees.baseFee.baseFeeMode,
-            tokenType,
-            quoteMint
-        )
+        let creatorSwapBuyTx: Transaction | undefined
+        if (
+            createPoolWithPartnerAndCreatorFirstBuyParam.creatorFirstBuyParam &&
+            createPoolWithPartnerAndCreatorFirstBuyParam.creatorFirstBuyParam.buyAmount.gt(
+                new BN(0)
+            )
+        ) {
+            creatorSwapBuyTx = await this.swapBuyTx(
+                {
+                    buyer: createPoolWithPartnerAndCreatorFirstBuyParam
+                        .creatorFirstBuyParam.creator,
+                    buyAmount:
+                        createPoolWithPartnerAndCreatorFirstBuyParam
+                            .creatorFirstBuyParam.buyAmount,
+                    minimumAmountOut:
+                        createPoolWithPartnerAndCreatorFirstBuyParam
+                            .creatorFirstBuyParam.minimumAmountOut,
+                    referralTokenAccount:
+                        createPoolWithPartnerAndCreatorFirstBuyParam
+                            .creatorFirstBuyParam.referralTokenAccount,
+                },
+                createPoolWithPartnerAndCreatorFirstBuyParam.createPoolParam
+                    .baseMint,
+                config,
+                poolConfigState.poolFees.baseFee.baseFeeMode,
+                tokenType,
+                quoteMint
+            )
+        }
 
         return {
             createPoolTx,
