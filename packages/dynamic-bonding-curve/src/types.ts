@@ -349,18 +349,18 @@ export type CreateConfigAndPoolParam = CreateConfigParam & {
 }
 
 export type CreateConfigAndPoolWithFirstBuyParam = CreateConfigAndPoolParam & {
-    firstBuyParam: FirstBuyParam
+    firstBuyParam?: FirstBuyParam
 }
 
 export type CreatePoolWithFirstBuyParam = {
     createPoolParam: CreatePoolParam
-    firstBuyParam: FirstBuyParam
+    firstBuyParam?: FirstBuyParam
 }
 
 export type CreatePoolWithPartnerAndCreatorFirstBuyParam = {
     createPoolParam: CreatePoolParam
-    partnerFirstBuyParam: PartnerFirstBuyParam
-    creatorFirstBuyParam: CreatorFirstBuyParam
+    partnerFirstBuyParam?: PartnerFirstBuyParam
+    creatorFirstBuyParam?: CreatorFirstBuyParam
 }
 
 export type PreCreatePoolParam = {
@@ -415,6 +415,16 @@ export type SwapQuoteParam = {
 export type SwapQuoteExactInParam = {
     virtualPool: VirtualPool
     config: PoolConfig
+    currentPoint: BN
+}
+
+export type SwapQuoteExactOutParam = {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    swapBaseForQuote: boolean
+    outAmount: BN
+    slippageBps?: number
+    hasReferral: boolean
     currentPoint: BN
 }
 

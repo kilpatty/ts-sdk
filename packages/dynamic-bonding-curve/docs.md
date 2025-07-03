@@ -28,6 +28,7 @@
     - [swap](#swap)
     - [swapQuote](#swapQuote)
     - [swapQuoteExactIn](#swapQuoteExactIn)
+    - [swapQuoteExactOut](#swapQuoteExactOut)
 
 - [Migration Functions](#migration-functions)
 
@@ -1350,7 +1351,7 @@ Creates a config key and a token pool and buys the token immediately in a single
 async createConfigAndPoolWithFirstBuy(createConfigAndPoolWithFirstBuyParam: CreateConfigAndPoolWithFirstBuyParam): Promise<{
     createConfigTx: Transaction
     createPoolTx: Transaction
-    swapBuyTx: Transaction
+    swapBuyTx: Transaction | undefined
 }>
 ```
 
@@ -1428,7 +1429,8 @@ interface CreateConfigAndPoolWithFirstBuyParam {
         uri: string // The uri of the pool
         poolCreator: PublicKey // The pool creator of the transaction
     }
-    firstBuyParam: {
+    firstBuyParam?: {
+        // Optional first buy param
         buyer: PublicKey // The buyer of the transaction
         buyAmount: BN // The amount of tokens to buy
         minimumAmountOut: BN // The minimum amount of tokens to receive
@@ -1530,7 +1532,8 @@ const transaction = await client.pool.createConfigAndPoolWithFirstBuy({
 - The payer must be the same as the payer in the `CreateConfigAndPoolWithFirstBuyParam` params.
 - The `createConfigTx` requires the payer and config to sign the transaction.
 - The `createPoolTx` requires the payer, poolCreator, and baseMint to sign the transaction.
-- The `swapBuyTx` requires the poolCreator and payer to sign the transaction.
+- If the `firstBuyParam` is not provided, the `swapBuyTx` will be undefined.
+- The `swapBuyTx` requires the buyer and payer to sign the transaction.
 
 ---
 
@@ -1543,7 +1546,7 @@ Creates a new pool with the config key and buys the token immediately.
 ```typescript
 async createPoolWithFirstBuy(createPoolWithFirstBuyParam: CreatePoolWithFirstBuyParam): Promise<{
     createPoolTx: Transaction
-    swapBuyTx: Transaction
+    swapBuyTx: Transaction | undefined
 }>
 ```
 
@@ -1560,7 +1563,8 @@ interface CreatePoolWithFirstBuyParam {
         payer: PublicKey // The payer of the transaction
         poolCreator: PublicKey // The pool creator of the transaction
     }
-    firstBuyParam: {
+    firstBuyParam?: {
+        // Optional first buy param
         buyer: PublicKey // The buyer of the transaction
         buyAmount: BN // The amount of tokens to buy
         minimumAmountOut: BN // The minimum amount of tokens to receive
@@ -1614,8 +1618,8 @@ Creates a new pool with the config key and buys the token immediately with partn
 ```typescript
 async createPoolWithPartnerAndCreatorFirstBuy(createPoolWithPartnerAndCreatorFirstBuyParam: CreatePoolWithPartnerAndCreatorFirstBuyParam): Promise<{
     createPoolTx: Transaction
-    partnerSwapBuyTx: Transaction
-    creatorSwapBuyTx: Transaction
+    partnerSwapBuyTx: Transaction | undefined
+    creatorSwapBuyTx: Transaction | undefined
 }>
 ```
 
@@ -1632,13 +1636,15 @@ interface CreatePoolWithPartnerAndCreatorFirstBuyParam {
         payer: PublicKey // The payer of the transaction
         poolCreator: PublicKey // The pool creator of the transaction
     }
-    partnerFirstBuyParam: {
+    partnerFirstBuyParam?: {
+        // Optional partner first buy param
         partner: PublicKey // The launchpad partner
         buyAmount: BN // The amount of tokens to buy
         minimumAmountOut: BN // The minimum amount of tokens to receive
         referralTokenAccount: PublicKey | null // The referral token account (optional)
     }
-    creatorFirstBuyParam: {
+    creatorFirstBuyParam?: {
+        // Optional creator first buy param
         creator: PublicKey // The pool creator
         buyAmount: BN // The amount of tokens to buy
         minimumAmountOut: BN // The minimum amount of tokens to receive
@@ -1682,7 +1688,8 @@ const transaction = await client.pool.createPoolWithPartnerAndCreatorFirstBuy({
 #### Notes
 
 - The `poolCreator` is required to sign when creating the pool.
-- The `partner` and `creator` are required to sign when buying the token.
+- The `partner` is required to sign when buying the token.
+- The `creator` is required to sign when buying the token.
 - The `baseMint` token type must be the same as the config key's token type.
 - The `minimumAmountOut` parameter protects against slippage. Set it to a value slightly lower than the expected output.
 - The `referralTokenAccount` parameter is an optional token account. If provided, the referral fee will be applied to the transaction.
@@ -1848,6 +1855,72 @@ const quote = await client.pool.swapQuoteExactIn({
 #### Notes
 
 - This function helps to get the exact number of quote tokens to swap to hit the `migrationQuoteThreshold` in the config key.
+- The `currentPoint` parameter is typically used in cases where the config has applied a fee scheduler. If activationType == 0, then it is current slot. If activationType == 1, then it is the current block timestamp. You can fill in accordingly based on slot or timestamp.
+
+---
+
+### swapQuoteExactOut
+
+Gets the exact swap out quotation in between quote and base swaps.
+
+#### Function
+
+```typescript
+swapQuoteExactOut(swapQuoteExactOutParam: SwapQuoteExactOutParam): Promise<QuoteResult>
+```
+
+#### Parameters
+
+```typescript
+interface SwapQuoteExactOutParam {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    swapBaseForQuote: boolean
+    outAmount: BN
+    slippageBps?: number
+    hasReferral: boolean
+    currentPoint: BN
+}
+```
+
+#### Returns
+
+The exact quote out result of the swap.
+
+#### Example
+
+```typescript
+const virtualPoolState = await client.state.getPool(poolAddress)
+const poolConfigState = await client.state.getPoolConfig(
+    virtualPoolState.config
+)
+
+let currentPoint: BN
+if (poolConfigState.activationType === 0) {
+    // Slot
+    const currentSlot = await connection.getSlot()
+    currentPoint = new BN(currentSlot)
+} else {
+    // Timestamp
+    const currentSlot = await connection.getSlot()
+    const currentTime = await connection.getBlockTime(currentSlot)
+    currentPoint = new BN(currentTime || 0)
+}
+
+const quote = await client.pool.swapQuoteExactOut({
+    virtualPool: virtualPoolState,
+    config: poolConfigState,
+    swapBaseForQuote: false,
+    outAmount: new BN(100000000),
+    slippageBps: 0,
+    hasReferral: false,
+    currentPoint,
+})
+```
+
+#### Notes
+
+- This function helps to get the exact number of input tokens to swap to get the exact output amount.
 - The `currentPoint` parameter is typically used in cases where the config has applied a fee scheduler. If activationType == 0, then it is current slot. If activationType == 1, then it is the current block timestamp. You can fill in accordingly based on slot or timestamp.
 
 ---

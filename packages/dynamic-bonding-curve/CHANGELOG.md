@@ -2,6 +2,12 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.3.1] - 2025-07-02
+
+### Added
+
+- `swapQuoteExactOut` function
+
 ## [1.3.0] - 2025-07-01
 
 ### Added
