@@ -257,7 +257,7 @@ When creating a new configuration for a dynamic bonding curve, several validatio
     - Min and max fee numerators must be within valid range (MIN_FEE_NUMERATOR to MAX_FEE_NUMERATOR)
     - Fee numerators must be less than FEE_DENOMINATOR
 - If using Rate Limiter:
-    - Can only be used with OnlyQuote collect fee mode
+    - Can only be used with QuoteToken collect fee mode
     - All parameters must be set for non-zero rate limiter
     - Max limiter duration must be within limits based on activation type
     - Fee increment numerator must be less than FEE_DENOMINATOR
@@ -266,7 +266,7 @@ When creating a new configuration for a dynamic bonding curve, several validatio
 
 ##### Fee Mode
 
-- Collect fee mode must be either `OnlyQuote` (0) or `Both` (1)
+- Collect fee mode must be either `QuoteToken` (0) or `OutputToken` (1)
 
 ##### Migration and Token Type
 
@@ -646,7 +646,7 @@ const curveConfig = buildCurve({
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
-    collectFeeMode: CollectFeeMode.OnlyQuote,
+    collectFeeMode: CollectFeeMode.QuoteToken,
     migrationFeeOption: MigrationFeeOption.FixedBps100,
     tokenType: TokenType.SPL,
     partnerLpPercentage: 0,
@@ -782,7 +782,7 @@ const curveConfig = buildCurveWithMarketCap({
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
-    collectFeeMode: CollectFeeMode.OnlyQuote,
+    collectFeeMode: CollectFeeMode.QuoteToken,
     migrationFeeOption: MigrationFeeOption.FixedBps100,
     tokenType: TokenType.SPL,
     partnerLpPercentage: 0,
@@ -920,7 +920,7 @@ const curveConfig = buildCurveWithTwoSegments({
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
-    collectFeeMode: CollectFeeMode.OnlyQuote,
+    collectFeeMode: CollectFeeMode.QuoteToken,
     migrationFeeOption: MigrationFeeOption.FixedBps100,
     tokenType: TokenType.SPL,
     partnerLpPercentage: 100,
@@ -1062,7 +1062,7 @@ const curveConfig = buildCurveWithLiquidityWeights({
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
-    collectFeeMode: CollectFeeMode.OnlyQuote,
+    collectFeeMode: CollectFeeMode.QuoteToken,
     migrationFeeOption: MigrationFeeOption.FixedBps100,
     tokenType: TokenType.SPL,
     partnerLpPercentage: 100,
