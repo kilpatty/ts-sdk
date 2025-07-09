@@ -231,3 +231,90 @@ export function getInitializeAmounts(
 
     return [amountBase, amountQuote]
 }
+
+/**
+ * Gets the next sqrt price from amount quote rounding up
+ * Formula: √P' = √P - Δy / L
+ * @param sqrtPrice Current sqrt price
+ * @param liquidity Liquidity
+ * @param amount Output amount
+ * @returns Next sqrt price
+ */
+export function getNextSqrtPriceFromAmountQuoteRoundingUp(
+    sqrtPrice: BN,
+    liquidity: BN,
+    amount: BN
+): BN {
+    if (amount.isZero()) {
+        return sqrtPrice
+    }
+
+    // quotient = (amount << 128 + liquidity - 1) / liquidity
+    const amountShifted = SafeMath.shl(amount, 128)
+    const step1 = SafeMath.add(amountShifted, liquidity)
+    const step2 = SafeMath.sub(step1, new BN(1))
+    const quotient = SafeMath.div(step2, liquidity)
+
+    // √P - quotient
+    return SafeMath.sub(sqrtPrice, quotient)
+}
+
+/**
+ * Gets the next sqrt price from amount base rounding down
+ * Formula: √P' = √P * L / (L - Δx * √P)
+ * @param sqrtPrice Current sqrt price
+ * @param liquidity Liquidity
+ * @param amount Output amount
+ * @returns Next sqrt price
+ */
+export function getNextSqrtPriceFromAmountBaseRoundingDown(
+    sqrtPrice: BN,
+    liquidity: BN,
+    amount: BN
+): BN {
+    if (amount.isZero()) {
+        return sqrtPrice
+    }
+
+    // Δx * √P
+    const product = SafeMath.mul(amount, sqrtPrice)
+
+    // L - Δx * √P
+    const denominator = SafeMath.sub(liquidity, product)
+
+    // √P * L / (L - Δx * √P) with rounding down
+    return mulDiv(liquidity, sqrtPrice, denominator, Rounding.Down)
+}
+
+/**
+ * Gets the next sqrt price from output amount
+ * @param sqrtPrice Current sqrt price
+ * @param liquidity Liquidity
+ * @param outAmount Output amount
+ * @param isQuote Whether the output is quote token
+ * @returns Next sqrt price
+ */
+export function getNextSqrtPriceFromOutput(
+    sqrtPrice: BN,
+    liquidity: BN,
+    outAmount: BN,
+    isQuote: boolean
+): BN {
+    if (sqrtPrice.isZero()) {
+        throw new Error('Sqrt price cannot be zero')
+    }
+
+    if (isQuote) {
+        return getNextSqrtPriceFromAmountQuoteRoundingUp(
+            sqrtPrice,
+            liquidity,
+            outAmount
+        )
+    } else {
+        return getNextSqrtPriceFromAmountBaseRoundingDown(
+            sqrtPrice,
+            liquidity,
+            outAmount
+        )
+    }
+}

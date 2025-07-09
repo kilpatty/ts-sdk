@@ -7,17 +7,19 @@ import {
 import BN from 'bn.js'
 import {
     ActivationType,
+    BuildCurveBaseParam,
     CollectFeeMode,
-    FeeSchedulerMode,
+    BaseFeeMode,
     MigrationFeeOption,
     MigrationOption,
     TokenDecimal,
     TokenType,
+    TokenUpdateAuthorityOption,
 } from '../src'
 import { convertBNToDecimal } from './utils/common'
 
 describe('buildCurveWithMarketCap tests', () => {
-    const baseParams = {
+    const baseParams: BuildCurveBaseParam = {
         totalTokenSupply: 1000000000,
         migrationOption: MigrationOption.MET_DAMM_V2,
         tokenBaseDecimal: TokenDecimal.SIX,
@@ -29,12 +31,14 @@ describe('buildCurveWithMarketCap tests', () => {
             totalVestingDuration: 0,
             cliffDurationFromMigrationTime: 0,
         },
-        feeSchedulerParam: {
-            startingFeeBps: 100,
-            endingFeeBps: 100,
-            numberOfPeriod: 0,
-            totalDuration: 0,
-            feeSchedulerMode: FeeSchedulerMode.Linear,
+        baseFeeParams: {
+            baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+            feeSchedulerParam: {
+                startingFeeBps: 100,
+                endingFeeBps: 100,
+                numberOfPeriod: 0,
+                totalDuration: 0,
+            },
         },
         dynamicFeeEnabled: true,
         activationType: ActivationType.Slot,
@@ -47,9 +51,14 @@ describe('buildCurveWithMarketCap tests', () => {
         creatorLockedLpPercentage: 0,
         creatorTradingFeePercentage: 0,
         leftover: 10000,
+        tokenUpdateAuthority: 0,
+        migrationFee: {
+            feePercentage: 10,
+            creatorFeePercentage: 50,
+        },
     }
 
-    test('build curve by market cap', () => {
+    test('build curve by market cap 1', () => {
         console.log('\n testing build curve by market cap...')
         const config = buildCurveWithMarketCap({
             ...baseParams,
@@ -63,6 +72,24 @@ describe('buildCurveWithMarketCap tests', () => {
                 .div(new BN(10 ** TokenDecimal.NINE))
                 .toString()
         )
+        console.log('sqrtStartPrice', convertBNToDecimal(config.sqrtStartPrice))
+        console.log('curve', convertBNToDecimal(config.curve))
+        expect(config).toBeDefined()
+    })
+
+    test('build curve by market cap 2', () => {
+        console.log('\n testing build curve by market cap...')
+        const config = buildCurveWithMarketCap({
+            ...baseParams,
+            initialMarketCap: 0.1,
+            migrationMarketCap: 0.5,
+        })
+
+        console.log(
+            'migrationQuoteThreshold: %d',
+            config.migrationQuoteThreshold.toString()
+        )
+
         console.log('sqrtStartPrice', convertBNToDecimal(config.sqrtStartPrice))
         console.log('curve', convertBNToDecimal(config.curve))
         expect(config).toBeDefined()
@@ -102,8 +129,7 @@ describe('buildCurveWithMarketCap tests', () => {
             lockedVestingParams.lockedVestingParam.totalVestingDuration,
             lockedVestingParams.lockedVestingParam
                 .cliffDurationFromMigrationTime,
-            lockedVestingParams.tokenBaseDecimal,
-            lockedVestingParams.activationType
+            lockedVestingParams.tokenBaseDecimal
         )
 
         console.log('lockedVesting', convertBNToDecimal(lockedVesting))
@@ -139,5 +165,58 @@ describe('buildCurveWithMarketCap tests', () => {
             lockedVestingParams.lockedVestingParam.totalLockedVestingAmount *
                 10 ** lockedVestingParams.tokenBaseDecimal
         )
+    })
+
+    test('build curve by market cap 3', () => {
+        console.log('\n testing build curve by market cap...')
+        const config = buildCurveWithMarketCap({
+            totalTokenSupply: 100000000,
+            initialMarketCap: 1000,
+            migrationMarketCap: 3000,
+            migrationOption: MigrationOption.MET_DAMM_V2,
+            tokenBaseDecimal: TokenDecimal.SIX,
+            tokenQuoteDecimal: TokenDecimal.SIX,
+            lockedVestingParam: {
+                totalLockedVestingAmount: 50000000,
+                numberOfVestingPeriod: 1,
+                cliffUnlockAmount: 50000000,
+                totalVestingDuration: 1,
+                cliffDurationFromMigrationTime: 0,
+            },
+            baseFeeParams: {
+                baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+                feeSchedulerParam: {
+                    startingFeeBps: 100,
+                    endingFeeBps: 100,
+                    numberOfPeriod: 0,
+                    totalDuration: 0,
+                },
+            },
+            dynamicFeeEnabled: true,
+            activationType: ActivationType.Slot,
+            collectFeeMode: CollectFeeMode.OnlyQuote,
+            migrationFeeOption: MigrationFeeOption.FixedBps100,
+            tokenType: TokenType.SPL,
+            partnerLpPercentage: 0,
+            creatorLpPercentage: 0,
+            partnerLockedLpPercentage: 100,
+            creatorLockedLpPercentage: 0,
+            creatorTradingFeePercentage: 50,
+            leftover: 0,
+            tokenUpdateAuthority: TokenUpdateAuthorityOption.Immutable,
+            migrationFee: {
+                feePercentage: 1.5,
+                creatorFeePercentage: 50,
+            },
+        })
+
+        console.log(
+            'migrationQuoteThreshold: %d',
+            config.migrationQuoteThreshold.toString()
+        )
+
+        console.log('sqrtStartPrice', convertBNToDecimal(config.sqrtStartPrice))
+        console.log('curve', convertBNToDecimal(config.curve))
+        expect(config).toBeDefined()
     })
 })

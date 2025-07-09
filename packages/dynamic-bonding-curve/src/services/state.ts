@@ -1,18 +1,10 @@
 import { Commitment, Connection, PublicKey } from '@solana/web3.js'
 import { DynamicBondingCurveProgram } from './program'
-import {
-    createProgramAccountFilter,
-    deriveDammV1MigrationMetadataAddress,
-    deriveDammV2MigrationMetadataAddress,
-    getAccountData,
-} from '../helpers'
+import { createProgramAccountFilter, getAccountData } from '../helpers'
 import {
     LockEscrow,
-    MeteoraDammMigrationMetadata,
-    MeteoraDammV2MigrationMetadata,
     PartnerMetadata,
     PoolConfig,
-    TokenType,
     VirtualPool,
     VirtualPoolMetadata,
 } from '../types'
@@ -89,6 +81,18 @@ export class StateService extends DynamicBondingCurveProgram {
         configAddress: PublicKey | string
     ): Promise<ProgramAccount<VirtualPool>[]> {
         const filters = createProgramAccountFilter(configAddress, 72)
+        return this.program.account.virtualPool.all(filters)
+    }
+
+    /**
+     * Get all dynamic bonding curve pools by creator address
+     * @param creatorAddress - The address of the creator
+     * @returns Array of pool accounts with their addresses
+     */
+    async getPoolsByCreator(
+        creatorAddress: PublicKey | string
+    ): Promise<ProgramAccount<VirtualPool>[]> {
+        const filters = createProgramAccountFilter(creatorAddress, 104)
         return this.program.account.virtualPool.all(filters)
     }
 
@@ -192,41 +196,6 @@ export class StateService extends DynamicBondingCurveProgram {
     }
 
     /**
-     * Get DAMM V1 migration metadata
-     * @param poolAddress - The address of the DAMM V1 pool (on DBC)
-     * @returns A DAMM V1 migration metadata
-     */
-    async getDammV1MigrationMetadata(
-        poolAddress: PublicKey
-    ): Promise<MeteoraDammMigrationMetadata> {
-        const migrationMetadataAddress =
-            deriveDammV1MigrationMetadataAddress(poolAddress)
-        const metadata =
-            await this.program.account.meteoraDammMigrationMetadata.fetch(
-                migrationMetadataAddress
-            )
-
-        return metadata
-    }
-
-    /**
-     * Get DAMM V2 migration metadata
-     * @param poolAddress - The address of the DAMM V2 pool (on DBC)
-     * @returns A DAMM V2 migration metadata
-     */
-    async getDammV2MigrationMetadata(
-        poolAddress: PublicKey
-    ): Promise<MeteoraDammV2MigrationMetadata> {
-        const migrationMetadataAddress =
-            deriveDammV2MigrationMetadataAddress(poolAddress)
-        const metadata = await this.program.account.meteoraDammV2Metadata.fetch(
-            migrationMetadataAddress
-        )
-
-        return metadata
-    }
-
-    /**
      * Get fee metrics for a specific pool
      * @param poolAddress - The address of the pool
      * @returns Object containing current and total fee metrics
@@ -263,55 +232,18 @@ export class StateService extends DynamicBondingCurveProgram {
     }
 
     /**
-     * Get fee metrics for a specific pool
-     * @param poolAddress - The address of the pool
-     * @returns Object containing current and total fee metrics
-     */
-    async getPoolCreatorFeeMetrics(poolAddress: PublicKey | string): Promise<{
-        creatorBaseFee: BN
-        creatorQuoteFee: BN
-    }> {
-        const pool = await this.getPool(poolAddress)
-        if (!pool) {
-            throw new Error(`Pool not found: ${poolAddress.toString()}`)
-        }
-
-        return {
-            creatorBaseFee: pool.creatorBaseFee,
-            creatorQuoteFee: pool.creatorQuoteFee,
-        }
-    }
-
-    /**
-     * Get fee metrics for a specific pool
-     * @param poolAddress - The address of the pool
-     * @returns Object containing current and total fee metrics
-     */
-    async getPoolPartnerFeeMetrics(poolAddress: PublicKey | string): Promise<{
-        partnerBaseFee: BN
-        partnerQuoteFee: BN
-    }> {
-        const pool = await this.getPool(poolAddress)
-        if (!pool) {
-            throw new Error(`Pool not found: ${poolAddress.toString()}`)
-        }
-
-        return {
-            partnerBaseFee: pool.partnerBaseFee,
-            partnerQuoteFee: pool.partnerQuoteFee,
-        }
-    }
-
-    /**
-     * Get all quote fees for pools linked to a specific config key
+     * Get all fees for pools linked to a specific config key
      * @param configAddress - The address of the pool config
      * @returns Array of pools with their quote fees
      */
-    async getPoolsQuoteFeesByConfig(configAddress: PublicKey | string): Promise<
+    async getPoolsFeesByConfig(configAddress: PublicKey | string): Promise<
         Array<{
             poolAddress: PublicKey
+            partnerBaseFee: BN
             partnerQuoteFee: BN
+            creatorBaseFee: BN
             creatorQuoteFee: BN
+            totalTradingBaseFee: BN
             totalTradingQuoteFee: BN
         }>
     > {
@@ -319,32 +251,41 @@ export class StateService extends DynamicBondingCurveProgram {
 
         return filteredPools.map((pool) => ({
             poolAddress: pool.publicKey,
+            partnerBaseFee: pool.account.partnerBaseFee,
             partnerQuoteFee: pool.account.partnerQuoteFee,
+            creatorBaseFee: pool.account.creatorBaseFee,
             creatorQuoteFee: pool.account.creatorQuoteFee,
+            totalTradingBaseFee: pool.account.metrics.totalTradingBaseFee,
             totalTradingQuoteFee: pool.account.metrics.totalTradingQuoteFee,
         }))
     }
 
     /**
-     * Get all base fees for pools linked to a specific config key
-     * @param configAddress - The address of the pool config
+     * Get all fees for pools linked to a specific creator
+     * @param creatorAddress - The address of the creator
      * @returns Array of pools with their base fees
      */
-    async getPoolsBaseFeesByConfig(configAddress: PublicKey | string): Promise<
+    async getPoolsFeesByCreator(creatorAddress: PublicKey | string): Promise<
         Array<{
             poolAddress: PublicKey
             partnerBaseFee: BN
+            partnerQuoteFee: BN
             creatorBaseFee: BN
+            creatorQuoteFee: BN
             totalTradingBaseFee: BN
+            totalTradingQuoteFee: BN
         }>
     > {
-        const filteredPools = await this.getPoolsByConfig(configAddress)
+        const filteredPools = await this.getPoolsByCreator(creatorAddress)
 
         return filteredPools.map((pool) => ({
             poolAddress: pool.publicKey,
             partnerBaseFee: pool.account.partnerBaseFee,
+            partnerQuoteFee: pool.account.partnerQuoteFee,
             creatorBaseFee: pool.account.creatorBaseFee,
+            creatorQuoteFee: pool.account.creatorQuoteFee,
             totalTradingBaseFee: pool.account.metrics.totalTradingBaseFee,
+            totalTradingQuoteFee: pool.account.metrics.totalTradingQuoteFee,
         }))
     }
 }

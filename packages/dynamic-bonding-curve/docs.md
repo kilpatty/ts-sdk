@@ -7,7 +7,9 @@
     - [createConfig](#createConfig)
     - [createPartnerMetadata](#createPartnerMetadata)
     - [claimPartnerTradingFee](#claimPartnerTradingFee)
+    - [claimPartnerTradingFee2](#claimPartnerTradingFee2)
     - [partnerWithdrawSurplus](#partnerWithdrawSurplus)
+    - [partnerWithdrawMigrationFee](#partnerWithdrawMigrationFee)
 
 - [Build Curve Functions](#build-curve-functions)
 
@@ -15,15 +17,18 @@
     - [buildCurveWithMarketCap](#buildCurveWithMarketCap)
     - [buildCurveWithTwoSegments](#buildCurveWithTwoSegments)
     - [buildCurveWithLiquidityWeights](#buildCurveWithLiquidityWeights)
-    - [buildCurveWithCreatorFirstBuy](#buildCurveWithCreatorFirstBuy)
 
 - [Pool Functions](#pool-functions)
 
     - [createPool](#createPool)
     - [createConfigAndPool](#createConfigAndPool)
-    - [createPoolAndBuy](#createPoolAndBuy)
+    - [createConfigAndPoolWithFirstBuy](#createConfigAndPoolWithFirstBuy)
+    - [createPoolWithFirstBuy](#createPoolWithFirstBuy)
+    - [createPoolWithPartnerAndCreatorFirstBuy](#createPoolWithPartnerAndCreatorFirstBuy)
     - [swap](#swap)
     - [swapQuote](#swapQuote)
+    - [swapQuoteExactIn](#swapQuoteExactIn)
+    - [swapQuoteExactOut](#swapQuoteExactOut)
 
 - [Migration Functions](#migration-functions)
 
@@ -40,7 +45,10 @@
 
     - [createPoolMetadata](#createPoolMetadata)
     - [claimCreatorTradingFee](#claimCreatorTradingFee)
+    - [claimCreatorTradingFee2](#claimCreatorTradingFee2)
     - [creatorWithdrawSurplus](#creatorWithdrawSurplus)
+    - [creatorWithdrawMigrationFee](#creatorWithdrawMigrationFee)
+    - [transferPoolCreator](#transferPoolCreator)
 
 - [State Functions](#state-functions)
 
@@ -50,19 +58,16 @@
     - [getPool](#getPool)
     - [getPools](#getPools)
     - [getPoolsByConfig](#getPoolsByConfig)
+    - [getPoolsByCreator](#getPoolsByCreator)
     - [getPoolByBaseMint](#getPoolByBaseMint)
     - [getPoolMigrationQuoteThreshold](#getPoolMigrationQuoteThreshold)
     - [getPoolCurveProgress](#getPoolCurveProgress)
     - [getPoolMetadata](#getPoolMetadata)
     - [getPartnerMetadata](#getPartnerMetadata)
     - [getDammV1LockEscrow](#getDammV1LockEscrow)
-    - [getDammV1MigrationMetadata](#getDammV1MigrationMetadata)
-    - [getDammV2MigrationMetadata](#getDammV2MigrationMetadata)
     - [getPoolFeeMetrics](#getPoolFeeMetrics)
-    - [getPoolCreatorFeeMetrics](#getPoolCreatorFeeMetrics)
-    - [getPoolPartnerFeeMetrics](#getPoolPartnerFeeMetrics)
-    - [getPoolsQuoteFeesByConfig](#getPoolsQuoteFeesByConfig)
-    - [getPoolsBaseFeesByConfig](#getPoolsBaseFeesByConfig)
+    - [getPoolsFeesByConfig](#getPoolsFeesByConfig)
+    - [getPoolsFeesByCreator](#getPoolsFeesByCreator)
 
 - [Helper Functions](#helper-functions)
 
@@ -73,9 +78,11 @@
 
 - [Calculation Functions](#calculation-functions)
 
-    - [getBaseFeeParams](#getBaseFeeParams)
+    - [getFeeSchedulerParams](#getFeeSchedulerParams)
+    - [getRateLimiterParams](#getRateLimiterParams)
     - [getDynamicFeeParams](#getDynamicFeeParams)
     - [getLockedVestingParams](#getLockedVestingParams)
+    - [getQuoteReserveFromNextSqrtPrice](#getQuoteReserveFromNextSqrtPrice)
 
 ---
 
@@ -101,13 +108,12 @@ interface CreateConfigParam {
     leftoverReceiver: PublicKey // The wallet that will receive the bonding curve leftover
     quoteMint: PublicKey // The quote mint address
     poolFees: {
-        // The pool fees
         baseFee: {
             cliffFeeNumerator: BN // Initial fee numerator (base fee)
-            numberOfPeriod: number // The number of reduction periods
-            reductionFactor: BN // How much fee reduces in each period
-            periodFrequency: BN // How often fees change
-            feeSchedulerMode: number // 0: Linear, 1: Exponential
+            firstFactor: number // feeScheduler: numberOfPeriod, rateLimiter: feeIncrementBps
+            secondFactor: BN // feeScheduler: periodFrequency, rateLimiter: maxLimiterDuration
+            thirdFactor: BN // feeScheduler: reductionFactor, rateLimiter: referenceAmount
+            baseFeeMode: number // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential, 2: RateLimiter
         }
         dynamicFee: {
             // Optional dynamic fee
@@ -146,6 +152,12 @@ interface CreateConfigParam {
         postMigrationTokenSupply: BN // The token supply after migration
     } | null
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
+    tokenUpdateAuthority: number // 0 - CreatorUpdateAuthority, 1 - Immutable, 2 - PartnerUpdateAuthority, 3 - CreatorUpdateAndMintAuthority, 4 - PartnerUpdateAndMintAuthority
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
     padding0: []
     padding1: []
     curve: {
@@ -172,10 +184,10 @@ const transaction = await client.partner.createConfig({
     poolFees: {
         baseFee: {
             cliffFeeNumerator: new BN('2500000'),
-            numberOfPeriod: 0,
-            reductionFactor: new BN('0'),
-            periodFrequency: new BN('0'),
-            feeSchedulerMode: FeeSchedulerMode.Linear,
+            firstFactor: 0,
+            secondFactor: new BN('0'),
+            thirdFactor: new BN('0'),
+            baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
         },
         dynamicFee: {
             binStep: 1,
@@ -189,7 +201,7 @@ const transaction = await client.partner.createConfig({
     },
     activationType: 0,
     collectFeeMode: 0,
-    migrationOption: 0
+    migrationOption: 0,
     tokenType: 0,
     tokenDecimal: 9,
     migrationQuoteThreshold: new BN('1000000000'),
@@ -211,6 +223,11 @@ const transaction = await client.partner.createConfig({
         postMigrationTokenSupply: new BN('10000000000000000000'),
     },
     creatorTradingFeePercentage: 0,
+    tokenUpdateAuthority: 1,
+    migrationFee: {
+        feePercentage: 25,
+        creatorFeePercentage: 50,
+    },
     padding0: [],
     padding1: [],
     curve: [
@@ -233,6 +250,19 @@ When creating a new configuration for a dynamic bonding curve, several validatio
 ##### Pool Fees
 
 - Base fee must have a positive cliff fee numerator
+- If using Fee Scheduler (Linear or Exponential):
+    - All parameters (firstFactor, secondFactor, thirdFactor) must be set if any are set
+    - Cliff fee numerator must be positive
+    - For Linear mode, final fee must not be negative
+    - Min and max fee numerators must be within valid range (MIN_FEE_NUMERATOR to MAX_FEE_NUMERATOR)
+    - Fee numerators must be less than FEE_DENOMINATOR
+- If using Rate Limiter:
+    - Can only be used with OnlyQuote collect fee mode
+    - All parameters must be set for non-zero rate limiter
+    - Max limiter duration must be within limits based on activation type
+    - Fee increment numerator must be less than FEE_DENOMINATOR
+    - Cliff fee numerator must be within valid range
+    - Min and max fee numerators must be within valid range
 
 ##### Fee Mode
 
@@ -249,6 +279,8 @@ When creating a new configuration for a dynamic bonding curve, several validatio
 ##### Migration Fee
 
 - Must be a valid option: FixedBps25 (0), FixedBps30 (1), FixedBps100 (2), FixedBps200 (3), FixedBps400 (4), FixedBps600 (5)
+- Migration fee percentage must be between 0 and 50
+- Creator fee percentage must be between 0 and 100
 
 ##### Token Decimals
 
@@ -276,12 +308,21 @@ When creating a new configuration for a dynamic bonding curve, several validatio
 
 ##### Locked Vesting
 
-- If the values are not all zeros (no Locked Vesting), then the values must have a frequency greater than 0, and the total amount of tokens vested must be greater than 0.
+- If the values are not all zeros (no Locked Vesting), then:
+    - Frequency must be greater than 0
+    - Total amount of tokens vested (cliffUnlockAmount + amountPerPeriod \* numberOfPeriod) must be greater than 0
 
 ##### Token Supply
 
-- If you want to set a total supply of 1,000,000,000 (1B) tokens, then the pre-migration supply must be 1B and the post-migration supply must be 1B.
-- Post-migration supply must not exceed pre-migration supply
+- If specified:
+    - Leftover receiver must be a valid non-default PublicKey
+    - Post-migration supply must not exceed pre-migration supply
+    - Pre-migration supply must be sufficient to cover minimum base supply with buffer
+    - Post-migration supply must be sufficient to cover minimum base supply without buffer
+
+##### Token Update Authority
+
+- Must be either CreatorUpdateAuthority (0), Immutable (1), PartnerUpdateAuthority (2), CreatorUpdateAndMintAuthority (3), PartnerUpdateAndMintAuthority (4)
 
 ---
 
@@ -327,7 +368,7 @@ const transaction = await client.partner.createPartnerMetadata({
 
 ### claimPartnerTradingFee
 
-Claims the trading fee for the partner.
+Claims the trading fee for the partner. A partner is the `feeClaimer` in the config key.
 
 #### Function
 
@@ -377,6 +418,94 @@ const transaction = await client.partner.claimPartnerTradingFee({
 
 ---
 
+### claimPartnerTradingFee2
+
+Claims the trading fee for the partner. A partner is the `feeClaimer` in the config key.
+
+#### Function
+
+```typescript
+async claimPartnerTradingFee2(claimTradingFee2Param: ClaimTradingFee2Param): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface ClaimTradingFeeParam {
+    pool: PublicKey // The pool address
+    feeClaimer: PublicKey // The wallet that will claim the fee
+    payer: PublicKey // The wallet that will pay for the transaction
+    maxBaseAmount: BN // The maximum base amount to claim (use 0 to not claim base tokens)
+    maxQuoteAmount: BN // The maximum quote amount to claim (use 0 to not claim quote tokens)
+    receiver?: PublicKey | null // The wallet that will receive the tokens
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.partner.claimPartnerTradingFee2({
+    pool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    payer: new PublicKey('payer1234567890abcdefghijklmnopqrstuvwxyz'),
+    maxBaseAmount: new BN(1000000),
+    maxQuoteAmount: new BN(1000000),
+    receiver: new PublicKey('receiver1234567890abcdefghijklmnopqrstuvwxyz'),
+})
+```
+
+#### Notes
+
+- The feeClaimer of the pool must be the same as the feeClaimer in the `ClaimTradingFee2Param` params.
+- You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
+- Can be used in case the partner is a squad multisig account.
+
+---
+
+### partnerWithdrawMigrationFee
+
+Withdraws the partner's migration fee from the pool.
+
+#### Function
+
+```typescript
+async partnerWithdrawMigrationFee(withdrawMigrationFeeParam: WithdrawMigrationFeeParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface WithdrawMigrationFeeParam {
+    virtualPool: PublicKey // The virtual pool address
+    sender: PublicKey // The wallet that will claim the fee
+    feePayer?: PublicKey // The wallet that will pay for the transaction
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.partner.partnerWithdrawMigrationFee({
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    sender: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    feePayer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+})
+```
+
+#### Notes
+
+- The sender of the pool must be the same as the partner (`feeClaimer`) in the config key.
+
+---
+
 ### partnerWithdrawSurplus
 
 Withdraws the partner's surplus from the pool.
@@ -419,7 +548,7 @@ const transaction = await client.partner.partnerWithdrawSurplus({
 
 ### buildCurve
 
-Builds a new constant product curve. Does the math for you.
+Builds a new constant product curve. This function does the math for you to create a curve structure based on percentage of supply on migration and migration quote threshold.
 
 #### Function
 
@@ -437,7 +566,7 @@ interface BuildCurveParam {
     migrationOption: number // 0: DAMM V1, 1: DAMM v2
     tokenBaseDecimal: number // The number of decimals for the base token
     tokenQuoteDecimal: number // The number of decimals for the quote token
-    lockedVesting: {
+    lockedVestingParam: {
         // Optional locked vesting (0 for all fields for no vesting)
         totalLockedVestingAmount: number // The total locked vesting amount
         numberOfVestingPeriod: number // The number of vesting periods
@@ -445,13 +574,25 @@ interface BuildCurveParam {
         totalVestingDuration: number // The total vesting duration in seconds
         cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
     }
-    feeSchedulerParam: {
-        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
-        startingFeeBps: number // The starting fee in basis points
-        endingFeeBps: number // The ending fee in basis points
-        feeSchedulerMode: number // 0: Linear, 1: Exponential
-        numberOfPeriod: number // The number of periods
-        totalDuration: number // The total duration of the fee scheduler
+    // Either FeeSchedulerLinear/FeeSchedulerExponential mode
+    baseFeeParams: {
+        baseFeeMode: 0 | 1 // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential
+        feeSchedulerParam: {
+            startingFeeBps: number // The starting fee in basis points
+            endingFeeBps: number // The ending fee in basis points
+            numberOfPeriod: number // The number of periods
+            totalDuration: number // The total duration of the fee scheduler
+        }
+    }
+    // OR RateLimiter mode
+    baseFeeParams: {
+        baseFeeMode: 2 // RateLimiter
+        rateLimiterParam: {
+            baseFeeBps: number // The base fee in basis points
+            feeIncrementBps: number // The fee increment in basis points
+            referenceAmount: number // The reference amount for rate limiting
+            maxLimiterDuration: number // The maximum duration for rate limiting
+        }
     }
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
     activationType: number // 0: Slot, 1: Timestamp
@@ -464,6 +605,12 @@ interface BuildCurveParam {
     creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
     leftover: number // The leftover amount that can be withdrawn by leftover receiver
+    tokenUpdateAuthority: number // 0 - CreatorUpdateAuthority, 1 - Immutable, 2 - PartnerUpdateAuthority, 3 - CreatorUpdateAndMintAuthority, 4 - PartnerUpdateAndMintAuthority
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
 }
 ```
 
@@ -478,7 +625,7 @@ const curveConfig = buildCurve({
     totalTokenSupply: 1000000000,
     percentageSupplyOnMigration: 10,
     migrationQuoteThreshold: 300,
-    migrationOption: MigrationOption.MET_DAMM,
+    migrationOption: MigrationOption.MET_DAMM_V2,
     tokenBaseDecimal: TokenDecimal.SIX,
     tokenQuoteDecimal: TokenDecimal.NINE,
     lockedVestingParam: {
@@ -488,12 +635,14 @@ const curveConfig = buildCurve({
         totalVestingDuration: 0,
         cliffDurationFromMigrationTime: 0,
     },
-    feeSchedulerParam: {
-        startingFeeBps: 100,
-        endingFeeBps: 100,
-        numberOfPeriod: 0,
-        totalDuration: 0,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
+    baseFeeParams: {
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        feeSchedulerParam: {
+            startingFeeBps: 100,
+            endingFeeBps: 100,
+            numberOfPeriod: 0,
+            totalDuration: 0,
+        },
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
@@ -506,6 +655,11 @@ const curveConfig = buildCurve({
     creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
     leftover: 10000,
+    tokenUpdateAuthority: 1,
+    migrationFee: {
+        feePercentage: 0,
+        creatorFeePercentage: 0,
+    },
 })
 
 const transaction = await client.partner.createConfig({
@@ -521,12 +675,16 @@ const transaction = await client.partner.createConfig({
 #### Notes
 
 - `buildCurve` helps you to create a curve structure based on percentage of supply on migration and migration quote threshold.
+- If `dynamicFeeEnabled` is true, the dynamic fee will be enabled and capped at 20% of minimum base fee.
+- `lockedVestingParam.totalVestingDuration` and `lockedVestingParam.cliffDurationFromMigrationTime` are calculated in terms of seconds.
+- `feeSchedulerParam.totalDuration` is calculated based on your `activationType` and `activationTime`.
+- Slot is 400ms, Timestamp is 1000ms.
 
 ---
 
 ### buildCurveWithMarketCap
 
-Builds a new constant product curve with customisable parameters based on market cap.
+Builds a new constant product curve with customisable parameters based on market cap. This function does the math for you to create a curve structure based on initial market cap and migration market cap.
 
 #### Function
 
@@ -544,25 +702,34 @@ interface BuildCurveWithMarketCapParam {
     migrationOption: number // 0: DAMM V1, 1: DAMM v2
     tokenBaseDecimal: number // The number of decimals for the base token
     tokenQuoteDecimal: number // The number of decimals for the quote token
-    lockedVesting: {
+    lockedVestingParam: {
         // Optional locked vesting (0 for all fields for no vesting)
         totalLockedVestingAmount: number // The total locked vesting amount
         numberOfVestingPeriod: number // The number of vesting periods
         cliffUnlockAmount: number // The amount of tokens that will be unlocked when vesting starts
         totalVestingDuration: number // The total vesting duration in seconds
         cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
-        tokenBaseDecimal: number // The number of decimals for the base token
-        activationType: number // 0: Slot, 1: Timestamp
     }
-    feeSchedulerParam: {
-        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
-        startingFeeBps: number // The starting fee in basis points
-        endingFeeBps: number // The ending fee in basis points
-        feeSchedulerMode: number // 0: Linear, 1: Exponential
-        numberOfPeriod: number // The number of periods
-        totalDuration: number // The total duration of the fee scheduler
+    // Either FeeSchedulerLinear/FeeSchedulerExponential mode
+    baseFeeParams: {
+        baseFeeMode: 0 | 1 // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential
+        feeSchedulerParam: {
+            startingFeeBps: number // The starting fee in basis points
+            endingFeeBps: number // The ending fee in basis points
+            numberOfPeriod: number // The number of periods
+            totalDuration: number // The total duration of the fee scheduler
+        }
     }
-    baseFeeBps: number // The base fee in bps
+    // OR RateLimiter mode
+    baseFeeParams: {
+        baseFeeMode: 2 // RateLimiter
+        rateLimiterParam: {
+            baseFeeBps: number // The base fee in basis points
+            feeIncrementBps: number // The fee increment in basis points
+            referenceAmount: number // The reference amount for rate limiting
+            maxLimiterDuration: number // The maximum duration for rate limiting
+        }
+    }
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
     activationType: number // 0: Slot, 1: Timestamp
     collectFeeMode: number // 0: Only Quote, 1: Both
@@ -574,6 +741,12 @@ interface BuildCurveWithMarketCapParam {
     creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
     leftover: number // The leftover amount that can be withdrawn by leftover receiver
+    tokenUpdateAuthority: number // 0 - CreatorUpdateAuthority, 1 - Immutable, 2 - PartnerUpdateAuthority, 3 - CreatorUpdateAndMintAuthority, 4 - PartnerUpdateAndMintAuthority
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
 }
 ```
 
@@ -588,7 +761,7 @@ const curveConfig = buildCurveWithMarketCap({
     totalTokenSupply: 1000000000,
     initialMarketCap: 100,
     migrationMarketCap: 3000,
-    migrationOption: MigrationOption.MET_DAMM,
+    migrationOption: MigrationOption.MET_DAMM_V2,
     tokenBaseDecimal: TokenDecimal.SIX,
     tokenQuoteDecimal: TokenDecimal.NINE,
     lockedVestingParam: {
@@ -598,12 +771,14 @@ const curveConfig = buildCurveWithMarketCap({
         totalVestingDuration: 0,
         cliffDurationFromMigrationTime: 0,
     },
-    feeSchedulerParam: {
-        startingFeeBps: 100,
-        endingFeeBps: 100,
-        numberOfPeriod: 0,
-        totalDuration: 0,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
+    baseFeeParams: {
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        feeSchedulerParam: {
+            startingFeeBps: 100,
+            endingFeeBps: 100,
+            numberOfPeriod: 0,
+            totalDuration: 0,
+        },
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
@@ -616,6 +791,11 @@ const curveConfig = buildCurveWithMarketCap({
     creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
     leftover: 0,
+    tokenUpdateAuthority: 1,
+    migrationFee: {
+        feePercentage: 0,
+        creatorFeePercentage: 0,
+    },
 })
 
 const transaction = await client.partner.createConfig({
@@ -630,13 +810,17 @@ const transaction = await client.partner.createConfig({
 
 #### Notes
 
-- `buildCurveWithMarketCap` when you want to create a curve structure based on initial market cap and migration market cap.
+- `buildCurveWithMarketCap` helps you to create a curve structure based on initial market cap and migration market cap.
+- If `dynamicFeeEnabled` is true, the dynamic fee will be enabled and capped at 20% of minimum base fee.
+- `lockedVestingParam.totalVestingDuration` and `lockedVestingParam.cliffDurationFromMigrationTime` are calculated in terms of seconds.
+- `feeSchedulerParam.totalDuration` is calculated based on your `activationType` and `activationTime`.
+- Slot is 400ms, Timestamp is 1000ms.
 
 ---
 
 ### buildCurveWithTwoSegments
 
-Builds a new constant product curve with two segments.
+Builds a new constant product curve with two segments. This function does the math for you to create a curve structure based on initial market cap, migration market cap and percentage of supply on migration.
 
 #### Function
 
@@ -655,25 +839,34 @@ interface BuildCurveWithTwoSegmentsParam {
     migrationOption: number // 0: DAMM V1, 1: DAMM v2
     tokenBaseDecimal: number // The number of decimals for the base token
     tokenQuoteDecimal: number // The number of decimals for the quote token
-    lockedVesting: {
+    lockedVestingParam: {
         // Optional locked vesting (0 for all fields for no vesting)
         totalLockedVestingAmount: number // The total locked vesting amount
         numberOfVestingPeriod: number // The number of vesting periods
         cliffUnlockAmount: number // The amount of tokens that will be unlocked when vesting starts
         totalVestingDuration: number // The total vesting duration in seconds
         cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
-        tokenBaseDecimal: number // The number of decimals for the base token
-        activationType: number // 0: Slot, 1: Timestamp
     }
-    feeSchedulerParam: {
-        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
-        startingFeeBps: number // The starting fee in basis points
-        endingFeeBps: number // The ending fee in basis points
-        feeSchedulerMode: number // 0: Linear, 1: Exponential
-        numberOfPeriod: number // The number of periods
-        totalDuration: number // The total duration of the fee scheduler
+    // Either FeeSchedulerLinear/FeeSchedulerExponential mode
+    baseFeeParams: {
+        baseFeeMode: 0 | 1 // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential
+        feeSchedulerParam: {
+            startingFeeBps: number // The starting fee in basis points
+            endingFeeBps: number // The ending fee in basis points
+            numberOfPeriod: number // The number of periods
+            totalDuration: number // The total duration of the fee scheduler
+        }
     }
-    baseFeeBps: number // The base fee in bps
+    // OR RateLimiter mode
+    baseFeeParams: {
+        baseFeeMode: 2 // RateLimiter
+        rateLimiterParam: {
+            baseFeeBps: number // The base fee in basis points
+            feeIncrementBps: number // The fee increment in basis points
+            referenceAmount: number // The reference amount for rate limiting
+            maxLimiterDuration: number // The maximum duration for rate limiting
+        }
+    }
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
     activationType: number // 0: Slot, 1: Timestamp
     collectFeeMode: number // 0: Only Quote, 1: Both
@@ -685,6 +878,12 @@ interface BuildCurveWithTwoSegmentsParam {
     creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
     leftover: number // The leftover amount that can be withdrawn by leftover receiver
+    tokenUpdateAuthority: number // 0 - CreatorUpdateAuthority, 1 - Immutable, 2 - PartnerUpdateAuthority, 3 - CreatorUpdateAndMintAuthority, 4 - PartnerUpdateAndMintAuthority
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
 }
 ```
 
@@ -710,12 +909,14 @@ const curveConfig = buildCurveWithTwoSegments({
         totalVestingDuration: 0,
         cliffDurationFromMigrationTime: 0,
     },
-    feeSchedulerParam: {
-        startingFeeBps: 100,
-        endingFeeBps: 100,
-        numberOfPeriod: 0,
-        totalDuration: 0,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
+    baseFeeParams: {
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        feeSchedulerParam: {
+            startingFeeBps: 100,
+            endingFeeBps: 100,
+            numberOfPeriod: 0,
+            totalDuration: 0,
+        },
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
@@ -727,7 +928,12 @@ const curveConfig = buildCurveWithTwoSegments({
     partnerLockedLpPercentage: 0,
     creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
-    leftover: 1000000,
+    leftover: 1000,
+    tokenUpdateAuthority: 1,
+    migrationFee: {
+        feePercentage: 0,
+        creatorFeePercentage: 0,
+    },
 })
 
 const transaction = await client.partner.createConfig({
@@ -742,13 +948,17 @@ const transaction = await client.partner.createConfig({
 
 #### Notes
 
-- `buildCurveWithTwoSegments` when you want to create a curve structure based on initial market cap and migration market cap.
+- `buildCurveWithTwoSegments` helps you to create a curve structure based on initial market cap, migration market cap and percentage of supply on migration.
+- If `dynamicFeeEnabled` is true, the dynamic fee will be enabled and capped at 20% of minimum base fee.
+- `lockedVestingParam.totalVestingDuration` and `lockedVestingParam.cliffDurationFromMigrationTime` are calculated in terms of seconds.
+- `feeSchedulerParam.totalDuration` is calculated based on your `activationType` and `activationTime`.
+- Slot is 400ms, Timestamp is 1000ms.
 
 ---
 
 ### buildCurveWithLiquidityWeights
 
-Builds a super customizable curve graph config by changing the liquidity weights.
+Builds a super customizable constant product curve graph configuration based on different liquidity weights. This function does the math for you to create a curve structure based on initial market cap, migration market cap and liquidity weights.
 
 #### Function
 
@@ -766,25 +976,34 @@ interface BuildCurveWithLiquidityWeightsParam {
     migrationOption: number // 0: DAMM V1, 1: DAMM v2
     tokenBaseDecimal: number // The number of decimals for the base token
     tokenQuoteDecimal: number // The number of decimals for the quote token
-    lockedVesting: {
+    lockedVestingParam: {
         // Optional locked vesting (0 for all fields for no vesting)
         totalLockedVestingAmount: number // The total locked vesting amount
         numberOfVestingPeriod: number // The number of vesting periods
         cliffUnlockAmount: number // The amount of tokens that will be unlocked when vesting starts
         totalVestingDuration: number // The total vesting duration in seconds
         cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
-        tokenBaseDecimal: number // The number of decimals for the base token
-        activationType: number // 0: Slot, 1: Timestamp
     }
-    feeSchedulerParam: {
-        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
-        startingFeeBps: number // The starting fee in basis points
-        endingFeeBps: number // The ending fee in basis points
-        feeSchedulerMode: number // 0: Linear, 1: Exponential
-        numberOfPeriod: number // The number of periods
-        totalDuration: number // The total duration of the fee scheduler
+    // Either FeeSchedulerLinear/FeeSchedulerExponential mode
+    baseFeeParams: {
+        baseFeeMode: 0 | 1 // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential
+        feeSchedulerParam: {
+            startingFeeBps: number // The starting fee in basis points
+            endingFeeBps: number // The ending fee in basis points
+            numberOfPeriod: number // The number of periods
+            totalDuration: number // The total duration of the fee scheduler
+        }
     }
-    baseFeeBps: number // The base fee in bps
+    // OR RateLimiter mode
+    baseFeeParams: {
+        baseFeeMode: 2 // RateLimiter
+        rateLimiterParam: {
+            baseFeeBps: number // The base fee in basis points
+            feeIncrementBps: number // The fee increment in basis points
+            referenceAmount: number // The reference amount for rate limiting
+            maxLimiterDuration: number // The maximum duration for rate limiting
+        }
+    }
     dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
     activationType: number // 0: Slot, 1: Timestamp
     collectFeeMode: number // 0: Only Quote, 1: Both
@@ -797,6 +1016,12 @@ interface BuildCurveWithLiquidityWeightsParam {
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
     leftover: number // The leftover amount that can be withdrawn by leftover receiver
     liquidityWeights: number[] // The liquidity weights for each liquidity segment in the curve
+    tokenUpdateAuthority: number // 0 - CreatorUpdateAuthority, 1 - Immutable, 2 - PartnerUpdateAuthority, 3 - CreatorUpdateAndMintAuthority, 4 - PartnerUpdateAndMintAuthority
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
 }
 ```
 
@@ -826,12 +1051,14 @@ const curveConfig = buildCurveWithLiquidityWeights({
         totalVestingDuration: 0,
         cliffDurationFromMigrationTime: 0,
     },
-    feeSchedulerParam: {
-        startingFeeBps: 100,
-        endingFeeBps: 100,
-        numberOfPeriod: 0,
-        totalDuration: 0,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
+    baseFeeParams: {
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        feeSchedulerParam: {
+            startingFeeBps: 100,
+            endingFeeBps: 100,
+            numberOfPeriod: 0,
+            totalDuration: 0,
+        },
     },
     dynamicFeeEnabled: true,
     activationType: ActivationType.Slot,
@@ -843,8 +1070,13 @@ const curveConfig = buildCurveWithLiquidityWeights({
     partnerLockedLpPercentage: 0,
     creatorLockedLpPercentage: 0,
     creatorTradingFeePercentage: 0,
-    leftover: 1000000,
+    leftover: 1000,
     liquidityWeights,
+    tokenUpdateAuthority: 1,
+    migrationFee: {
+        feePercentage: 0,
+        creatorFeePercentage: 0,
+    },
 })
 
 const transaction = await client.partner.createConfig({
@@ -859,7 +1091,7 @@ const transaction = await client.partner.createConfig({
 
 #### Notes
 
-- `buildCurveWithLiquidityWeights` when you want to create a curve structure based on liquidity weights.
+- `buildCurveWithLiquidityWeights` helps you to create a curve structure based on initial market cap, migration market cap and liquidity weights.
 - What does liquidity weights do?
     - The `liquidityWeights` is an array of numbers that determines how liquidity is distributed across the curve's price ranges.
     - The maximum number of liquidity weights[i] is `16`.
@@ -872,134 +1104,10 @@ const transaction = await client.partner.createConfig({
         - This means that the price will move more for a given trade at lower prices (less resistance), and price will move less for a given trade at higher prices (more resistance).
     3. `liquidityWeights[i] > liquidityWeights[i+1]`: Higher liquidity at lower prices.
         - This means that the price will move less for a given trade at lower prices (more resistance), and price will move more for a given trade at higher prices (less resistance).
-
----
-
-### buildCurveWithCreatorFirstBuy
-
-Builds a curve structure with creator first buy.
-
-#### Function
-
-```typescript
-async buildCurveWithCreatorFirstBuy(buildCurveWithCreatorFirstBuyParam: BuildCurveWithCreatorFirstBuyParam): Promise<ConfigParameters>
-```
-
-#### Parameters
-
-```typescript
-interface BuildCurveWithCreatorFirstBuyParam {
-    totalTokenSupply: number // The total token supply
-    initialMarketCap: number // The initial market cap
-    migrationMarketCap: number // The migration market cap
-    migrationOption: number // 0: DAMM V1, 1: DAMM v2
-    tokenBaseDecimal: number // The number of decimals for the base token
-    tokenQuoteDecimal: number // The number of decimals for the quote token
-    lockedVesting: {
-        // Optional locked vesting (0 for all fields for no vesting)
-        totalLockedVestingAmount: number // The total locked vesting amount
-        numberOfVestingPeriod: number // The number of vesting periods
-        cliffUnlockAmount: number // The amount of tokens that will be unlocked when vesting starts
-        totalVestingDuration: number // The total vesting duration in seconds
-        cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
-        tokenBaseDecimal: number // The number of decimals for the base token
-        activationType: number // 0: Slot, 1: Timestamp
-    }
-    feeSchedulerParam: {
-        // Optional fee scheduler (startingFeeBps == endingFeeBps for no fee scheduler)
-        startingFeeBps: number // The starting fee in basis points
-        endingFeeBps: number // The ending fee in basis points
-        feeSchedulerMode: number // 0: Linear, 1: Exponential
-        numberOfPeriod: number // The number of periods
-        totalDuration: number // The total duration of the fee scheduler
-    }
-    baseFeeBps: number // The base fee in bps
-    dynamicFeeEnabled: boolean // Whether dynamic fee is enabled (true: enabled, false: disabled)
-    activationType: number // 0: Slot, 1: Timestamp
-    collectFeeMode: number // 0: Only Quote, 1: Both
-    migrationFeeOption: number // 0: Fixed 25bps, 1: Fixed 30bps, 2: Fixed 100bps, 3: Fixed 200bps, 4: Fixed 400bps, 5: Fixed 600bps
-    tokenType: number // 0: SPL, 1: Token2022
-    partnerLpPercentage: number // The percentage of the pool that will be allocated to the partner
-    creatorLpPercentage: number // The percentage of the pool that will be allocated to the creator
-    partnerLockedLpPercentage: number // The percentage of the pool that will be allocated to the partner locked
-    creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked
-    creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
-    leftover: number // The leftover amount that can be withdrawn by leftover receiver
-    liquidityWeights: number[] // The liquidity weights for each liquidity segment in the curve
-    creatorFirstBuyOption: {
-        quoteAmount: number // The amount of quote tokens used at the first buy
-        baseAmount: number // The amount of base tokens to buy at the first buy
-    }
-}
-```
-
-#### Returns
-
-A `ConfigParameters` object.
-
-#### Example
-
-```typescript
-let liquidityWeights: number[] = []
-for (let i = 0; i < 16; i++) {
-    liquidityWeights[i] = new Decimal(1.2).pow(new Decimal(i)).toNumber()
-}
-
-const curveConfig = buildCurveWithCreatorFirstBuy({
-    totalTokenSupply: 1000000000,
-    initialMarketCap: 5000,
-    migrationMarketCap: 1000000,
-    migrationOption: MigrationOption.MET_DAMM_V2,
-    tokenBaseDecimal: TokenDecimal.SIX,
-    tokenQuoteDecimal: TokenDecimal.SIX,
-    lockedVestingParam: {
-        totalLockedVestingAmount: 0,
-        numberOfVestingPeriod: 0,
-        cliffUnlockAmount: 0,
-        totalVestingDuration: 0,
-        cliffDurationFromMigrationTime: 0,
-    },
-    feeSchedulerParam: {
-        startingFeeBps: 100,
-        endingFeeBps: 100,
-        numberOfPeriod: 0,
-        totalDuration: 0,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
-    },
-    dynamicFeeEnabled: true,
-    activationType: ActivationType.Slot,
-    collectFeeMode: CollectFeeMode.OnlyQuote,
-    migrationFeeOption: MigrationFeeOption.FixedBps100,
-    tokenType: TokenType.SPL,
-    partnerLpPercentage: 100,
-    creatorLpPercentage: 0,
-    partnerLockedLpPercentage: 0,
-    creatorLockedLpPercentage: 0,
-    creatorTradingFeePercentage: 0,
-    leftover: 1000000,
-    liquidityWeights,
-    creatorFirstBuyOption: {
-        quoteAmount: 0.01,
-        baseAmount: 10000000,
-    },
-})
-
-const transaction = await client.partner.createConfig({
-    config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
-    feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
-    leftoverReceiver: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
-    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
-    quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
-    ...curveConfig,
-})
-```
-
-#### Notes
-
-- `buildCurveWithCreatorFirstBuy` when you want to create a curve structure with creator first buy.
-- Primarily used when you want to immediately purchase a fixed amount of tokens at the first buy even if the fees are high.
-- The `quoteAmount` is the amount of quote tokens you would like to spend at the first buy.
-- The `baseAmount` is the amount of base tokens you would like to receive at the first buy.
+- If `dynamicFeeEnabled` is true, the dynamic fee will be enabled and capped at 20% of minimum base fee.
+- `lockedVestingParam.totalVestingDuration` and `lockedVestingParam.cliffDurationFromMigrationTime` are calculated in terms of seconds.
+- `feeSchedulerParam.totalDuration` is calculated based on your `activationType` and `activationTime`.
+- Slot is 400ms, Timestamp is 1000ms.
 
 ---
 
@@ -1007,7 +1115,7 @@ const transaction = await client.partner.createConfig({
 
 ### createPool
 
-Creates a new pool with the configuration key.
+Creates a new pool with the config key.
 
 #### Function
 
@@ -1040,8 +1148,8 @@ const transaction = await client.pool.createPool({
     baseMint: new PublicKey('0987654321zyxwvutsrqponmlkjihgfedcba'),
     config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
     name: 'Meteora',
-    website: 'https://launch.meteora.ag',
-    logo: 'https://launch.meteora.ag/icons/logo.svg',
+    symbol: 'MET',
+    uri: 'https://launch.meteora.ag',
     payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     poolCreator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
 })
@@ -1052,13 +1160,12 @@ const transaction = await client.pool.createPool({
 - The payer must be the same as the payer in the `CreatePoolParam` params.
 - The poolCreator is required to sign when creating the pool.
 - The baseMint token type must be the same as the config key's token type.
-- The quoteMint must be the same as the config key's quoteMint.
 
 ---
 
 ### createConfigAndPool
 
-Creates a configuration key and a token pool in a single transaction.
+Creates a config key and a token pool in a single transaction.
 
 #### Function
 
@@ -1076,13 +1183,194 @@ interface CreateConfigAndPoolParam {
     leftoverReceiver: PublicKey // The wallet that will receive the bonding curve leftover
     quoteMint: PublicKey // The quote mint address
     poolFees: {
-        // The pool fees
         baseFee: {
             cliffFeeNumerator: BN // Initial fee numerator (base fee)
-            numberOfPeriod: number // The number of reduction periods
-            reductionFactor: BN // How much fee reduces in each period
-            periodFrequency: BN // How often fees change
-            feeSchedulerMode: number // 0: Linear, 1: Exponential
+            firstFactor: number // feeScheduler: numberOfPeriod, rateLimiter: feeIncrementBps
+            secondFactor: BN // feeScheduler: periodFrequency, rateLimiter: maxLimiterDuration
+            thirdFactor: BN // feeScheduler: reductionFactor, rateLimiter: referenceAmount
+            baseFeeMode: number // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential, 2: RateLimiter
+        }
+        dynamicFee: {
+            // Optional dynamic fee, put null if you don't want to use dynamic fee
+            binStep: number // u16 value representing the bin step in bps
+            binStepU128: BN // u128 value for a more accurate bin step
+            filterPeriod: number // Minimum time that must pass between fee updates
+            decayPeriod: number // Period after the volatility starts decaying (must be > filterPeriod)
+            reductionFactor: number // Controls how quickly volatility decys over time
+            variableFeeControl: number // Multiplier that determines how much volatility affects fees
+            maxVolatilityAccumulator: number // Caps the maximum volatility that can be accumulated
+        } | null
+    }
+    activationType: number // 0: Slot, 1: Timestamp
+    collectFeeMode: number // 0: Only Quote, 1: Both
+    migrationOption: number // 0: DAMM V1, 1: DAMM v2
+    tokenType: number // 0: SPL, 1: Token2022
+    tokenDecimal: number // The number of decimals for the token
+    migrationQuoteThreshold: BN // The quote threshold for migration
+    partnerLpPercentage: number // The percentage of the pool that will be allocated to the partner (0-100)
+    creatorLpPercentage: number // The percentage of the pool that will be allocated to the creator (0-100)
+    partnerLockedLpPercentage: number // The percentage of the pool that will be allocated to the partner locked (0-100)
+    creatorLockedLpPercentage: number // The percentage of the pool that will be allocated to the creator locked (0-100)
+    sqrtStartPrice: BN // The starting price of the pool
+    lockedVesting: {
+        // Optional locked vesting (BN (0) for all fields for no vesting)
+        amountPerPeriod: BN // The amount of tokens that will be vested per period
+        cliffDurationFromMigrationTime: BN // The duration of the cliff period
+        frequency: BN // The frequency of the vesting
+        numberOfPeriod: BN // The number of periods
+        cliffUnlockAmount: BN // The amount of tokens that will be unlocked at the cliff
+    }
+    migrationFeeOption: number // 0: Fixed 25bps, 1: Fixed 30bps, 2: Fixed 100bps, 3: Fixed 200bps, 4: Fixed 400bps, 5: Fixed 600bps
+    tokenSupply: {
+        // Optional token supply
+        preMigrationTokenSupply: BN // The token supply before migration
+        postMigrationTokenSupply: BN // The token supply after migration
+    } | null
+    creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
+    tokenUpdateAuthority: number // 0 - CreatorUpdateAuthority, 1 - Immutable, 2 - PartnerUpdateAuthority, 3 - CreatorUpdateAndMintAuthority, 4 - PartnerUpdateAndMintAuthority
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
+    padding0: []
+    padding1: []
+    curve: {
+        // The curve of the pool
+        sqrtPrice: BN // The square root of the curve point price
+        liquidity: BN // The liquidity of the curve point
+    }[]
+    preCreatePoolParam: {
+        baseMint: PublicKey // The base mint address (generated by you)
+        name: string // The name of the pool
+        symbol: string // The symbol of the pool
+        uri: string // The uri of the pool
+        poolCreator: PublicKey // The pool creator of the transaction
+    }
+}
+```
+
+#### Returns
+
+A transaction that requires signatures from the payer, the baseMint keypair, and the config keypair before being submitted to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.pool.createConfigAndPool({
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
+    feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    leftoverReceiver: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    quoteMint: new PublicKey('So11111111111111111111111111111111111111112'),
+    poolFees: {
+        baseFee: {
+            cliffFeeNumerator: new BN('2500000'),
+            firstFactor: 0,
+            secondFactor: new BN('0'),
+            thirdFactor: new BN('0'),
+            baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        },
+        dynamicFee: {
+            binStep: 1,
+            binStepU128: new BN('1844674407370955'),
+            filterPeriod: 10,
+            decayPeriod: 120,
+            reductionFactor: 1000,
+            variableFeeControl: 100000,
+            maxVolatilityAccumulator: 100000,
+        },
+    },
+    activationType: 0,
+    collectFeeMode: 0,
+    migrationOption: 0,
+    tokenType: 0,
+    tokenDecimal: 9,
+    migrationQuoteThreshold: new BN('1000000000'),
+    partnerLpPercentage: 25,
+    creatorLpPercentage: 25,
+    partnerLockedLpPercentage: 25,
+    creatorLockedLpPercentage: 25,
+    sqrtStartPrice: new BN('58333726687135158'),
+    lockedVesting: {
+        amountPerPeriod: new BN('0'),
+        cliffDurationFromMigrationTime: new BN('0'),
+        frequency: new BN('0'),
+        numberOfPeriod: new BN('0'),
+        cliffUnlockAmount: new BN('0'),
+    },
+    migrationFeeOption: 0,
+    tokenSupply: {
+        preMigrationTokenSupply: new BN('10000000000000000000'),
+        postMigrationTokenSupply: new BN('10000000000000000000'),
+    },
+    creatorTradingFeePercentage: 0,
+    tokenUpdateAuthority: 1,
+    migrationFee: {
+        feePercentage: 25,
+        creatorFeePercentage: 50,
+    },
+    padding0: [],
+    padding1: [],
+    curve: [
+        {
+            sqrtPrice: new BN('233334906748540631'),
+            liquidity: new BN('622226417996106429201027821619672729'),
+        },
+        {
+            sqrtPrice: new BN('79226673521066979257578248091'),
+            liquidity: new BN('1'),
+        },
+    ],
+    preCreatePoolParam: {
+        baseMint: new PublicKey('0987654321zyxwvutsrqponmlkjihgfedcba'),
+        name: 'Meteora',
+        symbol: 'MET',
+        uri: 'https://launch.meteora.ag/icons/logo.svg',
+        poolCreator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    },
+})
+```
+
+#### Notes
+
+- The payer must be the same as the payer in the `CreateConfigAndPoolParam` params.
+- The poolCreator is required to sign when creating the pool.
+- The baseMint token type must be the same as the config key's token type.
+- You can use any of the build curve functions to create the curve configuration.
+
+---
+
+### createConfigAndPoolWithFirstBuy
+
+Creates a config key and a token pool and buys the token immediately in a single transaction.
+
+#### Function
+
+```typescript
+async createConfigAndPoolWithFirstBuy(createConfigAndPoolWithFirstBuyParam: CreateConfigAndPoolWithFirstBuyParam): Promise<{
+    createConfigTx: Transaction
+    createPoolTx: Transaction
+    swapBuyTx: Transaction | undefined
+}>
+```
+
+#### Parameters
+
+```typescript
+interface CreateConfigAndPoolWithFirstBuyParam {
+    payer: PublicKey // The wallet paying for the transaction
+    config: PublicKey // The config account address (generated by the partner)
+    feeClaimer: PublicKey // The wallet that will be able to claim the fee
+    leftoverReceiver: PublicKey // The wallet that will receive the bonding curve leftover
+    quoteMint: PublicKey // The quote mint address
+    poolFees: {
+        baseFee: {
+            cliffFeeNumerator: BN // Initial fee numerator (base fee)
+            firstFactor: number // feeScheduler: numberOfPeriod, rateLimiter: feeIncrementBps
+            secondFactor: BN // feeScheduler: periodFrequency, rateLimiter: maxLimiterDuration
+            thirdFactor: BN // feeScheduler: reductionFactor, rateLimiter: referenceAmount
+            baseFeeMode: number // 0: FeeSchedulerLinear, 1: FeeSchedulerExponential, 2: RateLimiter
         }
         dynamicFee: {
             // Optional dynamic fee
@@ -1121,6 +1409,12 @@ interface CreateConfigAndPoolParam {
         postMigrationTokenSupply: BN // The token supply after migration
     } | null
     creatorTradingFeePercentage: number // The percentage of the trading fee that will be allocated to the creator
+    tokenUpdateAuthority: number // 0 - CreatorUpdateAuthority, 1 - Immutable, 2 - PartnerUpdateAuthority, 3 - CreatorUpdateAndMintAuthority, 4 - PartnerUpdateAndMintAuthority
+    migrationFee: {
+        // Optional migration fee (set as 0 for feePercentage and creatorFeePercentage for no migration fee)
+        feePercentage: number // The percentage of fee taken from migration quote threshold (0-50)
+        creatorFeePercentage: number // The fee share percentage for the creator from the migration fee (0-100)
+    }
     padding0: []
     padding1: []
     curve: {
@@ -1128,24 +1422,31 @@ interface CreateConfigAndPoolParam {
         sqrtPrice: BN // The square root of the curve point price
         liquidity: BN // The liquidity of the curve point
     }[]
-    createPoolParam: {
+    preCreatePoolParam: {
         baseMint: PublicKey // The base mint address (generated by you)
         name: string // The name of the pool
         symbol: string // The symbol of the pool
         uri: string // The uri of the pool
         poolCreator: PublicKey // The pool creator of the transaction
     }
+    firstBuyParam?: {
+        // Optional first buy param
+        buyer: PublicKey // The buyer of the transaction
+        buyAmount: BN // The amount of tokens to buy
+        minimumAmountOut: BN // The minimum amount of tokens to receive
+        referralTokenAccount: PublicKey | null // The referral token account (optional)
+    }
 }
 ```
 
 #### Returns
 
-A transaction that requires signatures from the payer, the baseMint keypair, and the config keypair before being submitted to the network.
+An object of transactions (containing createConfigTx, createPoolTx, and swapBuyTx) that requires signatures before being submitted to the network. Can be bundled together.
 
 #### Example
 
 ```typescript
-const transaction = await client.pool.createConfigAndPool({
+const transaction = await client.pool.createConfigAndPoolWithFirstBuy({
     payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
     feeClaimer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
@@ -1154,10 +1455,10 @@ const transaction = await client.pool.createConfigAndPool({
     poolFees: {
         baseFee: {
             cliffFeeNumerator: new BN('2500000'),
-            numberOfPeriod: 0,
-            reductionFactor: new BN('0'),
-            periodFrequency: new BN('0'),
-            feeSchedulerMode: FeeSchedulerMode.Linear,
+            firstFactor: 0,
+            secondFactor: new BN('0'),
+            thirdFactor: new BN('0'),
+            baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
         },
         dynamicFee: {
             binStep: 1,
@@ -1171,7 +1472,7 @@ const transaction = await client.pool.createConfigAndPool({
     },
     activationType: 0,
     collectFeeMode: 0,
-    migrationOption: 0
+    migrationOption: 0,
     tokenType: 0,
     tokenDecimal: 9,
     migrationQuoteThreshold: new BN('1000000000'),
@@ -1193,6 +1494,11 @@ const transaction = await client.pool.createConfigAndPool({
         postMigrationTokenSupply: new BN('10000000000000000000'),
     },
     creatorTradingFeePercentage: 0,
+    tokenUpdateAuthority: 1,
+    migrationFee: {
+        feePercentage: 25,
+        creatorFeePercentage: 50,
+    },
     padding0: [],
     padding1: [],
     curve: [
@@ -1205,54 +1511,76 @@ const transaction = await client.pool.createConfigAndPool({
             liquidity: new BN('1'),
         },
     ],
-    createPoolParam: {
+    preCreatePoolParam: {
         baseMint: new PublicKey('0987654321zyxwvutsrqponmlkjihgfedcba'),
         name: 'Meteora',
         symbol: 'MET',
         uri: 'https://launch.meteora.ag/icons/logo.svg',
         poolCreator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     },
+    firstBuyParam: {
+        buyer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+        buyAmount: new BN(0.1 * 1e9),
+        minimumAmountOut: new BN(1),
+        referralTokenAccount: null,
+    },
 })
 ```
 
 #### Notes
 
-- The payer must be the same as the payer in the `CreatePoolParam` params.
-- The poolCreator is required to sign when creating the pool.
-- The baseMint token type must be the same as the config key's token type.
-- The quoteMint must be the same as the config key's quoteMint.
+- The payer must be the same as the payer in the `CreateConfigAndPoolWithFirstBuyParam` params.
+- The `createConfigTx` requires the payer and config to sign the transaction.
+- The `createPoolTx` requires the payer, poolCreator, and baseMint to sign the transaction.
+- If the `firstBuyParam` is not provided, the `swapBuyTx` will be undefined.
+- The `swapBuyTx` requires the buyer and payer to sign the transaction.
 
 ---
 
-### createPoolAndBuy
+### createPoolWithFirstBuy
 
-Creates a new pool with the configuration key and buys the token immediately.
+Creates a new pool with the config key and buys the token immediately.
 
 #### Function
 
 ```typescript
-async createPoolAndBuy(createPoolAndBuyParam: CreatePoolAndBuyParam): Promise<Transaction>
+async createPoolWithFirstBuy(createPoolWithFirstBuyParam: CreatePoolWithFirstBuyParam): Promise<{
+    createPoolTx: Transaction
+    swapBuyTx: Transaction | undefined
+}>
 ```
 
 #### Parameters
 
 ```typescript
-interface CreatePoolAndBuyParam {
-    createPoolParam: CreatePoolParam // The create pool parameters
-    buyAmount: BN // The amount of tokens to buy
-    minimumAmountOut: BN // The minimum amount of tokens to receive
-    referralTokenAccount: PublicKey | null // The referral token account (optional)
+interface CreatePoolWithFirstBuyParam {
+    createPoolParam: {
+        baseMint: PublicKey // The base mint address (generated by you)
+        config: PublicKey // The config account address
+        name: string // The name of the pool
+        symbol: string // The symbol of the pool
+        uri: string // The uri of the pool
+        payer: PublicKey // The payer of the transaction
+        poolCreator: PublicKey // The pool creator of the transaction
+    }
+    firstBuyParam?: {
+        // Optional first buy param
+        buyer: PublicKey // The buyer of the transaction
+        buyAmount: BN // The amount of tokens to buy
+        minimumAmountOut: BN // The minimum amount of tokens to receive
+        referralTokenAccount: PublicKey | null // The referral token account (optional)
+    }
 }
 ```
 
 #### Returns
 
-A transaction that requires signatures from the payer, the baseMint keypair, and the poolCreator before being submitted to the network.
+An object of transactions (containing createPoolTx and swapBuyTx) that requires signatures before being submitted to the network. Can be bundled together.
 
 #### Example
 
 ```typescript
-const transaction = await client.pool.createPoolAndBuy({
+const transaction = await client.pool.createPoolWithFirstBuy({
     createPoolParam: {
         baseMint: new PublicKey('0987654321zyxwvutsrqponmlkjihgfedcba'),
         config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
@@ -1262,18 +1590,107 @@ const transaction = await client.pool.createPoolAndBuy({
         payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
         poolCreator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
     },
-    buyAmount: new BN(0.1 * 1e9),
-    minimumAmountOut: new BN(1),
-    referralTokenAccount: null,
+    firstBuyParam: {
+        buyer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+        buyAmount: new BN(0.1 * 1e9),
+        minimumAmountOut: new BN(1),
+        referralTokenAccount: null,
+    },
 })
 ```
 
 #### Notes
 
-- The `payer` must be the same as the payer in the `CreatePoolParam` params.
 - The `poolCreator` is required to sign when creating the pool.
+- The `buyer` is required to sign when buying the token.
 - The `baseMint` token type must be the same as the config key's token type.
-- The `buyAmount` must be greater than 0.
+- The `minimumAmountOut` parameter protects against slippage. Set it to a value slightly lower than the expected output.
+- The `referralTokenAccount` parameter is an optional token account. If provided, the referral fee will be applied to the transaction.
+
+---
+
+### createPoolWithPartnerAndCreatorFirstBuy
+
+Creates a new pool with the config key and buys the token immediately with partner and creator.
+
+#### Function
+
+```typescript
+async createPoolWithPartnerAndCreatorFirstBuy(createPoolWithPartnerAndCreatorFirstBuyParam: CreatePoolWithPartnerAndCreatorFirstBuyParam): Promise<{
+    createPoolTx: Transaction
+    partnerSwapBuyTx: Transaction | undefined
+    creatorSwapBuyTx: Transaction | undefined
+}>
+```
+
+#### Parameters
+
+```typescript
+interface CreatePoolWithPartnerAndCreatorFirstBuyParam {
+    createPoolParam: {
+        baseMint: PublicKey // The base mint address (generated by you)
+        config: PublicKey // The config account address
+        name: string // The name of the pool
+        symbol: string // The symbol of the pool
+        uri: string // The uri of the pool
+        payer: PublicKey // The payer of the transaction
+        poolCreator: PublicKey // The pool creator of the transaction
+    }
+    partnerFirstBuyParam?: {
+        // Optional partner first buy param
+        partner: PublicKey // The launchpad partner
+        buyAmount: BN // The amount of tokens to buy
+        minimumAmountOut: BN // The minimum amount of tokens to receive
+        referralTokenAccount: PublicKey | null // The referral token account (optional)
+    }
+    creatorFirstBuyParam?: {
+        // Optional creator first buy param
+        creator: PublicKey // The pool creator
+        buyAmount: BN // The amount of tokens to buy
+        minimumAmountOut: BN // The minimum amount of tokens to receive
+        referralTokenAccount: PublicKey | null // The referral token account (optional)
+    }
+}
+```
+
+#### Returns
+
+An object of transactions (containing createPoolTx, partnerSwapBuyTx, and creatorSwapBuyTx) that requires signatures before being submitted to the network. Can be bundled together.
+
+#### Example
+
+```typescript
+const transaction = await client.pool.createPoolWithPartnerAndCreatorFirstBuy({
+    createPoolParam: {
+        baseMint: new PublicKey('0987654321zyxwvutsrqponmlkjihgfedcba'),
+        config: new PublicKey('1234567890abcdefghijklmnopqrstuvwxyz'),
+        name: 'Meteora',
+        symbol: 'MET',
+        uri: 'https://launch.meteora.ag/icons/logo.svg',
+        payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+        poolCreator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    },
+    partnerFirstBuyParam: {
+        partner: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+        buyAmount: new BN(0.1 * 1e9),
+        minimumAmountOut: new BN(1),
+        referralTokenAccount: null,
+    },
+    creatorFirstBuyParam: {
+        creator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+        buyAmount: new BN(0.1 * 1e9),
+        minimumAmountOut: new BN(1),
+        referralTokenAccount: null,
+    },
+})
+```
+
+#### Notes
+
+- The `poolCreator` is required to sign when creating the pool.
+- The `partner` is required to sign when buying the token.
+- The `creator` is required to sign when buying the token.
+- The `baseMint` token type must be the same as the config key's token type.
 - The `minimumAmountOut` parameter protects against slippage. Set it to a value slightly lower than the expected output.
 - The `referralTokenAccount` parameter is an optional token account. If provided, the referral fee will be applied to the transaction.
 
@@ -1286,7 +1703,7 @@ Swaps between base and quote or quote and base on the Dynamic Bonding Curve.
 #### Function
 
 ```typescript
-async swap(pool: PublicKey, swapParam: SwapParam): Promise<Transaction>
+async swap(swapParam: SwapParam): Promise<Transaction>
 ```
 
 #### Parameters
@@ -1299,6 +1716,7 @@ interface SwapParam {
     swapBaseForQuote: boolean // Whether to swap base for quote. true = swap base for quote, false = swap quote for base
     poolAddress: PublicKey // The pool address
     referralTokenAccount: PublicKey | null // The referral token account (optional)
+    payer?: PublicKey // The payer of the transaction (optional)
 }
 ```
 
@@ -1314,8 +1732,9 @@ const transaction = await client.pool.swap({
     amountIn: new BN(1000000000),
     minimumAmountOut: new BN(0),
     swapBaseForQuote: false,
-    poolAddress: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    pool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
     referralTokenAccount: null,
+    payer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
 })
 ```
 
@@ -1328,7 +1747,8 @@ const transaction = await client.pool.swap({
 - The `minimumAmountOut` parameter protects against slippage. Set it to a value slightly lower than the expected output.
 - The `referralTokenAccount` parameter is an optional token account. If provided, the referral fee will be applied to the transaction.
 - If the transaction fails with "insufficient balance", check that you have enough tokens plus fees for the transaction.
-- The pool address can be derived using `client.state.getDbcPoolAddress(quoteMint, baseMint, config)`.
+- The pool address can be derived using `deriveDbcPoolAddress`.
+- The `payer` parameter is optional. If not provided, the owner will be used as the payer to fund ATA creation.
 
 ---
 
@@ -1367,6 +1787,7 @@ const virtualPoolState = await client.state.getPool(poolAddress)
 const poolConfigState = await client.state.getPoolConfig(
     virtualPoolState.config
 )
+const currentSlot = await connection.getSlot()
 
 const quote = await client.pool.swapQuote({
     virtualPool: virtualPoolState, // The virtual pool state
@@ -1375,7 +1796,7 @@ const quote = await client.pool.swapQuote({
     amountIn: new BN(100000000), // The amount of tokens to swap
     slippageBps: 100, // The slippage in basis points (optional)
     hasReferral: false, // Whether to include a referral fee
-    currentPoint: new BN(0), // The current point
+    currentPoint: new BN(currentSlot), // The current point
 })
 ```
 
@@ -1391,11 +1812,142 @@ const quote = await client.pool.swapQuote({
 
 ---
 
+### swapQuoteExactIn
+
+Gets the exact swap quotation in between quote and base swaps.
+
+#### Function
+
+```typescript
+swapQuoteExactIn(swapQuoteExactInParam: SwapQuoteExactInParam): Promise<QuoteResult>
+```
+
+#### Parameters
+
+```typescript
+interface SwapQuoteExactInParam {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    currentPoint: BN
+}
+```
+
+#### Returns
+
+The exact quote in result of the swap.
+
+#### Example
+
+```typescript
+const virtualPoolState = await client.state.getPool(poolAddress)
+const poolConfigState = await client.state.getPoolConfig(
+    virtualPoolState.config
+)
+const currentSlot = await connection.getSlot()
+
+const quote = await client.pool.swapQuoteExactIn({
+    virtualPool: virtualPoolState, // The virtual pool state
+    config: poolConfigState, // The pool config state
+    currentPoint: new BN(currentSlot), // The current point
+})
+```
+
+#### Notes
+
+- This function helps to get the exact number of quote tokens to swap to hit the `migrationQuoteThreshold` in the config key.
+- The `currentPoint` parameter is typically used in cases where the config has applied a fee scheduler. If activationType == 0, then it is current slot. If activationType == 1, then it is the current block timestamp. You can fill in accordingly based on slot or timestamp.
+
+---
+
+### swapQuoteExactOut
+
+Gets the exact swap out quotation in between quote and base swaps.
+
+#### Function
+
+```typescript
+swapQuoteExactOut(swapQuoteExactOutParam: SwapQuoteExactOutParam): Promise<QuoteResult>
+```
+
+#### Parameters
+
+```typescript
+interface SwapQuoteExactOutParam {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    swapBaseForQuote: boolean
+    outAmount: BN
+    slippageBps?: number
+    hasReferral: boolean
+    currentPoint: BN
+}
+```
+
+#### Returns
+
+The exact quote out result of the swap.
+
+#### Example
+
+```typescript
+const virtualPoolState = await client.state.getPool(poolAddress)
+const poolConfigState = await client.state.getPoolConfig(
+    virtualPoolState.config
+)
+
+let currentPoint: BN
+if (poolConfigState.activationType === 0) {
+    // Slot
+    const currentSlot = await connection.getSlot()
+    currentPoint = new BN(currentSlot)
+} else {
+    // Timestamp
+    const currentSlot = await connection.getSlot()
+    const currentTime = await connection.getBlockTime(currentSlot)
+    currentPoint = new BN(currentTime || 0)
+}
+
+const quote = await client.pool.swapQuoteExactOut({
+    virtualPool: virtualPoolState,
+    config: poolConfigState,
+    swapBaseForQuote: false,
+    outAmount: new BN(100000000),
+    slippageBps: 0,
+    hasReferral: false,
+    currentPoint,
+})
+```
+
+#### Notes
+
+- This function helps to get the exact number of input tokens to swap to get the exact output amount.
+- The `currentPoint` parameter is typically used in cases where the config has applied a fee scheduler. If activationType == 0, then it is current slot. If activationType == 1, then it is the current block timestamp. You can fill in accordingly based on slot or timestamp.
+
+---
+
 ## Migration Functions
+
+### Flow of migration
+
+#### DAMM V1
+
+1. `createDammV1MigrationMetadata`
+2. `createLocker` (if the token has locked vesting)
+3. `migrateToDammV1`
+4. `lockDammV1LpToken` (if `creatorLockedLpPercentage` or `partnerLockedLpPercentage` is >0)
+5. `claimDammV1LpToken` (if `creatorLpPercentage` or `partnerLpPercentage` is >0)
+
+#### DAMM V2
+
+1. `createDammV2MigrationMetadata`
+2. `createLocker` (if the token has locked vesting)
+3. `migrateToDammV2`
+
+---
 
 ### createLocker
 
-Creates a new locker account when migrating from Dynamic Bonding Curve to DAMM V1 or DAMM V2.
+Creates a new locker account when migrating from Dynamic Bonding Curve to DAMM V1 or DAMM V2. This function is called when `lockedVestingParam` is enabled in the config key.
 
 #### Function
 
@@ -1427,7 +1979,7 @@ const transaction = await client.migration.createLocker({
 
 #### Notes
 
-- This function is called when lockedVesting is enabled in the config key.
+- This function is called when `lockedVesting` is enabled in the config key.
 
 ---
 
@@ -1465,7 +2017,7 @@ const transaction = await client.migration.withdrawLeftover({
 
 #### Notes
 
-- This function is called when there are leftover tokens in the Dynamic Bonding Curve pool.
+- This function is called when there are leftover tokens in the Dynamic Bonding Curve pool after migration.
 - The leftover tokens will be sent to the `leftoverReceiver` that was specified in the config key.
 
 ---
@@ -1506,7 +2058,7 @@ const transaction = await client.migration.createDammV1MigrationMetadata({
 
 #### Notes
 
-- When migrating to DAMM V1, the `createDammV1MigrationMetadata` function must be the first function called.
+- This function must be called before `migrateToDammV1`.
 
 ---
 
@@ -1546,13 +2098,7 @@ const transaction = await client.migration.migrateToDammV1({
 
 #### Notes
 
-- When migrating to DAMM V1, the flow would be the following:
-    1. `createDammV1MigrationMetadata`
-    2. `createLocker` (if the token has locked vesting)
-    3. `migrateToDammV1`
-    4. `lockDammV1LpToken` (if creatorLp or partnerLp is >0)
-    5. `claimDammV1LpToken` (if creatorLp or partnerLp is >0)
-- Ensure that when attempting to migrate the virtual pool, all these validation checks pass:
+- Ensure that when attempting to migrate the virtual pool, all these validation checks have already been met:
     1. The `MigrationFeeOption` must be a valid enum value with a valid base fee in basis points
     2. The pool's config account must have:
         - pool_creator_authority matching the pool_authority key
@@ -1566,7 +2112,7 @@ const transaction = await client.migration.migrateToDammV1({
         - virtual_pool must have matching base_vault and quote_vault
         - virtual_pool must have a matching config
         - migration_metadata must have a matching virtual_pool
-- You can get the dammConfig key from the [README.md](./README.md)
+- You can get the dammConfig key from the [README.md](./README.md), or you can use `DAMM_V1_MIGRATION_FEE_ADDRESS[i]` to get the dammConfig key address.
 
 ---
 
@@ -1608,7 +2154,8 @@ const transaction = await client.migration.lockDammV1LpToken({
 
 #### Notes
 
-- This function is called when the creator or partner would like to lock their LP tokens.
+- This function is called when the `creatorLockedLpPercentage` or `partnerLockedLpPercentage` is > 0.
+- You can get the dammConfig key from the [README.md](./README.md), or you can use `DAMM_V1_MIGRATION_FEE_ADDRESS[i]` to get the dammConfig key address.
 
 ---
 
@@ -1650,7 +2197,8 @@ const transaction = await client.migration.claimDammV1LpToken({
 
 #### Notes
 
-- This function is called when the creator or partner would like to claim their LP tokens.
+- This function is called when the `creatorLpPercentage` or `partnerLpPercentage` is > 0.
+- You can get the dammConfig key from the [README.md](./README.md), or you can use `DAMM_V1_MIGRATION_FEE_ADDRESS[i]` to get the dammConfig key address.
 
 ---
 
@@ -1690,7 +2238,7 @@ const transaction = await client.migration.createDammV2MigrationMetadata({
 
 #### Notes
 
-- When migrating to DAMM V2, the `createDammV2MigrationMetadata` function must be the first function called.
+- This function must be called before `migrateToDammV2`.
 
 ---
 
@@ -1730,13 +2278,8 @@ const transaction = await client.migration.migrateToDammV2({
 
 #### Notes
 
-- When migrating to DAMM V2, the flow would be the following:
-    1. `createDammV2MigrationMetadata`
-    2. `createLocker` (if the token has locked vesting)
-    3. `migrateToDammV2`
-- Ensure that when attempting to migrate the virtual pool, all these validation checks pass:
+- Ensure that when attempting to migrate the virtual pool, all these validation checks have already been met:
     1. The `MigrationFeeOption` must be a valid enum value with a valid base fee in basis points
-        - For fixed BPS fee options (25, 30, 100, 200, 400, 600), the pool_fees.base_fee.period_frequency must be 0
     2. The pool's config account must have:
         - pool_creator_authority matching the pool_authority key
         - partner_fee_percent set to 0
@@ -1752,7 +2295,7 @@ const transaction = await client.migration.migrateToDammV2({
         - migration_metadata must have a matching virtual_pool
         - first_position_nft_mint must not equal second_position_nft_mint
     7. Exactly one remaining account must be provided (for the DAMM V2 config)
-- You can get the dammConfig key from the [README.md](./README.md)
+- You can get the dammConfig key from the [README.md](./README.md), or you can use `DAMM_V2_MIGRATION_FEE_ADDRESS[i]` to get the dammConfig key address.
 
 ---
 
@@ -1771,7 +2314,7 @@ async createPoolMetadata(createVirtualPoolMetadataParam: CreateVirtualPoolMetada
 #### Parameters
 
 ```typescript
-interface CreatePoolMetadataParam {
+interface CreateVirtualPoolMetadataParam {
     virtualPool: PublicKey // The virtual pool address
     name: string // The name of the pool
     website: string // The website of the pool
@@ -1799,9 +2342,11 @@ const transaction = await client.creator.createPoolMetadata({
 })
 ```
 
+---
+
 ### claimCreatorTradingFee
 
-Claims a creator trading fee.
+Claims a creator trading fee. If your pool's config key has `creatorTradingFeePercentage` > 0, you can use this function to claim the trading fee for the pool creator.
 
 #### Function
 
@@ -1845,9 +2390,57 @@ const transaction = await client.creator.claimCreatorTradingFee({
 
 #### Notes
 
-- The creator of the pool must be the same as the creator in the `ClaimTradingFeeParam` params.
+- The creator of the pool must be the same as the creator in the `ClaimCreatorTradingFeeParam` params.
 - You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
 - If you indicated a `receiver`, the receiver **is not** required to sign the transaction, however, you must provide a `tempWSolAcc` if the receiver != creator and if the quote mint is SOL.
+
+---
+
+### claimCreatorTradingFee2
+
+Claims a creator trading fee. If your pool's config key has `creatorTradingFeePercentage` > 0, you can use this function to claim the trading fee for the pool creator.
+
+#### Function
+
+```typescript
+async claimCreatorTradingFee2(claimCreatorTradingFee2Param: ClaimCreatorTradingFee2Param): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface ClaimCreatorTradingFeeParam {
+    creator: PublicKey // The creator of the pool
+    payer: PublicKey // The payer of the transaction
+    pool: PublicKey // The pool address
+    maxBaseAmount: BN // The maximum amount of base tokens to claim
+    maxQuoteAmount: BN // The maximum amount of quote tokens to claim
+    receiver?: PublicKey | null // The wallet that will receive the tokens
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.creator.claimCreatorTradingFee({
+    creator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    payer: new PublicKey('payer1234567890abcdefghijklmnopqrstuvwxyz'),
+    pool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    maxBaseAmount: new BN(1000000000),
+    maxQuoteAmount: new BN(1000000000),
+    receiver: new PublicKey('receiver1234567890abcdefghijklmnopqrstuvwxyz'),
+})
+```
+
+#### Notes
+
+- The creator of the pool must be the same as the creator in the `ClaimCreatorTradingFee2Param` params.
+- You can indicate maxBaseAmount or maxQuoteAmount to be 0 to not claim Base or Quote tokens respectively.
+- Can be used in case the creator is a squad multisig account.
 
 ---
 
@@ -1886,6 +2479,86 @@ const transaction = await client.creator.creatorWithdrawSurplus({
 #### Notes
 
 - The creator of the pool must be the same as the creator in the `CreatorWithdrawSurplusParam` params.
+
+---
+
+### creatorWithdrawMigrationFee
+
+Withdraws the creator's migration fee from the pool.
+
+#### Function
+
+```typescript
+async creatorWithdrawMigrationFee(withdrawMigrationFeeParam: WithdrawMigrationFeeParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface WithdrawMigrationFeeParam {
+    virtualPool: PublicKey // The virtual pool address
+    sender: PublicKey // The wallet that will claim the fee
+    feePayer?: PublicKey // The wallet that will pay for the transaction
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.creator.creatorWithdrawMigrationFee({
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    sender: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    feePayer: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+})
+```
+
+#### Notes
+
+- The sender of the pool must be the same as the creator (`poolCreator`) in the virtual pool.
+
+---
+
+### transferPoolCreator
+
+Transfers the pool creator to a new wallet.
+
+#### Function
+
+```typescript
+async transferPoolCreator(transferPoolCreatorParam: TransferPoolCreatorParam): Promise<Transaction>
+```
+
+#### Parameters
+
+```typescript
+interface TransferPoolCreatorParam {
+    virtualPool: PublicKey // The virtual pool address
+    creator: PublicKey // The current creator of the pool
+    newCreator: PublicKey // The new creator of the pool
+}
+```
+
+#### Returns
+
+A transaction that can be signed and sent to the network.
+
+#### Example
+
+```typescript
+const transaction = await client.creator.transferPoolCreator({
+    virtualPool: new PublicKey('abcdefghijklmnopqrstuvwxyz1234567890'),
+    creator: new PublicKey('boss1234567890abcdefghijklmnopqrstuvwxyz'),
+    newCreator: new PublicKey('newCreator1234567890abcdefghijklmnopqrstuvwxyz'),
+})
+```
+
+#### Notes
+
+- The creator of the pool must be the signer of the transaction.
 
 ---
 
@@ -2043,6 +2716,34 @@ An array of pools.
 
 ```typescript
 const pools = await client.state.getPoolsByConfig(configAddress)
+```
+
+---
+
+### getPoolsByCreator
+
+Retrieves all pools by creator address.
+
+#### Function
+
+```typescript
+async getPoolsByCreator(creatorAddress: PublicKey | string): Promise<ProgramAccount<VirtualPool>[]>
+```
+
+#### Parameters
+
+```typescript
+creatorAddress: PublicKey | string // The address of the creator
+```
+
+#### Returns
+
+An array of pools.
+
+#### Example
+
+```typescript
+const pools = await client.state.getPoolsByCreator(creatorAddress)
 ```
 
 ---
@@ -2215,62 +2916,6 @@ const escrow = await client.state.getDammV1LockEscrow(escrowAddress)
 
 ---
 
-### getDammV1MigrationMetadata
-
-Gets the migration metadata for a DAMM V1 pool.
-
-#### Function
-
-```typescript
-async getDammV1MigrationMetadata(poolAddress: PublicKey | string): Promise<MeteoraDammMigrationMetadata>
-```
-
-#### Parameters
-
-```typescript
-poolAddress: PublicKey | string // The address of the DAMM V1 pool
-```
-
-#### Returns
-
-A `MeteoraDammMigrationMetadata` object containing the migration metadata.
-
-#### Example
-
-```typescript
-const metadata = await client.state.getDammV1MigrationMetadata(poolAddress)
-```
-
----
-
-### getDammV2MigrationMetadata
-
-Gets the migration metadata for a DAMM V2 pool.
-
-#### Function
-
-```typescript
-async getDammV2MigrationMetadata(poolAddress: PublicKey | string): Promise<MeteoraDammV2MigrationMetadata>
-```
-
-#### Parameters
-
-```typescript
-poolAddress: PublicKey | string // The address of the DAMM V2 pool
-```
-
-#### Returns
-
-A `MeteoraDammV2MigrationMetadata` object containing the migration metadata.
-
-#### Example
-
-```typescript
-const metadata = await client.state.getDammV2MigrationMetadata(poolAddress)
-```
-
----
-
 ### getPoolFeeMetrics
 
 Gets the fee metrics for a specific pool.
@@ -2310,79 +2955,20 @@ const metrics = await client.state.getPoolFeeMetrics(poolAddress)
 
 ---
 
-### getPoolCreatorFeeMetrics
+### getPoolsFeesByConfig
 
-Gets the creator fee metrics for a specific pool.
-
-#### Function
-
-```typescript
-async getPoolCreatorFeeMetrics(poolAddress: PublicKey): Promise<{
-    creatorBaseFee: BN
-    creatorQuoteFee: BN
-}>
-```
-
-#### Parameters
-
-```typescript
-poolAddress: PublicKey // The address of the pool
-```
-
-#### Returns
-
-An object containing the creator's fee metrics.
-
-#### Example
-
-```typescript
-const metrics = await client.state.getPoolCreatorFeeMetrics(poolAddress)
-```
-
----
-
-### getPoolPartnerFeeMetrics
-
-Gets the partner fee metrics for a specific pool.
+Gets all fees for pools linked to a specific config key.
 
 #### Function
 
 ```typescript
-async getPoolPartnerFeeMetrics(poolAddress: PublicKey): Promise<{
+async getPoolsFeesByConfig(configAddress: PublicKey): Promise<Array<{
+    poolAddress: PublicKey
     partnerBaseFee: BN
     partnerQuoteFee: BN
-}>
-```
-
-#### Parameters
-
-```typescript
-poolAddress: PublicKey // The address of the pool
-```
-
-#### Returns
-
-An object containing the partner's fee metrics.
-
-#### Example
-
-```typescript
-const metrics = await client.state.getPoolPartnerFeeMetrics(poolAddress)
-```
-
----
-
-### getPoolsQuoteFeesByConfig
-
-Gets all quote fees for pools linked to a specific config key.
-
-#### Function
-
-```typescript
-async getPoolsQuoteFeesByConfig(configAddress: PublicKey): Promise<Array<{
-    poolAddress: PublicKey
-    partnerQuoteFee: BN
+    creatorBaseFee: BN
     creatorQuoteFee: BN
+    totalTradingBaseFee: BN
     totalTradingQuoteFee: BN
 }>>
 ```
@@ -2400,40 +2986,43 @@ An array of objects containing quote fee metrics for each pool.
 #### Example
 
 ```typescript
-const fees = await client.state.getPoolsQuoteFeesByConfig(configAddress)
+const fees = await client.state.getPoolsFeesByConfig(configAddress)
 ```
 
 ---
 
-### getPoolsBaseFeesByConfig
+### getPoolsFeesByCreator
 
-Gets all base fees for pools linked to a specific config key.
+Gets all fees for pools linked to a specific creator.
 
 #### Function
 
 ```typescript
-async getPoolsBaseFeesByConfig(configAddress: PublicKey): Promise<Array<{
+async getPoolsFeesByCreator(creatorAddress: PublicKey): Promise<Array<{
     poolAddress: PublicKey
     partnerBaseFee: BN
+    partnerQuoteFee: BN
     creatorBaseFee: BN
+    creatorQuoteFee: BN
     totalTradingBaseFee: BN
+    totalTradingQuoteFee: BN
 }>>
 ```
 
 #### Parameters
 
 ```typescript
-configAddress: PublicKey // The address of the pool config
+creatorAddress: PublicKey // The address of the creator
 ```
 
 #### Returns
 
-An array of objects containing base fee metrics for each pool.
+An array of objects containing quote fee metrics for each pool.
 
 #### Example
 
 ```typescript
-const fees = await client.state.getPoolsBaseFeesByConfig(configAddress)
+const fees = await client.state.getPoolsFeesByCreator(creatorAddress)
 ```
 
 ---
@@ -2507,8 +3096,10 @@ The address of the DAMM V1 pool.
 #### Example
 
 ```typescript
+const poolConfig = await client.state.getPoolConfig(configAddress)
+
 const dammV1PoolAddress = deriveDammV1PoolAddress(
-    dammConfig: new PublicKey('8f848CEy8eY6PhJ3VcemtBDzPPSD4Vq7aJczLZ3o8MmX'),
+    dammConfig: DAMM_V1_MIGRATION_FEE_ADDRESS[poolConfig.migrationFeeOption],
     tokenAMint: new PublicKey('tokenA1234567890abcdefghijklmnopqrstuvwxyz'),
     tokenBMint: new PublicKey('tokenB1234567890abcdefghijklmnopqrstuvwxyz')
 )
@@ -2545,8 +3136,10 @@ The address of the DAMM V2 pool.
 #### Example
 
 ```typescript
+const poolConfig = await client.state.getPoolConfig(configAddress)
+
 const dammV2PoolAddress = deriveDammV2PoolAddress(
-    dammConfig: new PublicKey('7F6dnUcRuyM2TwR8myT1dYypFXpPSxqwKNSFNkxyNESd'),
+    dammConfig: DAMM_V2_MIGRATION_FEE_ADDRESS[poolConfig.migrationFeeOption],
     tokenAMint: new PublicKey('tokenA1234567890abcdefghijklmnopqrstuvwxyz'),
     tokenBMint: new PublicKey('tokenB1234567890abcdefghijklmnopqrstuvwxyz')
 )
@@ -2588,14 +3181,14 @@ const dbcTokenVaultAddress = deriveDbcTokenVaultAddress(
 
 ## Calculation Functions
 
-### getBaseFeeParams
+### getFeeSchedulerParams
 
-Gets the base fee parameters for a specific pool. Includes fee scheduler calculation.
+Gets the fee scheduler parameters for a specific pool config.
 
 #### Function
 
 ```typescript
-function getBaseFeeParams(
+function getFeeSchedulerParams(
     startingFeeBps: number,
     endingFeeBps: number,
     feeSchedulerMode: number,
@@ -2616,12 +3209,12 @@ totalDuration: number // The total duration of the fee scheduler
 
 #### Returns
 
-A `BaseFeeParams` object containing the calculated base fee parameters.
+A `BaseFee` object containing the calculated fee scheduler parameters.
 
 #### Example
 
 ```typescript
-const baseFeeParams = getBaseFeeParams(
+const baseFeeParams = getFeeSchedulerParams(
     startingFeeBps: 5000,
     endingFeeBps: 100,
     feeSchedulerMode: 1,
@@ -2629,6 +3222,68 @@ const baseFeeParams = getBaseFeeParams(
     totalDuration: 600
 )
 ```
+
+#### Notes
+
+- The `totalDuration` is the total duration of the fee scheduler. It must be calculated based on your `activationType`. If you use `ActivationType.Slot`, the `totalDuration` is denominated in terms of 400ms (slot). If you use `ActivationType.Timestamp`, the `totalDuration` is denominated in terms of 1000ms (timestamp).
+- `startingFeeBps` must always be greater than or equal to `endingFeeBps`.
+- `totalDuration` must always be greater than or equal to `numberOfPeriod`.
+
+---
+
+### getRateLimiterParams
+
+Gets the fee scheduler parameters for a specific pool config.
+
+#### Function
+
+```typescript
+function getRateLimiterParams(
+    baseFeeBps: number,
+    feeIncrementBps: number,
+    referenceAmount: number,
+    maxLimiterDuration: number,
+    tokenQuoteDecimal: TokenDecimal,
+    activationType: ActivationType
+): BaseFeeParams
+```
+
+#### Parameters
+
+```typescript
+baseFeeBps: number // The base fee in basis points
+feeIncrementBps: number // The fee increment in basis points
+referenceAmount: number // The reference amount (in terms of quote token)
+maxLimiterDuration: number // The max rate limiter duration
+tokenQuoteDecimal: TokenDecimal // The token quote decimal
+activationType: ActivationType // The activation type
+```
+
+#### Returns
+
+A `BaseFee` object containing the calculated rate limiter parameters.
+
+#### Example
+
+```typescript
+const baseFeeParams = getRateLimiterParams(
+    baseFeeBps: 100,
+    feeIncrementBps: 100,
+    referenceAmount: 1, // 1 SOL
+    maxLimiterDuration: 600, // 600 slots
+    tokenQuoteDecimal: TokenDecimal.NINE,
+    activationType: ActivationType.Slot
+)
+```
+
+#### Notes
+
+- The `maxLimiterDuration` is the max duration of the rate limiter. It must be calculated based on your `activationType`. If you use `ActivationType.Slot`, the `maxLimiterDuration` is denominated in terms of 400ms (slot). If you use `ActivationType.Timestamp`, the `maxLimiterDuration` is denominated in terms of 1000ms (timestamp).
+- `referenceAmount` must always be greater than 0. This parameter takes into account the quoteMint decimals. For example, if you use `TokenDecimal.NINE`, the `referenceAmount` must be 1 (1 SOL).
+- `maxLimiterDuration` must always be greater than 0.
+- `tokenQuoteDecimal` must always be greater than 0.
+- `activationType` must always be greater than 0.
+- `baseFeeBps` must always be greater than 0.
 
 ---
 
@@ -2680,8 +3335,7 @@ function getLockedVestingParams(
     cliffUnlockAmount: number,
     totalVestingDuration: number,
     cliffDurationFromMigrationTime: number,
-    tokenBaseDecimal: TokenDecimal,
-    activationType: ActivationType
+    tokenBaseDecimal: TokenDecimal
 ): LockedVestingParams
 ```
 
@@ -2694,7 +3348,6 @@ cliffUnlockAmount: number // The amount of tokens that will be unlocked when ves
 totalVestingDuration: number // The total vesting duration in seconds
 cliffDurationFromMigrationTime: number // The duration of the waiting time before the vesting starts
 tokenBaseDecimal: TokenDecimal // The number of decimals for the base token
-activationType: ActivationType // The activation type
 ```
 
 #### Returns
@@ -2711,6 +3364,51 @@ const lockedVestingParams = getLockedVestingParams(
     totalVestingDuration: 600,
     cliffDurationFromMigrationTime: 600,
     tokenBaseDecimal: 6,
-    activationType: 0
 )
 ```
+
+#### Notes
+
+- The `totalVestingDuration` is the total duration of the vesting. It must be calculated in terms of seconds => 1000ms (timestamp).
+
+---
+
+### getQuoteReserveFromNextSqrtPrice
+
+Gets the quote reserve from the next sqrt price instead of getting from the pool state.
+
+#### Function
+
+```typescript
+function getQuoteReserveFromNextSqrtPrice(
+    nextSqrtPrice: BN,
+    config: PoolConfig
+): BN
+```
+
+#### Parameters
+
+```typescript
+nextSqrtPrice: BN // The next sqrt price that you can fetch from swap cpi logs
+config: PoolConfig // The pool config
+```
+
+#### Returns
+
+A `BN` object containing the calculated quote reserve.
+
+#### Example
+
+```typescript
+const poolConfig = await client.state.getPoolConfig(configAddress)
+
+const quoteReserve = getQuoteReserveFromNextSqrtPrice(
+    nextSqrtPrice: new BN('13663931917038696),
+    config: poolConfig
+)
+```
+
+#### Notes
+
+- The `nextSqrtPrice` is the next sqrt price that you can fetch from swap cpi logs.
+- The `config` is the pool config that the token pool used to launch.

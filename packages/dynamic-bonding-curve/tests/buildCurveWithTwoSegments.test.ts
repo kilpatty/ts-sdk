@@ -3,8 +3,9 @@ import { buildCurveWithTwoSegments } from '../src/helpers'
 import BN from 'bn.js'
 import {
     ActivationType,
+    BaseFeeMode,
+    BuildCurveBaseParam,
     CollectFeeMode,
-    FeeSchedulerMode,
     MigrationFeeOption,
     MigrationOption,
     TokenDecimal,
@@ -13,7 +14,7 @@ import {
 import { convertBNToDecimal } from './utils/common'
 
 describe('buildCurveWithTwoSegments tests', () => {
-    const baseParams = {
+    const baseParams: BuildCurveBaseParam = {
         totalTokenSupply: 1000000000,
         migrationOption: MigrationOption.MET_DAMM_V2,
         tokenBaseDecimal: TokenDecimal.SIX,
@@ -25,12 +26,14 @@ describe('buildCurveWithTwoSegments tests', () => {
             totalVestingDuration: 0,
             cliffDurationFromMigrationTime: 0,
         },
-        feeSchedulerParam: {
-            startingFeeBps: 100,
-            endingFeeBps: 100,
-            numberOfPeriod: 0,
-            totalDuration: 0,
-            feeSchedulerMode: FeeSchedulerMode.Linear,
+        baseFeeParams: {
+            baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+            feeSchedulerParam: {
+                startingFeeBps: 100,
+                endingFeeBps: 100,
+                numberOfPeriod: 0,
+                totalDuration: 0,
+            },
         },
         dynamicFeeEnabled: true,
         activationType: ActivationType.Slot,
@@ -43,6 +46,11 @@ describe('buildCurveWithTwoSegments tests', () => {
         creatorLockedLpPercentage: 0,
         creatorTradingFeePercentage: 0,
         leftover: 10000,
+        tokenUpdateAuthority: 0,
+        migrationFee: {
+            feePercentage: 10,
+            creatorFeePercentage: 50,
+        },
     }
 
     test('build curve with two segments', () => {
@@ -50,9 +58,12 @@ describe('buildCurveWithTwoSegments tests', () => {
 
         const config = buildCurveWithTwoSegments({
             ...baseParams,
-            initialMarketCap: 200000,
+            totalTokenSupply: 1000000000,
+            initialMarketCap: 20000,
             migrationMarketCap: 1000000,
             percentageSupplyOnMigration: 20,
+            tokenBaseDecimal: TokenDecimal.NINE,
+            tokenQuoteDecimal: TokenDecimal.NINE,
             lockedVestingParam: {
                 totalLockedVestingAmount: 0,
                 numberOfVestingPeriod: 0,
@@ -60,12 +71,14 @@ describe('buildCurveWithTwoSegments tests', () => {
                 totalVestingDuration: 0,
                 cliffDurationFromMigrationTime: 0,
             },
-            feeSchedulerParam: {
-                startingFeeBps: 5000,
-                endingFeeBps: 100,
-                numberOfPeriod: 120,
-                totalDuration: 120,
-                feeSchedulerMode: FeeSchedulerMode.Exponential,
+            baseFeeParams: {
+                baseFeeMode: BaseFeeMode.FeeSchedulerExponential,
+                feeSchedulerParam: {
+                    startingFeeBps: 5000,
+                    endingFeeBps: 100,
+                    numberOfPeriod: 120,
+                    totalDuration: 120,
+                },
             },
             dynamicFeeEnabled: true,
             activationType: ActivationType.Slot,

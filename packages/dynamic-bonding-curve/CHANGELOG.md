@@ -2,6 +2,161 @@
 
 All notable changes to the Dynamic Bonding Curve SDK will be documented in this file.
 
+## [1.3.1] - 2025-07-02
+
+### Added
+
+- `swapQuoteExactOut` function
+
+## [1.3.0] - 2025-07-01
+
+### Added
+
+- Added optional `payer` parameter to `swap` function
+- Added `createPoolWithPartnerAndCreatorFirstBuy` function
+
+### Changed
+
+- `createConfigAndPoolWithFirstBuy` and `createPoolWithFirstBuy` function now accepts a `buyer` parameter
+- `createPoolWithFirstBuy` function now returns a `Transaction[]` containing `createPoolTx` and a `swapBuyTx` instead of a single `Transaction`
+
+## [1.2.9] - 2025-06-26
+
+### Added
+
+- `TokenUpdateAuthorityOption` enum to have more options for token update authority:
+    - CreatorUpdateAuthority (0)
+    - Immutable (1)
+    - PartnerUpdateAuthority (2)
+    - CreatorUpdateAndMintAuthority (3)
+    - PartnerUpdateAndMintAuthority (4)
+
+### Changed
+
+- Changed `CollectFeeMode` enums from `OnlyQuote` and `Both` to `QuoteToken` and `OutputToken`
+
+## [1.2.8] - 2025-06-24
+
+### Added
+
+- `getQuoteReserveFromNextSqrtPrice` helper function
+
+## [1.2.7] - 2025-06-19
+
+### Changed
+
+- Fixed `buildCurve` function to correctly calculate with precision for the `migrationBaseSupply`
+
+## [1.2.6] - 2025-06-13
+
+### Changed
+
+- Fixed `getPercentageSupplyOnMigration` function to correctly calculate the percentage of supply on migration
+
+## [1.2.5] - 2025-06-12
+
+### Changed
+
+- Removed `getDammV1MigrationMetadata` and `getDammV2MigrationMetadata` functions
+
+## [1.2.4] - 2025-06-12
+
+### Added
+
+- Support for Rate Limiter mode in base fee configuration
+    - Allows partners to configure an alternative base fee mode that increases fee slope based on quote amount
+    - Only available when collect fee mode is in quote token only and for buy operations
+    - Prevents multiple swap instructions (or CPI) to the same pool in a single transaction
+
+### Breaking Changes
+
+- Maximum `cliff_fee_numerator` increased from 50% (5000 bps / 500_000_000) to 99% (9900 bps / 990_000_000)
+- `swap` instruction now requires `instruction_sysvar_account` in remaining_accounts when `is_rate_limiter_applied` is true
+- `swap_quote` function updated to handle rate limiter math calculations and 99% max fee
+- Base fee parameter structure updated:
+    - Renamed `fee_scheduler_mode` to `base_fee_mode`
+    - Updated parameter structure:
+        ```
+        base_fee = {
+            cliff_fee_numerator: BN
+            first_factor: number // feeScheduler: numberOfPeriod, rateLimiter: feeIncrementBps
+            second_factor: BN // feeScheduler: periodFrequency, rateLimiter: maxLimiterDuration
+            third_factor: BN // feeScheduler: reductionFactor, rateLimiter: referenceAmount
+            base_fee_mode: BaseFeeMode // 0, 1, or 2
+        }
+        ```
+    - New base fee modes:
+        - 0 = Fee Scheduler - Linear
+        - 1 = Fee Scheduler - Exponential
+        - 2 = Rate Limiter
+- `buildCurve`, `buildCurveWithMarketCap`, `buildCurveWithTwoSegments`, `buildCurveWithLiquidityWeights` functions now require `baseFeeParams` parameter that can be either configured with `feeSchedulerParam` or `rateLimiterParam`
+
+### Changed
+
+- Updated base fee parameter structure to support both fee scheduler and rate limiter modes
+- Enhanced fee calculation logic to accommodate rate limiter functionality
+
+## [1.2.3] - 2025-06-07
+
+### Added
+
+- `swapQuoteExactIn` function
+
+## [1.2.2] - 2025-06-02
+
+### Added
+
+- `claimCreatorTradingFee2` function (without `tempWSolAcc` parameter)
+- `claimPartnerTradingFee2` function (without `tempWSolAcc` parameter)
+
+## [1.2.1] - 2025-06-02
+
+### Changed
+
+- Fixed `buildCurveWithMarketCap` function to correctly calculate the `migrationQuoteThreshold`
+- Fixed `validateConfigParameters` function to calculate `migrationBaseAmount` correctly
+
+## [1.2.0] - 2025-05-31
+
+### Changed
+
+- `withdrawMigrationFee` function for partner and creator is now called `partnerWithdrawMigrationFee` and `creatorWithdrawMigrationFee`
+- `createConfigAndPoolWithFirstBuy` function now returns an object containing the new config transaction, new pool transaction, and first buy transaction
+
+## [1.1.9] - 2025-05-30
+
+### Added
+
+- `transferPoolCreator` function for creator
+- `withdrawMigrationFee` function for creator
+- `withdrawMigrationFee` function for partner
+
+### Changed
+
+- Removed `buildCurveWithCreatorFirstBuy` function
+
+### Breaking Changes
+
+- `createConfig`'s `ConfigParameters` include `migrationFee` and `tokenUpdateAuthority` configurations.
+- All `buildCurve` functions now require `migrationFee` and `tokenUpdateAuthority` configurations.
+
+## [1.1.8] - 2025-05-28
+
+### Added
+
+- `createConfigAndPoolWithFirstBuy` function
+- `getTokenType` helper function
+- `prepareTokenAccountTx` helper function
+- `cleanUpTokenAccountTx` helper function
+
+## [1.1.7] - 2025-05-27
+
+### Changed
+
+- Fixed `buildCurveWithTwoSegments` function to correctly calculate the midSqrtPrice
+- Fixed precision error of `buildCurveWithMarketCap` function
+- Changed `periodFrequency` calculation in `getLockedVestingParams` function
+
 ## [1.1.6] - 2025-05-23
 
 ### Added

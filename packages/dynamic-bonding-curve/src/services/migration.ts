@@ -76,7 +76,7 @@ export class MigrationService extends DynamicBondingCurveProgram {
     }
 
     /**
-     * Get the vault program instance
+     * Get vault program instance
      * @returns The vault program instance
      */
     private getVaultProgram(): Program<DynamicVault> {
@@ -84,7 +84,7 @@ export class MigrationService extends DynamicBondingCurveProgram {
     }
 
     /**
-     * Get the DAMM V1 program instance
+     * Get DAMM V1 program instance
      * @returns The DAMM V1 program instance
      */
     private getDammV1Program(): Program<DammV1> {
@@ -92,9 +92,9 @@ export class MigrationService extends DynamicBondingCurveProgram {
     }
 
     /**
-     * Create lock escrow
-     * @param createLockerParam - The parameters for the lock escrow
-     * @returns A create lock escrow transaction
+     * Create Locker (if there is lockedVesting)
+     * @param createLockerParam - The parameters for the locker
+     * @returns A create locker transaction
      */
     async createLocker(
         createLockerParam: CreateLockerParam
@@ -486,15 +486,12 @@ export class MigrationService extends DynamicBondingCurveProgram {
 
         const dammV1Program = this.getDammV1Program()
 
-        const dammV1MigrationMetadata =
-            await this.state.getDammV1MigrationMetadata(migrationMetadata)
-
         let lockEscrowKey: PublicKey
 
         if (lockDammV1LpTokenParam.isPartner) {
             lockEscrowKey = deriveDammV1LockEscrowAddress(
                 dammPool,
-                dammV1MigrationMetadata.partner
+                poolConfigState.feeClaimer
             )
 
             const lockEscrowData =
@@ -505,7 +502,7 @@ export class MigrationService extends DynamicBondingCurveProgram {
                     lockDammV1LpTokenParam.payer,
                     dammPool,
                     lpMint,
-                    dammV1MigrationMetadata.partner,
+                    poolConfigState.feeClaimer,
                     lockEscrowKey,
                     dammV1Program
                 )
@@ -525,7 +522,7 @@ export class MigrationService extends DynamicBondingCurveProgram {
                     lockDammV1LpTokenParam.payer,
                     dammPool,
                     lpMint,
-                    dammV1MigrationMetadata.poolCreator,
+                    poolState.creator,
                     lockEscrowKey,
                     dammV1Program
                 )
@@ -569,8 +566,8 @@ export class MigrationService extends DynamicBondingCurveProgram {
                 lpMint,
                 lockEscrow: lockEscrowKey,
                 owner: lockDammV1LpTokenParam.isPartner
-                    ? dammV1MigrationMetadata.partner
-                    : dammV1MigrationMetadata.poolCreator,
+                    ? poolConfigState.feeClaimer
+                    : poolState.creator,
                 sourceTokens,
                 escrowVault,
                 aVault,
@@ -620,21 +617,18 @@ export class MigrationService extends DynamicBondingCurveProgram {
             claimDammV1LpTokenParam.virtualPool
         )
 
-        const dammV1MigrationMetadata =
-            await this.state.getDammV1MigrationMetadata(migrationMetadata)
-
         const lpMint = deriveDammV1LpMintAddress(dammPool)
 
         let destinationToken: PublicKey
         if (claimDammV1LpTokenParam.isPartner) {
             destinationToken = findAssociatedTokenAddress(
-                dammV1MigrationMetadata.partner,
+                poolConfigState.feeClaimer,
                 lpMint,
                 TOKEN_PROGRAM_ID
             )
         } else {
             destinationToken = findAssociatedTokenAddress(
-                dammV1MigrationMetadata.poolCreator,
+                virtualPoolState.creator,
                 lpMint,
                 TOKEN_PROGRAM_ID
             )
@@ -647,8 +641,8 @@ export class MigrationService extends DynamicBondingCurveProgram {
                 claimDammV1LpTokenParam.payer,
                 destinationToken,
                 claimDammV1LpTokenParam.isPartner
-                    ? dammV1MigrationMetadata.partner
-                    : dammV1MigrationMetadata.poolCreator,
+                    ? poolConfigState.feeClaimer
+                    : virtualPoolState.creator,
                 lpMint,
                 TOKEN_PROGRAM_ID
             )
@@ -669,8 +663,8 @@ export class MigrationService extends DynamicBondingCurveProgram {
             sourceToken,
             destinationToken,
             owner: claimDammV1LpTokenParam.isPartner
-                ? dammV1MigrationMetadata.partner
-                : dammV1MigrationMetadata.poolCreator,
+                ? poolConfigState.feeClaimer
+                : virtualPoolState.creator,
             sender: claimDammV1LpTokenParam.payer,
             tokenProgram: TOKEN_PROGRAM_ID,
         }

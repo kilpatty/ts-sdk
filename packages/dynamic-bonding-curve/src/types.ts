@@ -86,8 +86,12 @@ export type SwapAccounts = Accounts<
     DynamicBondingCurve['instructions']['20']
 >['swap']
 
-export type WithdrawLeftoverAccounts = Accounts<
+export type TransferPoolCreatorAccounts = Accounts<
     DynamicBondingCurve['instructions']['21']
+>['transferPoolCreator']
+
+export type WithdrawLeftoverAccounts = Accounts<
+    DynamicBondingCurve['instructions']['22']
 >['withdrawLeftover']
 
 ///////////////
@@ -153,8 +157,8 @@ export enum TokenType {
 }
 
 export enum CollectFeeMode {
-    OnlyQuote = 0,
-    Both = 1,
+    QuoteToken = 0,
+    OutputToken = 1,
 }
 
 export enum MigrationOption {
@@ -162,14 +166,10 @@ export enum MigrationOption {
     MET_DAMM_V2 = 1,
 }
 
-export enum GetFeeMode {
-    QuoteToken = 0,
-    OutputToken = 1,
-}
-
-export enum FeeSchedulerMode {
-    Linear = 0,
-    Exponential = 1,
+export enum BaseFeeMode {
+    FeeSchedulerLinear = 0,
+    FeeSchedulerExponential = 1,
+    RateLimiter = 2,
 }
 
 export enum MigrationFeeOption {
@@ -198,6 +198,19 @@ export enum Rounding {
     Down,
 }
 
+export enum TokenUpdateAuthorityOption {
+    // Creator has permission to update update_authority
+    CreatorUpdateAuthority = 0,
+    // No one has permission to update the authority
+    Immutable = 1,
+    // Partner has permission to update update_authority
+    PartnerUpdateAuthority = 2,
+    // Creator has permission as mint_authority and update_authority
+    CreatorUpdateAndMintAuthority = 3,
+    // Partner has permission as mint_authority and update_authority
+    PartnerUpdateAndMintAuthority = 4,
+}
+
 ///////////
 // TYPES //
 ///////////
@@ -219,18 +232,24 @@ export type CreateDammV2MigrationMetadataParam =
 
 export type BaseFee = {
     cliffFeeNumerator: BN
-    numberOfPeriod: number
-    periodFrequency: BN
-    reductionFactor: BN
-    feeSchedulerMode: FeeSchedulerMode
+    firstFactor: number // feeScheduler: numberOfPeriod, rateLimiter: feeIncrementBps
+    secondFactor: BN // feeScheduler: periodFrequency, rateLimiter: maxLimiterDuration
+    thirdFactor: BN // feeScheduler: reductionFactor, rateLimiter: referenceAmount
+    baseFeeMode: BaseFeeMode
 }
 
 export type FeeSchedulerParams = {
     startingFeeBps: number
     endingFeeBps: number
     numberOfPeriod: number
-    feeSchedulerMode: FeeSchedulerMode
     totalDuration: number
+}
+
+export type RateLimiterParams = {
+    baseFeeBps: number
+    feeIncrementBps: number
+    referenceAmount: number
+    maxLimiterDuration: number
 }
 
 export type LockedVestingParams = {
@@ -241,13 +260,25 @@ export type LockedVestingParams = {
     cliffDurationFromMigrationTime: number
 }
 
+export type BaseFeeParams =
+    | {
+          baseFeeMode:
+              | BaseFeeMode.FeeSchedulerLinear
+              | BaseFeeMode.FeeSchedulerExponential
+          feeSchedulerParam: FeeSchedulerParams
+      }
+    | {
+          baseFeeMode: BaseFeeMode.RateLimiter
+          rateLimiterParam: RateLimiterParams
+      }
+
 export type BuildCurveBaseParam = {
     totalTokenSupply: number
     migrationOption: MigrationOption
     tokenBaseDecimal: TokenDecimal
     tokenQuoteDecimal: TokenDecimal
     lockedVestingParam: LockedVestingParams
-    feeSchedulerParam: FeeSchedulerParams
+    baseFeeParams: BaseFeeParams
     dynamicFeeEnabled: boolean
     activationType: ActivationType
     collectFeeMode: CollectFeeMode
@@ -259,6 +290,11 @@ export type BuildCurveBaseParam = {
     creatorLockedLpPercentage: number
     creatorTradingFeePercentage: number
     leftover: number
+    tokenUpdateAuthority: number
+    migrationFee: {
+        feePercentage: number
+        creatorFeePercentage: number
+    }
 }
 
 export type BuildCurveParam = BuildCurveBaseParam & {
@@ -281,16 +317,6 @@ export type BuildCurveWithLiquidityWeightsParam = BuildCurveBaseParam & {
     initialMarketCap: number
     migrationMarketCap: number
     liquidityWeights: number[]
-}
-
-export type BuildCurveWithCreatorFirstBuyParam = BuildCurveBaseParam & {
-    initialMarketCap: number
-    migrationMarketCap: number
-    liquidityWeights: number[]
-    creatorFirstBuyOption: {
-        quoteAmount: number
-        baseAmount: number
-    }
 }
 
 export type InitializePoolBaseParam = {
@@ -319,17 +345,48 @@ export type CreatePoolParam = {
 }
 
 export type CreateConfigAndPoolParam = CreateConfigParam & {
-    createPoolParam: {
-        name: string
-        symbol: string
-        uri: string
-        poolCreator: PublicKey
-        baseMint: PublicKey
-    }
+    preCreatePoolParam: PreCreatePoolParam
 }
 
-export type CreatePoolAndBuyParam = {
+export type CreateConfigAndPoolWithFirstBuyParam = CreateConfigAndPoolParam & {
+    firstBuyParam?: FirstBuyParam
+}
+
+export type CreatePoolWithFirstBuyParam = {
     createPoolParam: CreatePoolParam
+    firstBuyParam?: FirstBuyParam
+}
+
+export type CreatePoolWithPartnerAndCreatorFirstBuyParam = {
+    createPoolParam: CreatePoolParam
+    partnerFirstBuyParam?: PartnerFirstBuyParam
+    creatorFirstBuyParam?: CreatorFirstBuyParam
+}
+
+export type PreCreatePoolParam = {
+    name: string
+    symbol: string
+    uri: string
+    poolCreator: PublicKey
+    baseMint: PublicKey
+}
+
+export type FirstBuyParam = {
+    buyer: PublicKey
+    buyAmount: BN
+    minimumAmountOut: BN
+    referralTokenAccount: PublicKey | null
+}
+
+export type PartnerFirstBuyParam = {
+    partner: PublicKey
+    buyAmount: BN
+    minimumAmountOut: BN
+    referralTokenAccount: PublicKey | null
+}
+
+export type CreatorFirstBuyParam = {
+    creator: PublicKey
     buyAmount: BN
     minimumAmountOut: BN
     referralTokenAccount: PublicKey | null
@@ -342,6 +399,7 @@ export type SwapParam = {
     minimumAmountOut: BN
     swapBaseForQuote: boolean
     referralTokenAccount: PublicKey | null
+    payer?: PublicKey
 }
 
 export type SwapQuoteParam = {
@@ -349,6 +407,22 @@ export type SwapQuoteParam = {
     config: PoolConfig
     swapBaseForQuote: boolean
     amountIn: BN
+    slippageBps?: number
+    hasReferral: boolean
+    currentPoint: BN
+}
+
+export type SwapQuoteExactInParam = {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    currentPoint: BN
+}
+
+export type SwapQuoteExactOutParam = {
+    virtualPool: VirtualPool
+    config: PoolConfig
+    swapBaseForQuote: boolean
+    outAmount: BN
     slippageBps?: number
     hasReferral: boolean
     currentPoint: BN
@@ -390,6 +464,15 @@ export type ClaimTradingFeeParam = {
     tempWSolAcc?: PublicKey
 }
 
+export type ClaimTradingFee2Param = {
+    feeClaimer: PublicKey
+    payer: PublicKey
+    pool: PublicKey
+    maxBaseAmount: BN
+    maxQuoteAmount: BN
+    receiver: PublicKey
+}
+
 export type ClaimPartnerTradingFeeWithQuoteMintNotSolParam = {
     feeClaimer: PublicKey
     payer: PublicKey
@@ -415,6 +498,15 @@ export type ClaimCreatorTradingFeeParam = {
     maxQuoteAmount: BN
     receiver?: PublicKey
     tempWSolAcc?: PublicKey
+}
+
+export type ClaimCreatorTradingFee2Param = {
+    creator: PublicKey
+    payer: PublicKey
+    pool: PublicKey
+    maxBaseAmount: BN
+    maxQuoteAmount: BN
+    receiver: PublicKey
 }
 
 export type ClaimCreatorTradingFeeWithQuoteMintNotSolParam = {
@@ -463,6 +555,18 @@ export type CreatePartnerMetadataParam = {
     logo: string
     feeClaimer: PublicKey
     payer: PublicKey
+}
+
+export type TransferPoolCreatorParam = {
+    virtualPool: PublicKey
+    creator: PublicKey
+    newCreator: PublicKey
+}
+
+export type WithdrawMigrationFeeParam = {
+    virtualPool: PublicKey
+    sender: PublicKey // sender is creator or partner
+    feePayer?: PublicKey
 }
 
 ////////////////

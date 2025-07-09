@@ -21,8 +21,7 @@ describe('calculateLockedVesting tests', () => {
             cliffUnlockAmount,
             totalVestingDuration,
             cliffDurationFromMigrationTime,
-            TokenDecimal.SIX,
-            ActivationType.Timestamp
+            TokenDecimal.SIX
         )
 
         console.log('result', convertBNToDecimal(result))
@@ -53,8 +52,7 @@ describe('calculateLockedVesting tests', () => {
             cliffUnlockAmount,
             totalVestingDuration,
             cliffDurationFromMigrationTime,
-            TokenDecimal.SIX,
-            ActivationType.Slot
+            TokenDecimal.SIX
         )
 
         console.log('result', convertBNToDecimal(result))
@@ -72,12 +70,12 @@ describe('calculateLockedVesting tests', () => {
         )
     })
 
-    test('calculate locked vesting parameters 2', () => {
+    test('calculate locked vesting parameters 3', () => {
         const totalLockedVestingAmount = 20000000
         const numberOfVestingPeriod = 1
         const cliffUnlockAmount = 20000000
         const totalVestingDuration = 1
-        const cliffDurationFromMigrationTime = 0
+        const cliffDurationFromMigrationTime = 1000 * 365 * 24 * 60 * 60
 
         const result = getLockedVestingParams(
             totalLockedVestingAmount,
@@ -85,8 +83,7 @@ describe('calculateLockedVesting tests', () => {
             cliffUnlockAmount,
             totalVestingDuration,
             cliffDurationFromMigrationTime,
-            TokenDecimal.SIX,
-            ActivationType.Slot
+            TokenDecimal.SIX
         )
 
         console.log('result', convertBNToDecimal(result))
@@ -104,7 +101,7 @@ describe('calculateLockedVesting tests', () => {
         )
     })
 
-    test('calculate locked vesting parameters 2', () => {
+    test('calculate locked vesting parameters 4', () => {
         const totalLockedVestingAmount = 8888888
         const numberOfVestingPeriod = 9
         const cliffUnlockAmount = 9999
@@ -117,8 +114,38 @@ describe('calculateLockedVesting tests', () => {
             cliffUnlockAmount,
             totalVestingDuration,
             cliffDurationFromMigrationTime,
-            TokenDecimal.SIX,
-            ActivationType.Slot
+            TokenDecimal.SIX
+        )
+
+        console.log('result', convertBNToDecimal(result))
+
+        const totalCalculatedVestingAmount = getTotalVestingAmount(result)
+
+        console.log(
+            'totalCalculatedVestingAmount',
+            totalCalculatedVestingAmount.toString()
+        )
+        console.log('totalLockedVestingAmount', totalLockedVestingAmount)
+
+        expect(totalCalculatedVestingAmount.toNumber()).toEqual(
+            totalLockedVestingAmount * 10 ** TokenDecimal.SIX
+        )
+    })
+
+    test('calculate locked vesting parameters 5', () => {
+        const totalLockedVestingAmount = 1000000
+        const numberOfVestingPeriod = 1
+        const cliffUnlockAmount = 1000000
+        const totalVestingDuration = 0
+        const cliffDurationFromMigrationTime = 365 * 24 * 60 * 60
+
+        const result = getLockedVestingParams(
+            totalLockedVestingAmount,
+            numberOfVestingPeriod,
+            cliffUnlockAmount,
+            totalVestingDuration,
+            cliffDurationFromMigrationTime,
+            TokenDecimal.SIX
         )
 
         console.log('result', convertBNToDecimal(result))
